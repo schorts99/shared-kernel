@@ -2,7 +2,6 @@ import { ValueObject } from "./";
 
 export abstract class StringValue implements ValueObject {
   readonly valueType = "String";
-  abstract readonly attributeName: string;
   readonly value: string;
   readonly minLength: number;
   readonly maxLength: number | undefined;
@@ -16,4 +15,6 @@ export abstract class StringValue implements ValueObject {
   get isValid(): boolean {
     return this.value.length >= this.minLength && (this.maxLength ? this.value.length <= this.maxLength : true);
   }
+
+  abstract readonly attributeName: string;
 }
