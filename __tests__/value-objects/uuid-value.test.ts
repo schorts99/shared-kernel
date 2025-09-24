@@ -26,6 +26,10 @@ describe("UUIDValue", () => {
     expectTypeOf<UUIDValue["optional"]>().toBeBoolean();
   });
 
+  it('should define the "equals" method', () => {
+    expectTypeOf<UUIDValue["equals"]>().toEqualTypeOf<(valueObject: unknown) => boolean>();
+  });
+
   describe('when "value" is present', () => {
     describe('when "value" is valid', () => {
       it('should have a getter "isValid" that returns true', () => {

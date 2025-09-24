@@ -30,6 +30,10 @@ describe("StringValue", () => {
     expectTypeOf<StringValue["maxLength"]>().toEqualTypeOf<number | undefined>()
   });
 
+  it('should define the "equals" method', () => {
+    expectTypeOf<StringValue["equals"]>().toEqualTypeOf<(valueObject: unknown) => boolean>();
+  });
+
   describe('when "minLength" is not present', () => {
     it('should assign a default value of 0', () => {
       const testStringValue = new TestStringalue("");

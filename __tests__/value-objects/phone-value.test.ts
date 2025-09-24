@@ -34,6 +34,10 @@ describe("PhoneValue", () => {
     expectTypeOf<PhoneValue["formattedPhone"]>().toEqualTypeOf<string | null>();
   });
 
+  it('should define the "equals" method', () => {
+    expectTypeOf<PhoneValue["equals"]>().toEqualTypeOf<(valueObject: unknown) => boolean>();
+  });
+
   describe('when "value" is a phone', () => {
     const countryCode = "+52";
     const phoneNumber = "1234567890";

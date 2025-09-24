@@ -1,5 +1,7 @@
 import { ValueObject } from "./";
 
+const EPSILON = 1e-6;
+
 export abstract class CoordinatesValue implements ValueObject {
   readonly valueType = "Coordinates";
   readonly value: {
@@ -32,6 +34,16 @@ export abstract class CoordinatesValue implements ValueObject {
     }
 
     return null;
+  }
+
+  equals(valueObject: unknown): boolean {
+    if (!(valueObject instanceof CoordinatesValue)) return false;
+    if (!this.isValid || !valueObject.isValid) return false;
+  
+    const latDiff = Math.abs(this.value.latitude - valueObject.value.latitude);
+    const lonDiff = Math.abs(this.value.longitude - valueObject.value.longitude);
+  
+    return latDiff < EPSILON && lonDiff < EPSILON;
   }
 
   abstract readonly attributeName: string;

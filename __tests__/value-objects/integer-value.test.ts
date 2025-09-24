@@ -30,6 +30,10 @@ describe("IntegerValue", () => {
     expectTypeOf<IntegerValue["max"]>().toEqualTypeOf<number | undefined>()
   });
 
+  it('should define the "equals" method', () => {
+    expectTypeOf<IntegerValue["equals"]>().toEqualTypeOf<(valueObject: unknown) => boolean>();
+  });
+
   describe('when "min" is not present', () => {
     it('should allow any negative integer as valid', () => {
       const testIntegerValue = new TestIntegerValue(-1);

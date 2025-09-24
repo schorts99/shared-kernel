@@ -22,6 +22,10 @@ describe("SlugValue", () => {
     expectTypeOf<SlugValue["value"]>().toBeString();
   });
 
+  it('should define the "equals" method', () => {
+    expectTypeOf<SlugValue["equals"]>().toEqualTypeOf<(valueObject: unknown) => boolean>();
+  });
+
   describe('when "value" is an slug', () => {
     it('should return true the "isValid" getter', () => {
       const testSlugValue = new TestSlugValue("schorts99");

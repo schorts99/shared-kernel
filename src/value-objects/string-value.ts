@@ -16,5 +16,12 @@ export abstract class StringValue implements ValueObject {
     return this.value.length >= this.minLength && (this.maxLength ? this.value.length <= this.maxLength : true);
   }
 
+  equals(valueObject: unknown): boolean {
+    if (!(valueObject instanceof StringValue)) return false;
+    if (!this.isValid || !valueObject.isValid) return false;
+  
+    return this.value === valueObject.value;
+  }
+
   abstract readonly attributeName: string;
 }

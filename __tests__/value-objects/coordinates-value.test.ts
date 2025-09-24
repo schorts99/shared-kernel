@@ -30,6 +30,10 @@ describe("CoordinatesValue", () => {
     expectTypeOf<CoordinatesValue["longitude"]>().toEqualTypeOf<number | null>();
   });
 
+  it('should define the "equals" method', () => {
+    expectTypeOf<CoordinatesValue["equals"]>().toEqualTypeOf<(valueObject: unknown) => boolean>();
+  });
+
   describe('when "value" is a valid coordinate', () => {
     const coordinates = { latitude: 0, longitude: 0 };
     const testCoordinatesValue = new TestCoordinatesValue(coordinates);

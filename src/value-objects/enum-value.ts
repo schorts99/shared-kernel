@@ -14,5 +14,12 @@ export abstract class EnumValue implements ValueObject {
     return this.allowedValues.includes(this.value);
   }
 
+  equals(valueObject: unknown): boolean {
+    if (!(valueObject instanceof EnumValue)) return false;
+    if (!this.isValid || !valueObject.isValid) return false;
+  
+    return this.value === valueObject.value;
+  }
+
   abstract readonly attributeName: string;
 }

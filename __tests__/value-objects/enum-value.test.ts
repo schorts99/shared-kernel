@@ -30,6 +30,10 @@ describe("EnumValue", () => {
     expectTypeOf<EnumValue["attributeName"]>().toBeString;
   });
 
+  it('should define the "equals" method', () => {
+    expectTypeOf<EnumValue["equals"]>().toEqualTypeOf<(valueObject: unknown) => boolean>();
+  });
+
   describe('when value is in the "allowedTypes" property', () => {
     it('should return true on the "isValid" getter', () => {
       const testEnumValue = new TestEnumValue(["test"], "test");

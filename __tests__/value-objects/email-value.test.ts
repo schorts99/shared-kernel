@@ -22,6 +22,10 @@ describe("EmailValue", () => {
     expectTypeOf<EmailValue["value"]>().toBeString();
   });
 
+  it('should define the "equals" method', () => {
+    expectTypeOf<EmailValue["equals"]>().toEqualTypeOf<(valueObject: unknown) => boolean>();
+  });
+
   describe('when "value" is an email', () => {
     it('should return true the "isValid" getter', () => {
       const testEmailValue = new TestEmailValue("test@example.com");

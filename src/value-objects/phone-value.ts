@@ -42,5 +42,12 @@ export abstract class PhoneValue implements ValueObject {
     return null;
   }
 
+  equals(valueObject: unknown): boolean {
+    if (!(valueObject instanceof PhoneValue)) return false;
+    if (!this.isValid || !valueObject.isValid) return false;
+  
+    return this.value === valueObject.value;
+  }
+
   abstract readonly attributeName: string;
 }

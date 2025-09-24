@@ -3,4 +3,5 @@ export interface ValueObject {
   readonly valueType: string;
   readonly attributeName: string;
   isValid: boolean;
+  equals(valueObject: unknown): boolean;
 }

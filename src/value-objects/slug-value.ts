@@ -14,5 +14,12 @@ export abstract class SlugValue implements ValueObject {
     return REGEX.test(this.value);
   }
 
+  equals(valueObject: unknown): boolean {
+    if (!(valueObject instanceof SlugValue)) return false;
+    if (!this.isValid || !valueObject.isValid) return false;
+  
+    return this.value === valueObject.value;
+  }
+
   abstract readonly attributeName: string;
 }
