@@ -2,12 +2,15 @@ import type { ValueObject } from "./";
 
 const REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-export abstract class UUIDValue implements ValueObject {
+type UUIDInput<Required extends boolean> =
+  Required extends true ? string : string | undefined;
+
+export abstract class UUIDValue<Required extends boolean = true> implements ValueObject {
   readonly valueType = "UUID";
-  readonly value: string | undefined;
+  readonly value: UUIDInput<Required>;
   private readonly optional: boolean;
 
-  constructor(value?: string, optional: boolean = false) {
+  constructor(value: UUIDInput<Required>, optional: boolean = false) {
     this.value = value;
     this.optional = optional;
   }
