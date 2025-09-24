@@ -3,7 +3,7 @@ import { ValueObject } from "./";
 export abstract class EnumValue implements ValueObject {
   readonly valueType = "Enum";
   readonly allowedValues: Array<string>;
-  readonly value: string;
+  readonly value: typeof this.allowedValues[number] | string;
 
   constructor(allowedValues: Array<string>, value: string) {
     this.allowedValues = allowedValues;
