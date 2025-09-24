@@ -1,0 +1,33 @@
+{
+  "name": "@schorts99/shared-kernel",
+  "version": "0.0.1",
+  "description": "",
+  "exports": {
+    "./value-objects": {
+      "import": "./dist/value-objects/index.js",
+      "types": "./dist/value-objects/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:ci": "jest --ci --coverage --watchAll=false"
+  },
+  "author": {
+    "name": "Jorge Castillo",
+    "url": "https://github.com/schorts99"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "@jest/globals": "^30.1.2",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.5.2",
+    "expect-type": "^1.2.2",
+    "jest": "^30.1.3",
+    "jest-html-reporter": "^4.3.0",
+    "ts-jest": "^29.4.4",
+    "typescript": "^5.9.2"
+  }
+}
