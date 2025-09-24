@@ -3,7 +3,7 @@ import { expectTypeOf } from "expect-type";
 
 import { ValueObject, UUIDValue } from "../../src/value-objects";
 
-class TestUUIDvalue extends UUIDValue {
+class TestUUIDValue extends UUIDValue {
   readonly attributeName = "test";
 }
 
@@ -13,7 +13,7 @@ describe("UUIDValue", () => {
   });
 
   it('should have a "valueType" with "UUID" as value', () => {
-    const testUUIDvalue = new TestUUIDvalue();
+    const testUUIDvalue = new TestUUIDValue();
 
     expect(testUUIDvalue.valueType).toEqual("UUID");
   });
@@ -29,7 +29,7 @@ describe("UUIDValue", () => {
   describe('when "value" is present', () => {
     describe('when "value" is valid', () => {
       it('should have a getter "isValid" that returns true', () => {
-        const testUUIDvalue = new TestUUIDvalue("87a00bc1-c586-4d23-bfc7-dd637628777c");
+        const testUUIDvalue = new TestUUIDValue("87a00bc1-c586-4d23-bfc7-dd637628777c");
 
         expect(testUUIDvalue.isValid).toBeTruthy();
       });
@@ -37,7 +37,7 @@ describe("UUIDValue", () => {
 
     describe('when "value" is not valid', () => {
       it('should have a getter "isValid" that returns false', () => {
-        const testUUIDvalue = new TestUUIDvalue("dummy-uuid-12346-5734");
+        const testUUIDvalue = new TestUUIDValue("dummy-uuid-12346-5734");
 
         expect(testUUIDvalue.isValid).toBeFalsy();
       });
@@ -47,7 +47,7 @@ describe("UUIDValue", () => {
   describe('when "value" is not present', () => {
     describe('when "value" is optional', () => {
       it('should have a getter "isValid" that returns true', () => {
-        const testUUIDvalue = new TestUUIDvalue(undefined, true);
+        const testUUIDvalue = new TestUUIDValue(undefined, true);
 
         expect(testUUIDvalue.isValid).toBeTruthy();
       });
@@ -55,7 +55,7 @@ describe("UUIDValue", () => {
 
     describe('when "value" is not optional', () => {
       it('should have a getter "isValid" that runs the validations normally and returns false', () => {
-        const testUUIDvalue = new TestUUIDvalue(undefined, false);
+        const testUUIDvalue = new TestUUIDValue(undefined, false);
 
         expect(testUUIDvalue.isValid).toBeFalsy();
       });

@@ -1,13 +1,13 @@
 import { ValueObject } from "./";
 
-export default abstract class StringValue implements ValueObject {
+export abstract class StringValue implements ValueObject {
   readonly valueType = "String";
   abstract readonly attributeName: string;
   readonly value: string;
   readonly minLength: number;
   readonly maxLength: number | undefined;
 
-  constructor(value: string, minLength = 0, maxLength: number | undefined) {
+  constructor(value: string, minLength = 0, maxLength?: number) {
     this.value = value;
     this.minLength = minLength;
     this.maxLength = maxLength;
