@@ -5,3 +5,4 @@ export { StringValue } from "./string-value";
 export { EnumValue } from "./enum-value";
 export { EmailValue } from "./email-value";
 export { PhoneValue } from "./phone-value";
+export { SlugValue } from "./slug-value";

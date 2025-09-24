@@ -7,7 +7,7 @@ class TestPhoneValue extends PhoneValue {
   readonly attributeName = "test";
 }
 
-describe("EmailValue", () => {
+describe("PhoneValue", () => {
   it('should implement "ValueObject" interface', () => {
     expectTypeOf<PhoneValue>().toExtend<ValueObject>();
   });
