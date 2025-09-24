@@ -19,14 +19,14 @@ describe("StringValue", () => {
   });
 
   it('should have a "value" property of type string', () => {
-    expectTypeOf<StringValue["value"]>().toEqualTypeOf<string>();
+    expectTypeOf<StringValue["value"]>().toBeString();
   });
 
   it('should have a "minLength" property of type number', () => {
     expectTypeOf<StringValue["minLength"]>().toBeNumber();
   });
 
-  it('should have a "maxLength" property of type number', () => {
+  it('should have a "maxLength" property of type number or undefined', () => {
     expectTypeOf<StringValue["maxLength"]>().toEqualTypeOf<number | undefined>()
   });
 
