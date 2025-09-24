@@ -1,6 +1,6 @@
 export interface ValueObject {
-  value: unknown;
+  readonly value: unknown;
+  readonly valueType: string;
+  readonly attributeName: string;
   isValid: boolean;
-  valueType: string;
-  attributeName: string;
 }

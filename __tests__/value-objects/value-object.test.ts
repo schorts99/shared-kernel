@@ -3,7 +3,7 @@ import { expectTypeOf } from "expect-type";
 
 import { ValueObject } from "../../src/value-objects";
 
-describe("ValueObkect", () => {
+describe("ValueObject", () => {
   it('should have a "value" property of type unknown', () => {
     expectTypeOf<ValueObject>().toHaveProperty("value");
     expectTypeOf<ValueObject['value']>().toBeUnknown();
