@@ -4,4 +4,4 @@ export type { FilterCriterion } from "./filter-criterion";
 export type { Direction } from "./direction";
 
 export { Criteria } from "./criteria";
-export { PaginationNotValid, OffsetNotValid, LimitNotValid } from "./exceptions";
+export { OffsetNotValid, LimitNotValid } from "./exceptions";
