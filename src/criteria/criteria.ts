@@ -1,0 +1,62 @@
+import { FilterCriterion } from "./filter-criterion";
+import { Order } from "./order";
+import { Operator } from "./operator";
+import { Direction } from "./direction";
+import { PaginationNotValid, OffsetNotValid, LimitNotValid } from "./exceptions";
+
+export class Criteria {
+  readonly filters: Record<string, FilterCriterion> = {};
+  readonly orders: Array<Order> = [];
+  limit?: number;
+  offset?: number;
+
+  where(
+    field: string,
+    operator: Operator,
+    value: any,
+  ): Criteria {
+    this.filters[field] = { value, operator };
+
+    return this;
+  }
+
+  orderBy(
+    field: string,
+    direction: Direction = "ASC",
+  ): Criteria {
+    this.orders.push({ field, direction });
+
+    return this;
+  }
+
+  paginate(page: number, perPage: number): Criteria {
+    if (page < 1 || perPage < 1) {
+      throw new PaginationNotValid();
+    }
+
+    this.limit = perPage;
+    this.offset = (page - 1) * perPage;
+  
+    return this;
+  }
+
+  limitResults(limit: number): Criteria {
+    if (limit < 1) {
+      throw new LimitNotValid();
+    }
+
+    this.limit = limit;
+
+    return this;
+  }
+
+  offsetResults(offset: number): Criteria {
+    if (offset < 1) {
+      throw new OffsetNotValid();
+    }
+
+    this.offset = offset;
+
+    return this;
+  }
+}
