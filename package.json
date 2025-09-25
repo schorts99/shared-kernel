@@ -3,6 +3,10 @@
   "version": "0.0.1",
   "description": "",
   "exports": {
+    "./auth": {
+      "import": "./dist/auth/index.js",
+      "types": "./dist/auth/index.d.ts"
+    },
     "./domain-events": {
       "import": "./dist/domain-events/index.js",
       "types": "./dist/domain-events/index.d.ts"
