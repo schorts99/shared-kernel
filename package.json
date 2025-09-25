@@ -3,6 +3,18 @@
   "version": "0.0.1",
   "description": "",
   "exports": {
+    "./domain-events": {
+      "import": "./dist/domain-events/index.js",
+      "types": "./dist/domain-events/index.d.ts"
+    },
+    "./entities": {
+      "import": "./dist/entities/index.js",
+      "types": "./dist/entities/index.d.ts"
+    },
+    "./models": {
+      "import": "./dist/models/index.js",
+      "types": "./dist/models/index.d.ts"
+    },
     "./value-objects": {
       "import": "./dist/value-objects/index.js",
       "types": "./dist/value-objects/index.d.ts"
