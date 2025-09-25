@@ -35,7 +35,8 @@ describe('RequireAuth decorator (manual application)', () => {
         set: () => {},
       },
     });
-    service.securedMethod = decorated.bind(service);
+    const wrappedMethod = typeof decorated === 'function' ? decorated : decorated?.value;
+    service.securedMethod = wrappedMethod.bind(service);
 
     await expect(service.securedMethod()).rejects.toThrow(NotAuthenticated);
   });
@@ -56,7 +57,8 @@ describe('RequireAuth decorator (manual application)', () => {
         set: () => {},
       },
     });
-    service.securedMethod = decorated.bind(service);
+    const wrappedMethod = typeof decorated === 'function' ? decorated : decorated?.value;
+    service.securedMethod = wrappedMethod.bind(service);
     const result = await service.securedMethod();
 
     expect(result).toBe('fallback');
@@ -77,7 +79,8 @@ describe('RequireAuth decorator (manual application)', () => {
         set: () => {},
       },
     });
-    service.securedMethod = decorated.bind(service);
+    const wrappedMethod = typeof decorated === 'function' ? decorated : decorated?.value;
+    service.securedMethod = wrappedMethod.bind(service);
     const result = await service.securedMethod();
 
     expect(result).toBe('should not reach');
