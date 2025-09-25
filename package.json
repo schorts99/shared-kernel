@@ -43,6 +43,10 @@
       "import": "./dist/utils/index.js",
       "types": "./dist/utils/index.d.ts"
     },
+    "./state-manager": {
+      "import": "./dist/state-manager/index.js",
+      "types": "./dist/state-manager/index.d.ts"
+    },
     "./value-objects": {
       "import": "./dist/value-objects/index.js",
       "types": "./dist/value-objects/index.d.ts"
