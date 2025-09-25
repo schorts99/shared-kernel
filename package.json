@@ -23,6 +23,10 @@
       "import": "./dist/formatters/index.js",
       "types": "./dist/formatters/index.d.ts"
     },
+    "./http": {
+      "import": "./dist/http/index.js",
+      "types": "./dist/http/index.d.ts"
+    },
     "./messages": {
       "import": "./dist/messages/index.js",
       "types": "./dist/messages/index.d.ts"
