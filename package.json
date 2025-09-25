@@ -1,6 +1,6 @@
 {
   "name": "@schorts99/shared-kernel",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "",
   "exports": {
     "./auth": {
@@ -26,6 +26,10 @@
     "./http": {
       "import": "./dist/http/index.js",
       "types": "./dist/http/index.d.ts"
+    },
+    "./json-api": {
+      "import": "./dist/json-api/index.js",
+      "types": "./dist/json-api/index.d.ts"
     },
     "./messages": {
       "import": "./dist/messages/index.js",
