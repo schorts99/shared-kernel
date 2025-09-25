@@ -2,7 +2,7 @@ import { FilterCriterion } from "./filter-criterion";
 import { Order } from "./order";
 import { Operator } from "./operator";
 import { Direction } from "./direction";
-import { PaginationNotValid, OffsetNotValid, LimitNotValid } from "./exceptions";
+import { OffsetNotValid, LimitNotValid } from "./exceptions";
 
 export class Criteria {
   readonly filters: Record<string, FilterCriterion> = {};
@@ -26,17 +26,6 @@ export class Criteria {
   ): Criteria {
     this.orders.push({ field, direction });
 
-    return this;
-  }
-
-  paginate(page: number, perPage: number): Criteria {
-    if (page < 1 || perPage < 1) {
-      throw new PaginationNotValid();
-    }
-
-    this.limit = perPage;
-    this.offset = (page - 1) * perPage;
-  
     return this;
   }
 

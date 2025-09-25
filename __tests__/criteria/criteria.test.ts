@@ -103,43 +103,6 @@ describe('Criteria', () => {
     });
   });
 
-  describe('#paginate', () => {
-    it('should receive a page and perPage', () => {
-      expectTypeOf<Criteria["paginate"]>().parameters.toEqualTypeOf<[number, number]>();
-    });
-
-    it('should return the same instance', () => {
-      const criteria = new Criteria();
-      const result = criteria.paginate(1, 1);
-
-      expect(result).toEqual(criteria);
-    });
-
-    it('should set the "limit" and "offset" properties', () => {
-      const criteria = new Criteria();
-      const page = 1;
-      const perPage = 1;
-      const result = criteria.paginate(page, perPage);
-
-      expect(result.offset).toBeDefined();
-      expect(result.limit).toBeDefined();
-      expect(result.limit).toEqual(perPage);
-      expect(result.offset).toEqual((page - 1) * perPage);
-    });
-
-    it('throws a PaginationNotValid if page < 1', () => {
-      const criteria = new Criteria();
-  
-      expect(() => criteria.paginate(-1, 1)).toThrow(PaginationNotValid);
-    });
-
-    it('throws a PaginationNotValid if perPage < 1', () => {
-      const criteria = new Criteria();
-  
-      expect(() => criteria.paginate(-1, 0)).toThrow(PaginationNotValid)
-    });
-  });
-
   describe('#limitResults', () => {
     it('should receive a number', () => {
       expectTypeOf<Criteria["limitResults"]>().parameters.toEqualTypeOf<[number]>();
