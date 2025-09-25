@@ -1,4 +1,3 @@
-import { describe, it, expect } from "@jest/globals";
 import { expectTypeOf } from "expect-type";
 
 import { ValueObject, IntegerValue } from "../../src/value-objects";

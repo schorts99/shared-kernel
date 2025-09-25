@@ -1,4 +1,3 @@
-import { describe, it, expect } from "@jest/globals";
 import { expectTypeOf } from "expect-type";
 
 import { ValueObject, PhoneValue } from "../../src/value-objects";

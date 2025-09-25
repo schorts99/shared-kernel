@@ -1,4 +1,3 @@
-import { describe, it } from "@jest/globals";
 import { expectTypeOf } from "expect-type";
 
 import { DomainEvent, DomainEventPrimitives } from "../../src/domain-events";
