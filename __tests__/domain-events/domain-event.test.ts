@@ -33,9 +33,10 @@ describe('DomainEvent', () => {
     expectTypeOf<DomainEvent<PayloadSchema>['payload']>().toEqualTypeOf<PayloadSchema>();
   });
 
-  it('should have a "getEventName" property of type string', () => {
+  it('should have a "getEventName" method that returns an string', () => {
     expectTypeOf<DomainEvent>().toHaveProperty('getEventName');
-    expectTypeOf<DomainEvent['getEventName']>().toBeString();
+    expectTypeOf<DomainEvent['getEventName']>().toBeFunction();
+    expectTypeOf<DomainEvent['getEventName']>().returns.toBeString();
   });
 
   it('should declare a "toPrimitives" method', () => {
