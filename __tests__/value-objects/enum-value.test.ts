@@ -23,7 +23,7 @@ describe("EnumValue", () => {
   });
 
   it('should have a "allowedValues" property of type string[]', () => {
-    expectTypeOf<EnumValue["value"]>().toBeArray();
+    expectTypeOf<EnumValue["allowedValues"]>().toBeArray();
   });
 
   it('should have a "allowedTypes" property of type string', () => {
