@@ -7,6 +7,10 @@
       "import": "./dist/auth/index.js",
       "types": "./dist/auth/index.d.ts"
     },
+    "./criteria": {
+      "import": "./dist/criteria/index.js",
+      "types": "./dist/criteria/index.d.ts"
+    },
     "./domain-events": {
       "import": "./dist/domain-events/index.js",
       "types": "./dist/domain-events/index.d.ts"
@@ -14,6 +18,10 @@
     "./entities": {
       "import": "./dist/entities/index.js",
       "types": "./dist/entities/index.d.ts"
+    },
+    "./formatters": {
+      "import": "./dist/formatters/index.js",
+      "types": "./dist/formatters/index.d.ts"
     },
     "./messages": {
       "import": "./dist/messages/index.js",
