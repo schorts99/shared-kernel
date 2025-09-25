@@ -5,7 +5,7 @@ A modular, type-safe foundation for building expressive, maintainable applicatio
 ## 🚀 Installation
 
 ```bash
-npm install @schorts99/shared-kernel --save
+npm install @schorts/shared-kernel --save
 ```
 
 ## 🧱 Modules
@@ -73,7 +73,7 @@ This kernel is built around:
 ## 📦 Example Usage
 
 ```ts
-import { Criteria, JSONAPIConnector, FetchHTTPProvider } from "@schorts99/shared-kernel";
+import { Criteria, JSONAPIConnector, FetchHTTPProvider } from "@schorts/shared-kernel";
 
 const criteria = new Criteria()
   .where("status", "EQUAL", "active")

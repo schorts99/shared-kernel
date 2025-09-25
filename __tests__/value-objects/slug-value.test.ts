@@ -27,7 +27,7 @@ describe("SlugValue", () => {
 
   describe('when "value" is an slug', () => {
     it('should return true the "isValid" getter', () => {
-      const testSlugValue = new TestSlugValue("schorts99");
+      const testSlugValue = new TestSlugValue("schorts");
 
       expect(testSlugValue.isValid).toBeTruthy();
     });
@@ -35,7 +35,7 @@ describe("SlugValue", () => {
 
   describe('when "value" is not an slug', () => {
     it('should return false the "isValid" getter', () => {
-      const testSlugValue = new TestSlugValue("-schorts99");
+      const testSlugValue = new TestSlugValue("-schorts");
 
       expect(testSlugValue.isValid).toBeFalsy();
     });

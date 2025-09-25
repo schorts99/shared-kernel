@@ -2,7 +2,7 @@ import { expectTypeOf } from "expect-type";
 
 import { URLWithParamsBuilder } from "../../../src/utils";
 
-const baseURL = 'https://github.com/schorts99';
+const baseURL = 'https://github.com/schorts';
 const url = new URL(baseURL);
 
 describe('URLWithParamsBuilder', () => {
