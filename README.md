@@ -73,7 +73,12 @@ This kernel is built around:
 ## 📦 Example Usage
 
 ```ts
-import { Criteria, JSONAPIConnector, FetchHTTPProvider } from "@schorts/shared-kernel";
+import { Criteria } from "@schorts/shared-kernel/criteria";
+import { FetchHTTPProvider } from "@schorts/shared-kernel/http";
+import { JSONAPIConnector } from "@schorts/shared-kernel/json-api";
+
+// Didn't know what url use for the example hehe
+const usersURL = new URL("https://github.com/schorts99");
 
 const criteria = new Criteria()
   .where("status", "EQUAL", "active")
@@ -82,7 +87,8 @@ const criteria = new Criteria()
 
 const connector = new JSONAPIConnector(new FetchHTTPProvider());
 
-const users = await connector.findMany(new URL("/users", base), criteria);
+// UserModel is your own Model
+const users = await connector.findMany<UserModel>(usersURL, criteria);
 ```
 
 ## 🧪 Testing

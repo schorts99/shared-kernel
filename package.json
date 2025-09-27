@@ -1,6 +1,6 @@
 {
   "name": "@schorts/shared-kernel",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A modular, type-safe foundation for building expressive, maintainable applications. This package provides core abstractions for domain modeling, HTTP integration, authentication, state management, and more — designed to be framework-agnostic and highly extensible.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -61,7 +61,7 @@
     "test:coverage": "jest --coverage",
     "test:ci": "jest --ci --coverage --watchAll=false"
   },
-  "author": "Jorge Castillo (https://github.com/schorts)",
+  "author": "Jorge Castillo (https://github.com/schorts99)",
   "license": "LGPL-3.0-or-later",
   "devDependencies": {
     "@jest/globals": "^30.1.2",
@@ -273,7 +273,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/schorts/shared-kernel.git"
+    "url": "git+https://github.com/schorts99/shared-kernel.git"
   },
   "keywords": [
     "shared-kernel",
@@ -283,7 +283,7 @@
     "value-objects"
   ],
   "bugs": {
-    "url": "https://github.com/schorts/shared-kernel/issues"
+    "url": "https://github.com/schorts99/shared-kernel/issues"
   },
-  "homepage": "https://github.com/schorts/shared-kernel#readme"
+  "homepage": "https://github.com/schorts99/shared-kernel#readme"
 }
