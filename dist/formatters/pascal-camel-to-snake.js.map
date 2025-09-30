@@ -1,0 +1,1 @@
+{"version":3,"file":"pascal-camel-to-snake.js","sourceRoot":"","sources":["../../src/formatters/pascal-camel-to-snake.ts"],"names":[],"mappings":";;;AAAA,MAAa,kBAAkB;IAC7B,MAAM,CAAC,MAAM,CAAC,IAAY;QACxB,OAAO,IAAI;aACR,OAAO,CAAC,oBAAoB,EAAE,OAAO,CAAC;aACtC,OAAO,CAAC,uBAAuB,EAAE,OAAO,CAAC;aACzC,WAAW,EAAE,CAAC;IACnB,CAAC;CACF;AAPD,gDAOC"}

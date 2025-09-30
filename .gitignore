@@ -1,8 +1,5 @@
 # NPM
 node_modules
 
-# Build
-dist
-
 # Coverage
 coverage
