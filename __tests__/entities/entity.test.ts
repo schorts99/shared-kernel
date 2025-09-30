@@ -31,7 +31,7 @@ class IDValue extends UUIDValue {
   readonly attributeName = "ID";
 }
 
-class TestEntity extends Entity<Model> {
+class TestEntity extends Entity<IDValue, Model> {
   toPrimitives(): Model {
     return {
       id: this.id.toString(),
@@ -42,12 +42,12 @@ class TestEntity extends Entity<Model> {
 
 describe('Entity', () => {
   it('should have a "id" property of type string', () => {
-    expectTypeOf<Entity<Model>>().toHaveProperty("id");
-    expectTypeOf<Entity<Model>["id"]>().toEqualTypeOf<ValueObject>();
+    expectTypeOf<Entity<IDValue, Model>>().toHaveProperty("id");
+    expectTypeOf<Entity<IDValue, Model>["id"]>().toEqualTypeOf<IDValue>();
   });
 
   it('should have a private "domainEvents" property of type Array<DomainEvent>', () => {
-    expectTypeOf<Entity<Model>["domainEvents"]>().toEqualTypeOf<DomainEvent[]>();
+    expectTypeOf<Entity<IDValue, Model>["domainEvents"]>().toEqualTypeOf<DomainEvent[]>();
   });
 
   describe('#pullDomainEvents', () => {
@@ -107,8 +107,8 @@ describe('Entity', () => {
   });
 
   it('should declare a "toPrimitives" method', () => {
-    expectTypeOf<Entity<Model>>().toHaveProperty('toPrimitives');
-    expectTypeOf<Entity<Model>['toPrimitives']>().toBeFunction();
-    expectTypeOf<Entity<Model>['toPrimitives']>().returns.toEqualTypeOf<Model>();
+    expectTypeOf<Entity<IDValue, Model>>().toHaveProperty('toPrimitives');
+    expectTypeOf<Entity<IDValue, Model>['toPrimitives']>().toBeFunction();
+    expectTypeOf<Entity<IDValue, Model>['toPrimitives']>().returns.toEqualTypeOf<Model>();
   });
 });

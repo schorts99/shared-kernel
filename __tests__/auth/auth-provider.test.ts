@@ -2,13 +2,18 @@ import { expectTypeOf } from "expect-type";
 
 import { AuthProvider } from "../../src/auth";
 import { Entity } from "../../src/entities";
+import { UUIDValue } from "../../src/value-objects";
 
 type Model = {
   id: string;
   name: string;
 };
 
-class TestUser extends Entity<Model> {
+class IDValue extends UUIDValue {
+  attributeName = "ID";
+}
+
+class TestUser extends Entity<IDValue, Model> {
   toPrimitives(): Model {
     return {
       id: this.id.toString(),

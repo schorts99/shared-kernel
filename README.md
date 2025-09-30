@@ -26,6 +26,7 @@ npm install @schorts/shared-kernel --save
 ### 🧬 Entities
 
 - **Entity:** Base class for identity-based domain entities.
+- **EntityRegistry:** Dynamic registry for entity constructors, enabling polymorphic and type-safe instantiation of domain entities from serialized data.
 
 ### 🧹 Formatters
 

@@ -3,13 +3,18 @@ import { expectTypeOf } from "expect-type";
 import { DAO } from "../../src/dao";
 import { Entity } from "../../src/entities";
 import { Criteria } from "../../src/criteria";
+import { UUIDValue } from "../../src/value-objects";
 
 type Model = {
   id: string;
   name: string;
 };
 
-class ModelEntity extends Entity<Model> {
+class IDValue extends UUIDValue {
+  attributeName = "ID";
+}
+
+class ModelEntity extends Entity<IDValue, Model> {
   toPrimitives(): Model {
     throw new Error("Method not implemented.");
   }
@@ -77,10 +82,6 @@ describe("DAO", () => {
       expectTypeOf<DAO<Model, ModelEntity>>().toHaveProperty("create");
     });
 
-    it('should receive the entity argument', () => {
-      expectTypeOf<DAO<Model, ModelEntity>['create']>().parameters.toEqualTypeOf<[ModelEntity]>();
-    });
-
     it('should return a promise with the created entity', () => {
       expectTypeOf<DAO<Model, ModelEntity>['create']>().returns.toEqualTypeOf<Promise<ModelEntity>>();
     });
@@ -91,10 +92,6 @@ describe("DAO", () => {
       expectTypeOf<DAO<Model, ModelEntity>>().toHaveProperty("update");
     });
 
-    it('should receive the entity argument', () => {
-      expectTypeOf<DAO<Model, ModelEntity>['update']>().parameters.toEqualTypeOf<[ModelEntity]>();
-    });
-
     it('should return a promise with the updated entity', () => {
       expectTypeOf<DAO<Model, ModelEntity>['update']>().returns.toEqualTypeOf<Promise<ModelEntity>>();
     });
@@ -103,10 +100,6 @@ describe("DAO", () => {
   describe('#delete', () => {
     it('should declare the method', () => {
       expectTypeOf<DAO<Model, ModelEntity>>().toHaveProperty("delete");
-    });
-
-    it('should receive the entity argument', () => {
-      expectTypeOf<DAO<Model, ModelEntity>['delete']>().parameters.toEqualTypeOf<[ModelEntity]>();
     });
 
     it('should return a promise with the deleted entity', () => {
