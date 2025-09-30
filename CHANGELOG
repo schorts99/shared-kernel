@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.5] - 2025-09-30
+
+### Added
+
+- Introduce `DAO` concept for a related package with a `Firestore` implementation.
+- Introduce `UnitOfWOrk` concept for a related package with a `Firestore` implementation.
+
 ## [1.0.4] - 2025-09-30
 
 ### Fixed
@@ -21,5 +28,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Removed indirect dependencies from the `package.json`.
 
-[1.0.3]: https://github.com/schorts99/shared-kernel/compare/v1.0.3...v0.0.4
+[1.0.5]: https://github.com/schorts99/shared-kernel/compare/v1.0.4...v0.0.5
+[1.0.4]: https://github.com/schorts99/shared-kernel/compare/v1.0.3...v0.0.4
 [1.0.3]: https://github.com/schorts99/shared-kernel/releases/tag/v1.0.3

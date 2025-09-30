@@ -1,5 +1,5 @@
-  // jest.config.js
-  const { defaults: tsjPreset } = require("ts-jest/presets");
+// jest.config.js
+const { defaults: tsjPreset } = require("ts-jest/presets");
 const { transform } = require("typescript");
 
   module.exports = {

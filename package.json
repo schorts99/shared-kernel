@@ -1,6 +1,6 @@
 {
   "name": "@schorts/shared-kernel",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A modular, type-safe foundation for building expressive, maintainable applications. This package provides core abstractions for domain modeling, HTTP integration, authentication, state management, and more — designed to be framework-agnostic and highly extensible.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -12,6 +12,10 @@
     "./criteria": {
       "import": "./dist/criteria/index.js",
       "types": "./dist/criteria/index.d.ts"
+    },
+    "./dao": {
+      "import": "./dist/dao/index.js",
+      "types": "./dist/dao/index.d.ts"
     },
     "./domain-events": {
       "import": "./dist/domain-events/index.js",
@@ -40,6 +44,10 @@
     "./models": {
       "import": "./dist/models/index.js",
       "types": "./dist/models/index.d.ts"
+    },
+    "./unit-of-work": {
+      "import": "./dist/unit-of-work/index.js",
+      "types": "./dist/unit-of-work/index.d.ts"
     },
     "./utils": {
       "import": "./dist/utils/index.js",
@@ -81,6 +89,7 @@
     "shared-kernel",
     "auth",
     "jsonapi",
+    "dao",
     "kernel",
     "value-objects",
     "criteria",

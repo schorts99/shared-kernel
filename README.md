@@ -44,6 +44,11 @@ npm install @schorts/shared-kernel --save
 
 - **BaseModel:** Base class for serializable, type-safe models.
 
+### 🛠 Persistence
+
+- **DAO:** Generic interface defining data access operations for domain entities.
+- **UnitOfWork:** Interface enabling transactional coordination across multiple persistence operations.
+
 ### 🧠 State Manager
 
 - **StateManager:** Abstract reactive state manager with listener support.
