@@ -16,7 +16,7 @@ export class EntityRegistry {
 
   static resolve<Model extends BaseModel>(type: string): EntityConstructor<Model> | null {
     return (this.registry.get(type) || null) as EntityConstructor<Model> | null;
-  }  
+  }
 
   static create<Model extends BaseModel>(type: string, model: Model): Entity<ValueObject, Model> {
     const entity = this.resolve<Model>(type);
