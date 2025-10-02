@@ -31,7 +31,7 @@ export class Criteria {
 
   limitResults(limit: number): Criteria {
     if (limit < 1) {
-      throw new LimitNotValid();
+      throw new LimitNotValid(limit);
     }
 
     this.limit = limit;
@@ -41,7 +41,7 @@ export class Criteria {
 
   offsetResults(offset: number): Criteria {
     if (offset < 1) {
-      throw new OffsetNotValid();
+      throw new OffsetNotValid(offset);
     }
 
     this.offset = offset;

@@ -10,19 +10,19 @@ type EntityConstructor<Model extends BaseModel = BaseModel> = {
 export class EntityRegistry {
   private static registry = new Map<string, EntityConstructor>();
 
-  static register<Model extends BaseModel>(type: string, entity: EntityConstructor<Model>): void {
-    this.registry.set(type, entity);
+  static register<Model extends BaseModel>(tableOrCollectionName: string, entity: EntityConstructor<Model>): void {
+    this.registry.set(tableOrCollectionName, entity);
   }
 
-  static resolve<Model extends BaseModel>(type: string): EntityConstructor<Model> | null {
-    return (this.registry.get(type) || null) as EntityConstructor<Model> | null;
+  static resolve<Model extends BaseModel>(tableOrCollectionName: string): EntityConstructor<Model> | null {
+    return (this.registry.get(tableOrCollectionName) || null) as EntityConstructor<Model> | null;
   }
 
-  static create<Model extends BaseModel>(type: string, model: Model): Entity<ValueObject, Model> {
-    const entity = this.resolve<Model>(type);
+  static create<Model extends BaseModel>(tableOrCollectionName: string, model: Model): Entity<ValueObject, Model> {
+    const entity = this.resolve<Model>(tableOrCollectionName);
 
     if (!entity) {
-      throw new EntityNotRegistered(`Entity type "${type}" not registered`);
+      throw new EntityNotRegistered(tableOrCollectionName);
     }
 
     return entity.fromPrimitives(model);

@@ -14,7 +14,7 @@ function RequireAuth(onFail) {
                     return onFail();
                 }
                 else {
-                    throw new exceptions_1.NotAuthenticated();
+                    throw new exceptions_1.NotAuthenticated(this.translationResolver);
                 }
             }
             return await originalMethod.apply(this, args);
@@ -30,7 +30,7 @@ function RequireAuth(onFail) {
             const [originalMethod] = args;
             return wrapper(originalMethod);
         }
-        throw new Error("RequireAuth decorator used incorrectly");
+        throw new exceptions_1.RequireAuthNotImplementedCorrectly();
     };
 }
 //# sourceMappingURL=require-auth.decorator.js.map

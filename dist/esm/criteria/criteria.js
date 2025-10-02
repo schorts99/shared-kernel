@@ -17,14 +17,14 @@ class Criteria {
     }
     limitResults(limit) {
         if (limit < 1) {
-            throw new exceptions_1.LimitNotValid();
+            throw new exceptions_1.LimitNotValid(limit);
         }
         this.limit = limit;
         return this;
     }
     offsetResults(offset) {
         if (offset < 1) {
-            throw new exceptions_1.OffsetNotValid();
+            throw new exceptions_1.OffsetNotValid(offset);
         }
         this.offset = offset;
         return this;

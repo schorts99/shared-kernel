@@ -4,16 +4,16 @@ exports.EntityRegistry = void 0;
 const exceptions_1 = require("./exceptions");
 class EntityRegistry {
     static registry = new Map();
-    static register(type, entity) {
-        this.registry.set(type, entity);
+    static register(tableOrCollectionName, entity) {
+        this.registry.set(tableOrCollectionName, entity);
     }
-    static resolve(type) {
-        return (this.registry.get(type) || null);
+    static resolve(tableOrCollectionName) {
+        return (this.registry.get(tableOrCollectionName) || null);
     }
-    static create(type, model) {
-        const entity = this.resolve(type);
+    static create(tableOrCollectionName, model) {
+        const entity = this.resolve(tableOrCollectionName);
         if (!entity) {
-            throw new exceptions_1.EntityNotRegistered(`Entity type "${type}" not registered`);
+            throw new exceptions_1.EntityNotRegistered(tableOrCollectionName);
         }
         return entity.fromPrimitives(model);
     }

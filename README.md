@@ -37,6 +37,11 @@ npm install @schorts/shared-kernel --save
 - **HTTPProvider:** Abstract interface for HTTP transport.
 - **FetchHTTPProvider:** Concrete implementation using fetch.
 
+### 🌐 Internationalization (i18n)
+
+- **TranslationResolver:** Infrastructure-agnostic interface for resolving localized strings within the domain. Enables domain errors, validations, and events to be presented in different languages without coupling to any specific i18n implementation. Supports injection into domain exceptions, decorators, and services.
+Translation keys are centralized in registries for discoverability and tooling, with patterns to extend keys per bounded context.
+
 ### 🔗 JSON:API
 
 - **JSONAPIConnector:** Connector for interacting with JSON:API-compliant endpoints.

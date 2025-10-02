@@ -1,9 +1,21 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LimitNotValid = exports.OffsetNotValid = exports.Criteria = void 0;
+exports.Criteria = void 0;
 var criteria_1 = require("./criteria");
 Object.defineProperty(exports, "Criteria", { enumerable: true, get: function () { return criteria_1.Criteria; } });
-var exceptions_1 = require("./exceptions");
-Object.defineProperty(exports, "OffsetNotValid", { enumerable: true, get: function () { return exceptions_1.OffsetNotValid; } });
-Object.defineProperty(exports, "LimitNotValid", { enumerable: true, get: function () { return exceptions_1.LimitNotValid; } });
+__exportStar(require("./exceptions"), exports);
 //# sourceMappingURL=index.js.map

@@ -1,8 +1,9 @@
 import { AuthProvider } from "./auth-provider";
-import { NotAuthenticated } from './exceptions';
+import { NotAuthenticated, RequireAuthNotImplementedCorrectly } from './exceptions';
+import { TranslationResolver } from "../i18n";
 
 export function RequireAuth(onFail?: () => any) {
-  function wrapper<T extends { authProvider?: AuthProvider<any> }, A extends any[], R>(
+  function wrapper<T extends { authProvider?: AuthProvider<any>, translationResolver?: TranslationResolver }, A extends any[], R>(
     originalMethod: (this: T, ...args: A) => Promise<R>
   ): (this: T, ...args: A) => Promise<R> {
     return async function (this: T, ...args: A): Promise<R> {
@@ -16,7 +17,7 @@ export function RequireAuth(onFail?: () => any) {
         if (onFail) {
           return onFail();
         } else {
-          throw new NotAuthenticated();
+          throw new NotAuthenticated(this.translationResolver);
         }
       }
 
@@ -36,6 +37,6 @@ export function RequireAuth(onFail?: () => any) {
       return wrapper(originalMethod);
     }
 
-    throw new Error("RequireAuth decorator used incorrectly");
+    throw new RequireAuthNotImplementedCorrectly();
   };
 }
