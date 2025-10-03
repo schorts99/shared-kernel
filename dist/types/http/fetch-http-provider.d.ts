@@ -1,6 +1,8 @@
 import type { HTTPProvider } from "./http-provider";
 export declare class FetchHTTPProvider implements HTTPProvider {
     private ongoingRequests;
+    private readonly init;
+    constructor(init: Pick<RequestInit, "credentials" | "headers">);
     get<ResponseType>(url: URL): Promise<ResponseType>;
     post<RequestBodySchema, ResponseType>(url: URL, body: RequestBodySchema): Promise<ResponseType>;
     put<RequestBodySchema, ResponseType>(url: URL, body: RequestBodySchema): Promise<ResponseType>;
