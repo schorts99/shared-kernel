@@ -3,6 +3,11 @@ import { HTTPException } from "./exceptions";
 
 export class FetchHTTPProvider implements HTTPProvider {
   private ongoingRequests = new Map<string, Promise<any>>();
+  private readonly init: Pick<RequestInit, "credentials">;
+
+  constructor(init: Pick<RequestInit, "credentials">) {
+    this.init = init;
+  }
 
   get<ResponseType>(url: URL): Promise<ResponseType> {
     return this.request("GET", url);
@@ -54,7 +59,7 @@ export class FetchHTTPProvider implements HTTPProvider {
     }
 
     const request = (async () => {
-      const response = await fetch(url.href, init);
+      const response = await fetch(url.href, { ...init, ...this.init });
 
       if (!response) {
         throw new HTTPException("Fetch returned undefined", 0);
