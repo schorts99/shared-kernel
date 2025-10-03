@@ -5,7 +5,9 @@ const exceptions_1 = require("./exceptions");
 class FetchHTTPProvider {
     ongoingRequests = new Map();
     init;
-    constructor(init) {
+    getAuthorization;
+    constructor(getAuthorization, init) {
+        this.getAuthorization = getAuthorization;
         this.init = init;
     }
     get(url) {
@@ -35,8 +37,14 @@ class FetchHTTPProvider {
         if (body !== undefined) {
             init.headers = { "Content-Type": "application/json" };
         }
+        if (this.getAuthorization) {
+            init.headers = {
+                ...(init.headers || {}),
+                Authorization: this.getAuthorization(),
+            };
+        }
         const request = (async () => {
-            const response = await fetch(url.href, { ...init, ...this.init });
+            const response = await fetch(url.href, { ...init, ...(this.init || {}) });
             if (!response) {
                 throw new exceptions_1.HTTPException("Fetch returned undefined", 0);
             }

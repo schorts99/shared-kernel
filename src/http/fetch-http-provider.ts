@@ -3,9 +3,11 @@ import { HTTPException } from "./exceptions";
 
 export class FetchHTTPProvider implements HTTPProvider {
   private ongoingRequests = new Map<string, Promise<any>>();
-  private readonly init: Pick<RequestInit, "credentials" | "headers">;
+  private readonly init: Pick<RequestInit, "credentials" | "headers"> | undefined;
+  private readonly getAuthorization: (() => string) | undefined;
 
-  constructor(init: Pick<RequestInit, "credentials" | "headers">) {
+  constructor(getAuthorization?: () => string, init?: Pick<RequestInit, "credentials" | "headers">) {
+    this.getAuthorization = getAuthorization;
     this.init = init;
   }
 
@@ -58,8 +60,15 @@ export class FetchHTTPProvider implements HTTPProvider {
       init.headers = { "Content-Type": "application/json" };
     }
 
+    if (this.getAuthorization) {
+      init.headers = {
+        ...(init.headers || {}),
+        Authorization: this.getAuthorization(),
+      };
+    }
+
     const request = (async () => {
-      const response = await fetch(url.href, { ...init, ...this.init });
+      const response = await fetch(url.href, { ...init, ...(this.init || {}) });
 
       if (!response) {
         throw new HTTPException("Fetch returned undefined", 0);
