@@ -3,9 +3,9 @@ import { HTTPException } from "./exceptions";
 
 export class FetchHTTPProvider implements HTTPProvider {
   private ongoingRequests = new Map<string, Promise<any>>();
-  private readonly init: Pick<RequestInit, "credentials">;
+  private readonly init: Pick<RequestInit, "credentials" | "headers">;
 
-  constructor(init: Pick<RequestInit, "credentials">) {
+  constructor(init: Pick<RequestInit, "credentials" | "headers">) {
     this.init = init;
   }
 

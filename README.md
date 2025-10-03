@@ -58,6 +58,7 @@ Translation keys are centralized in registries for discoverability and tooling, 
 ### 🧠 State Manager
 
 - **StateManager:** Abstract reactive state manager with listener support.
+- **SessionStorageStateManager:** Concrete implementation using session storage.
 
 ### 🧪 Value Objects
 
