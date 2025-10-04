@@ -50,6 +50,10 @@ Translation keys are centralized in registries for discoverability and tooling, 
 
 - **BaseModel:** Base class for serializable, type-safe models.
 
+### 🎯 Result
+
+- **Result:** Type-safe wrapper for success/failure outcomes. Encapsulates either a value or an error, enforcing disciplined error handling without exceptions. Includes static factories (`success`, `error`), accessors (`getValue`, `getError`), and guards (`isSuccess`, `isFailure`).
+
 ### 🛠 Persistence
 
 - **DAO:** Generic interface defining data access operations for domain entities.
