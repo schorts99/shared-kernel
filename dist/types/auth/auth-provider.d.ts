@@ -2,7 +2,7 @@ import { Entity } from "../entities";
 import { BaseModel } from "../models";
 import { ValueObject } from "../value-objects";
 export interface AuthProvider<UserEntity extends Entity<ValueObject, BaseModel>> {
-    authenticate(...args: any[]): Promise<void>;
+    authenticate(...args: any[]): Promise<string>;
     logout(): Promise<void>;
     isAuthenticated(): Promise<boolean>;
     currentUser(): Promise<UserEntity | null>;
