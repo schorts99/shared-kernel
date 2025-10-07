@@ -5,7 +5,7 @@ export interface AuthProvider<UserEntity extends Entity<ValueObject, BaseModel>>
     authenticate(...args: any[]): Promise<string>;
     logout(): Promise<void>;
     isAuthenticated(): Promise<boolean>;
-    currentUser(): Promise<UserEntity | null>;
+    getCurrentUser(): Promise<UserEntity | null>;
     onAuthChange(callback: (user: UserEntity | null) => void): () => void;
 }
 //# sourceMappingURL=auth-provider.d.ts.map
