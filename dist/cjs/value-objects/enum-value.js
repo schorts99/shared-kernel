@@ -13,11 +13,10 @@ class EnumValue {
         return this.allowedValues.includes(this.value);
     }
     equals(valueObject) {
-        if (!(valueObject instanceof EnumValue))
-            return false;
-        if (!this.isValid || !valueObject.isValid)
-            return false;
-        return this.value === valueObject.value;
+        return (valueObject instanceof EnumValue &&
+            this.isValid &&
+            valueObject.isValid &&
+            this.value === valueObject.value);
     }
 }
 exports.EnumValue = EnumValue;
