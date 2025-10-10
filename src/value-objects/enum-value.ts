@@ -1,21 +1,16 @@
 import { ValueObject } from './';
 
-export abstract class EnumValue<Type extends string> implements ValueObject {
+export abstract class EnumValue<Type extends string | null> implements ValueObject {
   readonly valueType = 'Enum';
   readonly allowedValues: Type[];
-  readonly optional: boolean;
-  readonly value: Type | null;
+  readonly value: Type;
 
-  constructor(allowedValues: Type[], value: Type | null, optional = false) {
+  constructor(allowedValues: Type[], value: Type) {
     this.allowedValues = allowedValues;
-    this.optional = optional;
     this.value = value;
   }
 
   get isValid(): boolean {
-    if (this.optional && this.value === null) return true;
-    if (!this.optional && this.value === null) return false;
-
     return this.allowedValues.includes(this.value as Type);
   }
 

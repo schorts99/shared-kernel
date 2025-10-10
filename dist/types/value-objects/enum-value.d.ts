@@ -1,10 +1,9 @@
 import { ValueObject } from './';
-export declare abstract class EnumValue<Type extends string> implements ValueObject {
+export declare abstract class EnumValue<Type extends string | null> implements ValueObject {
     readonly valueType = "Enum";
     readonly allowedValues: Type[];
-    readonly optional: boolean;
-    readonly value: Type | null;
-    constructor(allowedValues: Type[], value: Type | null, optional?: boolean);
+    readonly value: Type;
+    constructor(allowedValues: Type[], value: Type);
     get isValid(): boolean;
     equals(valueObject: unknown): boolean;
     abstract readonly attributeName: string;
