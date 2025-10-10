@@ -71,7 +71,7 @@ export class FetchHTTPProvider implements HTTPProvider {
       const response = await fetch(url.href, { ...init, ...(this.init || {}) });
 
       if (!response) {
-        throw new HTTPException("Fetch returned undefined", 0);
+        throw new HTTPException(0, undefined);
       }
 
       if (response.status === 204) {
@@ -94,13 +94,7 @@ export class FetchHTTPProvider implements HTTPProvider {
       }
 
       if (!response.ok) {
-        const message =
-          typeof parsed === "string"
-            ? parsed
-            : parsed?.title ?? "Unknown error";
-        const code = parsed?.code ?? response.status;
-
-        throw new HTTPException(message, code);
+        throw new HTTPException(response.status, parsed);
       }
 
       return parsed as ResponseType;

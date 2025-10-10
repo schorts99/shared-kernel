@@ -46,7 +46,7 @@ class FetchHTTPProvider {
         const request = (async () => {
             const response = await fetch(url.href, { ...init, ...(this.init || {}) });
             if (!response) {
-                throw new exceptions_1.HTTPException("Fetch returned undefined", 0);
+                throw new exceptions_1.HTTPException(0, undefined);
             }
             if (response.status === 204) {
                 return undefined;
@@ -68,11 +68,7 @@ class FetchHTTPProvider {
                 parsed = undefined;
             }
             if (!response.ok) {
-                const message = typeof parsed === "string"
-                    ? parsed
-                    : parsed?.title ?? "Unknown error";
-                const code = parsed?.code ?? response.status;
-                throw new exceptions_1.HTTPException(message, code);
+                throw new exceptions_1.HTTPException(response.status, parsed);
             }
             return parsed;
         })().finally(() => {
