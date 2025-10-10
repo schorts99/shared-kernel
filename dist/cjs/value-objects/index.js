@@ -14,7 +14,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DateValue = exports.BooleanValue = exports.CoordinatesValue = exports.IntegerValue = exports.SlugValue = exports.PhoneValue = exports.EmailValue = exports.EnumValue = exports.StringValue = exports.UUIDValue = void 0;
+exports.FloatValue = exports.DateValue = exports.BooleanValue = exports.CoordinatesValue = exports.IntegerValue = exports.SlugValue = exports.PhoneValue = exports.EmailValue = exports.EnumValue = exports.StringValue = exports.UUIDValue = void 0;
 var uuid_value_1 = require("./uuid-value");
 Object.defineProperty(exports, "UUIDValue", { enumerable: true, get: function () { return uuid_value_1.UUIDValue; } });
 var string_value_1 = require("./string-value");
@@ -35,5 +35,7 @@ var boolean_value_1 = require("./boolean-value");
 Object.defineProperty(exports, "BooleanValue", { enumerable: true, get: function () { return boolean_value_1.BooleanValue; } });
 var date_value_1 = require("./date-value");
 Object.defineProperty(exports, "DateValue", { enumerable: true, get: function () { return date_value_1.DateValue; } });
+var float_valuet_1 = require("./float-valuet");
+Object.defineProperty(exports, "FloatValue", { enumerable: true, get: function () { return float_valuet_1.FloatValue; } });
 __exportStar(require("./exceptions"), exports);
 //# sourceMappingURL=index.js.map
