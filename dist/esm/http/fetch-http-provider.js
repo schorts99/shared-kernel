@@ -6,9 +6,13 @@ class FetchHTTPProvider {
     ongoingRequests = new Map();
     init;
     getAuthorization;
+    interceptors = [];
     constructor(getAuthorization, init) {
         this.getAuthorization = getAuthorization;
         this.init = init;
+    }
+    useInterceptor(interceptor) {
+        this.interceptors.push(interceptor);
     }
     get(url) {
         return this.request("GET", url);
@@ -30,21 +34,27 @@ class FetchHTTPProvider {
         if (this.ongoingRequests.has(key)) {
             return this.ongoingRequests.get(key);
         }
-        const init = {
+        const baseHeaders = this.init?.headers ?? {};
+        const authHeader = this.getAuthorization ? { Authorization: this.getAuthorization() } : {};
+        const contentTypeHeader = body !== undefined ? { "Content-Type": "application/json" } : {};
+        const headers = {
+            ...baseHeaders,
+            ...contentTypeHeader,
+            ...authHeader,
+        };
+        let init = {
             method,
             body: body !== undefined ? JSON.stringify(body) : null,
+            headers,
         };
-        if (body !== undefined) {
-            init.headers = { "Content-Type": "application/json" };
+        if (this.init?.credentials !== undefined) {
+            init.credentials = this.init.credentials;
         }
-        if (this.getAuthorization) {
-            init.headers = {
-                ...(init.headers || {}),
-                Authorization: this.getAuthorization(),
-            };
+        for (const interceptor of this.interceptors) {
+            init = interceptor.intercept(init, url);
         }
         const request = (async () => {
-            const response = await fetch(url.href, { ...init, ...(this.init || {}) });
+            const response = await fetch(url.href, init);
             if (!response) {
                 throw new exceptions_1.HTTPException(0, undefined);
             }

@@ -1,14 +1,29 @@
 import type { HTTPProvider } from "./http-provider";
 import { HTTPException } from "./exceptions";
+import type { HTTPInterceptor } from "./http-interceptor";
 
 export class FetchHTTPProvider implements HTTPProvider {
   private ongoingRequests = new Map<string, Promise<any>>();
-  private readonly init: Pick<RequestInit, "credentials" | "headers"> | undefined;
+  private readonly init: {
+    credentials?: RequestCredentials;
+    headers?: HeadersInit;
+  } | undefined;
   private readonly getAuthorization: (() => string) | undefined;
+  private readonly interceptors: HTTPInterceptor[] = [];
 
-  constructor(getAuthorization?: () => string, init?: Pick<RequestInit, "credentials" | "headers">) {
+  constructor(
+    getAuthorization?: () => string,
+    init?: {
+      credentials?: RequestCredentials;
+      headers?: HeadersInit;
+    }
+  ) {
     this.getAuthorization = getAuthorization;
     this.init = init;
+  }
+
+  useInterceptor(interceptor: HTTPInterceptor) {
+    this.interceptors.push(interceptor);
   }
 
   get<ResponseType>(url: URL): Promise<ResponseType> {
@@ -51,24 +66,32 @@ export class FetchHTTPProvider implements HTTPProvider {
       return this.ongoingRequests.get(key) as Promise<ResponseType>;
     }
 
-    const init: RequestInit = {
-      method,
-      body: body !== undefined ? JSON.stringify(body) : null,
+    const baseHeaders = this.init?.headers ?? {};
+    const authHeader = this.getAuthorization ? { Authorization: this.getAuthorization() } : {};
+    const contentTypeHeader = body !== undefined ? { "Content-Type": "application/json" } : {};
+
+    const headers: HeadersInit = {
+      ...baseHeaders,
+      ...contentTypeHeader,
+      ...authHeader,
     };
 
-    if (body !== undefined) {
-      init.headers = { "Content-Type": "application/json" };
+    let init: RequestInit = {
+      method,
+      body: body !== undefined ? JSON.stringify(body) : null,
+      headers,
+    };
+    
+    if (this.init?.credentials !== undefined) {
+      init.credentials = this.init.credentials;
     }
 
-    if (this.getAuthorization) {
-      init.headers = {
-        ...(init.headers || {}),
-        Authorization: this.getAuthorization(),
-      };
+    for (const interceptor of this.interceptors) {
+      init = interceptor.intercept(init, url);
     }
 
     const request = (async () => {
-      const response = await fetch(url.href, { ...init, ...(this.init || {}) });
+      const response = await fetch(url.href, init);
 
       if (!response) {
         throw new HTTPException(0, undefined);
