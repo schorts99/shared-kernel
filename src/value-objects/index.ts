@@ -9,4 +9,6 @@ export { SlugValue } from "./slug-value";
 export { IntegerValue } from "./integer-value";
 export { CoordinatesValue } from "./coordinates-value";
 export { BooleanValue } from "./boolean-value";
+export { DateValue } from "./date-value";
+
 export * from "./exceptions";

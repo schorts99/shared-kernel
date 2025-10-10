@@ -75,6 +75,7 @@ Translation keys are centralized in registries for discoverability and tooling, 
 - **StringValue**
 - **UUIDValue**
 - **BooleanValue**
+- **DateValue**
 
 Each value object enforces domain constraints and immutability, ensuring correctness at the boundary of your system.
 
