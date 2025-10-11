@@ -9,6 +9,7 @@ export * from "./i18n";
 export * from "./json-api";
 export * from "./messages";
 export * from "./models";
+export * from "./rbac";
 export * from "./result";
 export * from "./state-manager";
 export * from "./unit-of-work";

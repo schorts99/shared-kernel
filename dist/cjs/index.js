@@ -25,6 +25,7 @@ __exportStar(require("./i18n"), exports);
 __exportStar(require("./json-api"), exports);
 __exportStar(require("./messages"), exports);
 __exportStar(require("./models"), exports);
+__exportStar(require("./rbac"), exports);
 __exportStar(require("./result"), exports);
 __exportStar(require("./state-manager"), exports);
 __exportStar(require("./unit-of-work"), exports);
