@@ -1,7 +1,9 @@
-export class ValuesNotValid extends Error {
-  readonly errors: Array<Error>;
+import type { ValueNotValid } from "./value-not-valid";
 
-  constructor(errors: Array<Error>) {
+export class ValuesNotValid extends Error {
+  readonly errors: Array<ValueNotValid>;
+
+  constructor(errors: Array<ValueNotValid>) {
     super();
 
     this.errors = errors;
