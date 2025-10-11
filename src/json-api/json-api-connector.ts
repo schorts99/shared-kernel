@@ -31,7 +31,7 @@ export class JSONAPIConnector {
     url: URL,
     payload: {
       type: string;
-      attributes: Omit<EntityAttributes, "id">;
+      attributes: Omit<Partial<EntityAttributes>, "id">;
     }
   ): Promise<JSONAPISingle<EntityAttributes>> {
     return this.http.post(url, { data: payload });
@@ -42,7 +42,7 @@ export class JSONAPIConnector {
     payload: {
       id: string;
       type: string;
-      attributes: Omit<EntityAttributes, "id">;
+      attributes: Omit<Partial<EntityAttributes>, "id">;
     }
   ): Promise<JSONAPISingle<EntityAttributes>> {
     return this.http.patch(url, { data: payload });

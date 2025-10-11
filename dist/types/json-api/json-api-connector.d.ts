@@ -9,12 +9,12 @@ export declare class JSONAPIConnector {
     findMany<EntityAttributes>(url: URL, criteria?: Criteria, include?: string[]): Promise<JSONAPIList<EntityAttributes>>;
     create<EntityAttributes>(url: URL, payload: {
         type: string;
-        attributes: Omit<EntityAttributes, "id">;
+        attributes: Omit<Partial<EntityAttributes>, "id">;
     }): Promise<JSONAPISingle<EntityAttributes>>;
     update<EntityAttributes>(url: URL, payload: {
         id: string;
         type: string;
-        attributes: Omit<EntityAttributes, "id">;
+        attributes: Omit<Partial<EntityAttributes>, "id">;
     }): Promise<JSONAPISingle<EntityAttributes>>;
     delete<EntityAttributes>(url: URL): Promise<JSONAPISingle<EntityAttributes>>;
 }
