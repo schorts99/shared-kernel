@@ -15,6 +15,10 @@ npm install @schorts/shared-kernel --save
 - **AuthProvider:** Abstract interface for authentication strategies.
 - **RequireAuthDecorator:** Method-level decorator for enforcing authentication.
 
+### 🛡️ RBAC (Role-Based Access Control)
+- **RBACPolicy:** Abstract base class for defining role-based permission logic. Supports wildcard actions (manage) and resources (*), ownership checks, and composable access control strategies.
+- **Permission:** Lightweight value object representing an action-resource pair (e.g., read:orders, manage:*).
+
 ### 📊 Criteria
 
 - **Criteria:** Fluent query builder for filtering, sorting, and pagination.
