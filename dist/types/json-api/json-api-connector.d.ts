@@ -1,4 +1,4 @@
-import type { HTTPProvider } from "../http";
+import { HTTPProvider } from "../http";
 import type { JSONAPIList } from "./json-api-list";
 import type { JSONAPISingle } from "./json-api-single";
 import { Criteria } from "../criteria";

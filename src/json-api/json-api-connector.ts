@@ -1,8 +1,9 @@
-import type { HTTPProvider } from "../http";
+import { HTTPProvider, HTTPException } from "../http";
 import type { JSONAPIList } from "./json-api-list";
 import type { JSONAPISingle } from "./json-api-single";
 import { URLCriteriaBuilder } from "./url-criteria-builder";
 import { Criteria } from "../criteria";
+import { JSONAPIErrors } from "./exceptions";
 
 export class JSONAPIConnector {
   constructor(private http: HTTPProvider) {}
@@ -12,9 +13,17 @@ export class JSONAPIConnector {
     criteria?: Criteria,
     include?: string[]
   ): Promise<JSONAPISingle<EntityAttributes>> {
-    const fullUrl = new URLCriteriaBuilder(url, criteria, include).build();
+    try {
+      const fullUrl = new URLCriteriaBuilder(url, criteria, include).build();
 
-    return this.http.get(fullUrl);
+      return this.http.get(fullUrl);
+    } catch(error) {
+      if (error instanceof HTTPException && error.body) {
+        throw new JSONAPIErrors(error.body['errors']);
+      }
+
+      throw error;
+    }
   }
 
   async findMany<EntityAttributes>(
@@ -22,9 +31,17 @@ export class JSONAPIConnector {
     criteria?: Criteria,
     include?: string[]
   ): Promise<JSONAPIList<EntityAttributes>> {
-    const fullUrl = new URLCriteriaBuilder(url, criteria, include).build();
+    try {
+      const fullUrl = new URLCriteriaBuilder(url, criteria, include).build();
 
-    return this.http.get(fullUrl);
+      return this.http.get(fullUrl);
+    } catch(error) {
+      if (error instanceof HTTPException && error.body) {
+        throw new JSONAPIErrors(error.body['errors']);
+      }
+
+      throw error;
+    }
   }
 
   async create<EntityAttributes>(
@@ -34,7 +51,15 @@ export class JSONAPIConnector {
       attributes: Omit<Partial<EntityAttributes>, "id">;
     }
   ): Promise<JSONAPISingle<EntityAttributes>> {
-    return this.http.post(url, { data: payload });
+    try {
+      return this.http.post(url, { data: payload });
+    } catch(error) {
+      if (error instanceof HTTPException && error.body) {
+        throw new JSONAPIErrors(error.body['errors']);
+      }
+
+      throw error;
+    }
   }
 
   async update<EntityAttributes>(
@@ -45,12 +70,28 @@ export class JSONAPIConnector {
       attributes: Omit<Partial<EntityAttributes>, "id">;
     }
   ): Promise<JSONAPISingle<EntityAttributes>> {
-    return this.http.patch(url, { data: payload });
+    try {
+      return this.http.patch(url, { data: payload });
+    } catch(error) {
+      if (error instanceof HTTPException && error.body) {
+        throw new JSONAPIErrors(error.body['errors']);
+      }
+
+      throw error;
+    }
   }
 
   async delete<EntityAttributes>(
     url: URL
   ): Promise<JSONAPISingle<EntityAttributes>> {
-    return this.http.delete(url);
+    try {
+      return this.http.delete(url);
+    } catch(error) {
+      if (error instanceof HTTPException && error.body) {
+        throw new JSONAPIErrors(error.body['errors']);
+      }
+
+      throw error;
+    }
   }
 }
