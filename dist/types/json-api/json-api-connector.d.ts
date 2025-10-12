@@ -8,6 +8,7 @@ export declare class JSONAPIConnector {
     findOne<EntityAttributes>(url: URL, criteria?: Criteria, include?: string[]): Promise<JSONAPISingle<EntityAttributes>>;
     findMany<EntityAttributes>(url: URL, criteria?: Criteria, include?: string[]): Promise<JSONAPIList<EntityAttributes>>;
     create<EntityAttributes>(url: URL, payload: {
+        id: string;
         type: string;
         attributes: Omit<Partial<EntityAttributes>, "id">;
     }): Promise<JSONAPISingle<EntityAttributes>>;

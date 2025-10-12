@@ -47,6 +47,7 @@ export class JSONAPIConnector {
   async create<EntityAttributes>(
     url: URL,
     payload: {
+      id: string;
       type: string;
       attributes: Omit<Partial<EntityAttributes>, "id">;
     }
