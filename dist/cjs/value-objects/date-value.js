@@ -6,12 +6,16 @@ class DateValue {
     value;
     beforeDate;
     afterDate;
-    constructor(value, beforeDate, afterDate) {
+    optional;
+    constructor(value, beforeDate, afterDate, optional = false) {
         this.value = value;
         this.beforeDate = beforeDate;
         this.afterDate = afterDate;
+        this.optional = optional;
     }
     get isValid() {
+        if (!this.value)
+            return this.optional;
         if (this.beforeDate && this.value > this.beforeDate)
             return false;
         if (this.afterDate && this.value < this.afterDate)
@@ -23,7 +27,7 @@ class DateValue {
             return false;
         if (!this.isValid || !valueObject.isValid)
             return false;
-        return this.value.getTime() === valueObject.value.getTime();
+        return this.value?.getTime() === valueObject.value?.getTime();
     }
 }
 exports.DateValue = DateValue;

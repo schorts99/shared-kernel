@@ -13,7 +13,7 @@ export declare abstract class DomainEvent<PayloadSchema = {}> implements Message
         retries: number;
     });
     abstract getEventName(): string;
-    abstract toPrimitives(): DomainEventPrimitives<PayloadSchema>;
+    toPrimitives(): DomainEventPrimitives<PayloadSchema>;
     ack?: () => void;
     requeue?: () => void;
 }

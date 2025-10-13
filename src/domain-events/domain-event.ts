@@ -12,7 +12,17 @@ export abstract class DomainEvent<PayloadSchema = {}> implements Message<DomainE
   ) {}
 
   abstract getEventName(): string;
-  abstract toPrimitives(): DomainEventPrimitives<PayloadSchema>;
+
+  toPrimitives(): DomainEventPrimitives<PayloadSchema> {
+    return {
+      id: this.id,
+      occurred_at: this.occurredAt.toString(),
+      type: this.type,
+      version: this.version,
+      payload: this.payload,
+      meta: this.meta,
+    };
+  }
 
   ack?: () => void;
   requeue?: () => void;

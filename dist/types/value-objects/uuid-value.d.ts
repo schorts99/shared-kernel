@@ -1,5 +1,5 @@
 import type { ValueObject } from "./";
-type UUIDInput<Required extends boolean> = Required extends true ? string : string | undefined;
+type UUIDInput<Required extends boolean> = Required extends true ? string : string | null;
 export declare abstract class UUIDValue<Required extends boolean = true> implements ValueObject {
     readonly valueType = "UUID";
     readonly value: UUIDInput<Required>;

@@ -16,6 +16,16 @@ class DomainEvent {
         this.payload = payload;
         this.meta = meta;
     }
+    toPrimitives() {
+        return {
+            id: this.id,
+            occurred_at: this.occurredAt.toString(),
+            type: this.type,
+            version: this.version,
+            payload: this.payload,
+            meta: this.meta,
+        };
+    }
     ack;
     requeue;
 }
