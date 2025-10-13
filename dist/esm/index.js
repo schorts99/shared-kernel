@@ -19,6 +19,7 @@ __exportStar(require("./criteria"), exports);
 __exportStar(require("./dao"), exports);
 __exportStar(require("./domain-events"), exports);
 __exportStar(require("./entities"), exports);
+__exportStar(require("./event-bus"), exports);
 __exportStar(require("./formatters"), exports);
 __exportStar(require("./http"), exports);
 __exportStar(require("./i18n"), exports);

@@ -6,8 +6,15 @@ export declare abstract class DomainEvent<PayloadSchema = {}> implements Message
     readonly type: string;
     readonly version: number;
     readonly payload: PayloadSchema;
-    constructor(id: string, occurredAt: Date, type: string, version: number, payload: PayloadSchema);
+    meta: {
+        retries: number;
+    };
+    constructor(id: string, occurredAt: Date, type: string, version: number, payload: PayloadSchema, meta?: {
+        retries: number;
+    });
     abstract getEventName(): string;
     abstract toPrimitives(): DomainEventPrimitives<PayloadSchema>;
+    ack?: () => void;
+    requeue?: () => void;
 }
 //# sourceMappingURL=domain-event.d.ts.map

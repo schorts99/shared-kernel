@@ -1,6 +1,6 @@
 {
   "name": "@schorts/shared-kernel",
-  "version": "2.4.2",
+  "version": "2.5.0",
   "description": "A modular, type-safe foundation for building expressive, maintainable applications. This package provides core abstractions for domain modeling, HTTP integration, authentication, state management, and more — designed to be framework-agnostic and highly extensible.",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -35,6 +35,11 @@
       "import": "./dist/esm/entities/index.js",
       "require": "./dist/cjs/entities/index.js",
       "types": "./dist/types/entities/index.d.ts"
+    },
+    "./event-bus": {
+      "import": "./dist/esm/event-bus/index.js",
+      "require": "./dist/cjs/event-bus/index.js",
+      "types": "./dist/types/event-bus/index.d.ts"
     },
     "./formatters": {
       "import": "./dist/esm/formatters/index.js",

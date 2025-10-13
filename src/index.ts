@@ -3,6 +3,7 @@ export * from "./criteria";
 export * from "./dao";
 export * from "./domain-events";
 export * from "./entities";
+export * from "./event-bus";
 export * from "./formatters";
 export * from "./http";
 export * from "./i18n";
