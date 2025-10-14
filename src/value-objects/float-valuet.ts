@@ -3,15 +3,23 @@ import { ValueObject } from "./value-object";
 export abstract class FloatValue implements ValueObject {
   readonly valueType = "Float";
   readonly value: number;
+  readonly min: number | undefined;
+  readonly max: number | undefined;
   readonly decimals: number | undefined;
 
-  constructor(value: number, decimals?: number) {
+  constructor(value: number, decimals?: number, min?: number, max?: number) {
     this.decimals = decimals;
+    this.min = min;
+    this.max = max;
     this.value = this.transform(value);
+
+    Object.freeze(this);
   }
 
   get isValid(): boolean {
-    return !isNaN(this.value);
+    return !isNaN(this.value)
+      && (this.min !== undefined ? this.value >= this.min : true)
+      && (this.max !== undefined ? this.value <= this.max : true);
   }
 
   equals(valueObject: unknown): boolean {

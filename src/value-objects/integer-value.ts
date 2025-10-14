@@ -10,11 +10,13 @@ export abstract class IntegerValue implements ValueObject {
     this.min = min;
     this.max = max;
     this.value = value;
+
+    Object.freeze(this);
   }
 
   get isValid(): boolean {
-    return (this.min ? this.value >= this.min : true)
-      && (this.max ? this.value <= this.max : true)
+    return (this.min !== undefined ? this.value >= this.min : true)
+      && (this.max !== undefined ? this.value <= this.max : true)
       && Number.isInteger(this.value);
   }
 
