@@ -11,5 +11,6 @@ export { CoordinatesValue } from "./coordinates-value";
 export { BooleanValue } from "./boolean-value";
 export { DateValue } from "./date-value";
 export { FloatValue } from "./float-valuet";
+export { ArrayValue } from "./array-value";
 
 export * from "./exceptions";
