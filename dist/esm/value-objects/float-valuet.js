@@ -12,7 +12,6 @@ class FloatValue {
         this.min = min;
         this.max = max;
         this.value = this.transform(value);
-        Object.freeze(this);
     }
     get isValid() {
         return !isNaN(this.value)

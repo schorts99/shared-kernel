@@ -10,8 +10,6 @@ export abstract class IntegerValue implements ValueObject {
     this.min = min;
     this.max = max;
     this.value = value;
-
-    Object.freeze(this);
   }
 
   get isValid(): boolean {

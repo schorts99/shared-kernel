@@ -11,33 +11,32 @@ export type ValidationRule<Type> =
   | { type: "string" | "number" | "boolean" }
   | { custom: (value: Type) => boolean };
 
-type ObjectSchema<Type> = {
+export type ObjectSchema<Type> = {
   [Key in keyof Type]?: Type[Key] extends Primitive
     ? ValidationRule<Type[Key]>[]
     : ObjectSchema<Type[Key]>;
 };
 
-export abstract class ArrayValue<Type = any> implements ValueObject {
-  readonly valueType = "Array";
-  readonly value: Type[];
-  readonly schema: ObjectSchema<Type> | ValidationRule<Type>[];
+export abstract class ObjectValue<Type = any> implements ValueObject {
+  readonly valueType = "Object";
+  readonly value: Type;
+  readonly schema: ObjectSchema<Type>;
   abstract readonly attributeName: string;
-  abstract readonly isPrimitive: boolean;
 
-  constructor(
-    value: Type[],
-    schema: ObjectSchema<Type> | ValidationRule<Type>[],
-  ) {
+  constructor(value: Type, schema: ObjectSchema<Type>) {
     this.value = this.deepFreeze(value);
     this.schema = schema;
   }
 
   get isValid(): boolean {
-    return this.value.every((item) => {
-      return this.isPrimitive
-        ? (this.schema as ValidationRule<Type>[]).every(rule => this.validateRule(item, rule))
-        : this.validateObject(item, this.schema as ObjectSchema<Type>);
-    });
+    return this.validateObject(this.value, this.schema);
+  }
+
+  equals(valueObject: unknown): boolean {
+    if (!(valueObject instanceof ObjectValue)) return false;
+    if (!this.isValid || !valueObject.isValid) return false;
+
+    return JSON.stringify(this.value) === JSON.stringify(valueObject.value);
   }
 
   private validateObject(obj: any, schema: ObjectSchema<any>): boolean {
@@ -45,7 +44,7 @@ export abstract class ArrayValue<Type = any> implements ValueObject {
       const value = obj[key];
 
       if (Array.isArray(rulesOrNested)) {
-        return rulesOrNested.every((rule) => this.validateRule(value, rule));
+        return rulesOrNested.every(rule => this.validateRule(value, rule));
       }
 
       if (typeof rulesOrNested === "object" && value !== null && typeof value === "object") {
@@ -59,7 +58,7 @@ export abstract class ArrayValue<Type = any> implements ValueObject {
   private validateRule(value: any, rule: ValidationRule<any>): boolean {
     if ("required" in rule) return value !== undefined && value !== null;
     if ("greater_than" in rule) return typeof value === "number" && value > rule.greater_than;
-    if ("greater_than_or_equal" in rule) return value === "number" && value >= rule.greater_than_or_equal;
+    if ("greater_than_or_equal" in rule) return typeof value === "number" && value >= rule.greater_than_or_equal;
     if ("less_than" in rule) return typeof value === "number" && value < rule.less_than;
     if ("less_than_or_equal" in rule) return typeof value === "number" && value <= rule.less_than_or_equal;
     if ("type" in rule) return typeof value === rule.type;
@@ -68,14 +67,7 @@ export abstract class ArrayValue<Type = any> implements ValueObject {
     return true;
   }
 
-  equals(valueObject: unknown): boolean {
-    if (!(valueObject instanceof ArrayValue)) return false;
-    if (!this.isValid || !valueObject.isValid) return false;
-
-    return JSON.stringify(this.value) === JSON.stringify(valueObject.value);
-  }
-
-  private deepFreeze<Type>(obj: Type): Type {
+  private deepFreeze<T>(obj: T): T {
     if (Array.isArray(obj)) {
       obj.forEach(item => this.deepFreeze(item));
     } else if (obj && typeof obj === "object") {
@@ -86,7 +78,7 @@ export abstract class ArrayValue<Type = any> implements ValueObject {
         }
       });
     }
-  
+
     return Object.freeze(obj);
   }
 }

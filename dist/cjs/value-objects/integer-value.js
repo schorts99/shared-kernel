@@ -10,7 +10,6 @@ class IntegerValue {
         this.min = min;
         this.max = max;
         this.value = value;
-        Object.freeze(this);
     }
     get isValid() {
         return (this.min !== undefined ? this.value >= this.min : true)

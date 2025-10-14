@@ -12,8 +12,6 @@ export abstract class FloatValue implements ValueObject {
     this.min = min;
     this.max = max;
     this.value = this.transform(value);
-
-    Object.freeze(this);
   }
 
   get isValid(): boolean {

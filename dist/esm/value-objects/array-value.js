@@ -56,10 +56,10 @@ class ArrayValue {
         if (Array.isArray(obj)) {
             obj.forEach(item => this.deepFreeze(item));
         }
-        else if (obj && typeof obj === 'object') {
+        else if (obj && typeof obj === "object") {
             Object.getOwnPropertyNames(obj).forEach(prop => {
                 const value = obj[prop];
-                if (value && typeof value === 'object') {
+                if (value && typeof value === "object") {
                     this.deepFreeze(value);
                 }
             });
