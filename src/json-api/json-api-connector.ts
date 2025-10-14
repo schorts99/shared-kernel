@@ -16,13 +16,9 @@ export class JSONAPIConnector {
     try {
       const fullUrl = new URLCriteriaBuilder(url, criteria, include).build();
 
-      return this.http.get(fullUrl);
+      return await this.http.get(fullUrl);
     } catch(error) {
-      if (error instanceof HTTPException && error.body) {
-        throw new JSONAPIErrors(error.body['errors']);
-      }
-
-      throw error;
+      this.handleError(error);
     }
   }
 
@@ -34,13 +30,9 @@ export class JSONAPIConnector {
     try {
       const fullUrl = new URLCriteriaBuilder(url, criteria, include).build();
 
-      return this.http.get(fullUrl);
+      return await this.http.get(fullUrl);
     } catch(error) {
-      if (error instanceof HTTPException && error.body) {
-        throw new JSONAPIErrors(error.body['errors']);
-      }
-
-      throw error;
+      this.handleError(error);
     }
   }
 
@@ -53,13 +45,9 @@ export class JSONAPIConnector {
     }
   ): Promise<JSONAPISingle<EntityAttributes>> {
     try {
-      return this.http.post(url, { data: payload });
+      return await this.http.post(url, { data: payload });
     } catch(error) {
-      if (error instanceof HTTPException && error.body) {
-        throw new JSONAPIErrors(error.body['errors']);
-      }
-
-      throw error;
+      this.handleError(error);
     }
   }
 
@@ -72,13 +60,9 @@ export class JSONAPIConnector {
     }
   ): Promise<JSONAPISingle<EntityAttributes>> {
     try {
-      return this.http.patch(url, { data: payload });
+      return await this.http.patch(url, { data: payload });
     } catch(error) {
-      if (error instanceof HTTPException && error.body) {
-        throw new JSONAPIErrors(error.body['errors']);
-      }
-
-      throw error;
+      this.handleError(error);
     }
   }
 
@@ -86,13 +70,17 @@ export class JSONAPIConnector {
     url: URL
   ): Promise<JSONAPISingle<EntityAttributes>> {
     try {
-      return this.http.delete(url);
+      return await this.http.delete(url);
     } catch(error) {
-      if (error instanceof HTTPException && error.body) {
-        throw new JSONAPIErrors(error.body['errors']);
-      }
-
-      throw error;
+      this.handleError(error);
     }
+  }
+
+  private handleError(error: unknown): never {
+    if (error instanceof HTTPException && error.body?.errors) {
+      throw new JSONAPIErrors(error.body.errors);
+    }
+
+    throw error;
   }
 }

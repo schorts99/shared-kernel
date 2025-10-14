@@ -18,5 +18,6 @@ export declare class JSONAPIConnector {
         attributes: Omit<Partial<EntityAttributes>, "id">;
     }): Promise<JSONAPISingle<EntityAttributes>>;
     delete<EntityAttributes>(url: URL): Promise<JSONAPISingle<EntityAttributes>>;
+    private handleError;
 }
 //# sourceMappingURL=json-api-connector.d.ts.map
