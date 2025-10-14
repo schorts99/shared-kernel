@@ -9,6 +9,7 @@ export interface DAO<Model extends BaseModel, Entity extends BaseEntity<ValueObj
   findByID(id: Entity["id"]["value"]): Promise<Entity | null>;
   findOneBy(criteria: Criteria): Promise<Entity | null>;
   search(criteria: Criteria): Promise<Entity[]>;
+  countBy(criteria: Criteria): Promise<number>;
   create(entity: Entity, uow?: UnitOfWork): Promise<Entity>;
   update(entity: Entity, uow?: UnitOfWork): Promise<Entity>;
   delete(entity: Entity, uow?: UnitOfWork): Promise<Entity>;
