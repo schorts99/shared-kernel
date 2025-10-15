@@ -3,12 +3,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Criteria = void 0;
 const exceptions_1 = require("./exceptions");
 class Criteria {
-    filters = {};
+    filters = [];
     orders = [];
     limit;
     offset;
     where(field, operator, value) {
-        this.filters[field] = { value, operator };
+        this.filters.push({ field, operator, value });
         return this;
     }
     orderBy(field, direction = "ASC") {

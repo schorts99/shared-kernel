@@ -1,9 +1,12 @@
-import { FilterCriterion } from "./filter-criterion";
 import { Order } from "./order";
 import { Operator } from "./operator";
 import { Direction } from "./direction";
 export declare class Criteria {
-    readonly filters: Record<string, FilterCriterion>;
+    readonly filters: Array<{
+        field: string;
+        operator: Operator;
+        value: any;
+    }>;
     readonly orders: Array<Order>;
     limit?: number;
     offset?: number;
