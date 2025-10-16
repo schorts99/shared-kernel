@@ -1,6 +1,6 @@
 {
   "name": "@schorts/shared-kernel",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "A modular, type-safe foundation for building expressive, maintainable applications. This package provides core abstractions for domain modeling, HTTP integration, authentication, state management, and more — designed to be framework-agnostic and highly extensible.",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -70,6 +70,11 @@
       "import": "./dist/esm/models/index.js",
       "require": "./dist/cjs/models/index.js",
       "types": "./dist/types/models/index.d.ts"
+    },
+    "./pub-sub": {
+      "import": "./dist/esm/pub-sub/index.js",
+      "require": "./dist/cjs/pub-sub/index.js",
+      "types": "./dist/types/pub-sub/index.d.ts"
     },
     "./rbac": {
       "import": "./dist/esm/rbac/index.js",

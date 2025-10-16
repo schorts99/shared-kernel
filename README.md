@@ -39,6 +39,11 @@ npm install @schorts/shared-kernel --save
 - **EventSubscriber:** Interface for subscribing to specific event types with clean, type-safe handlers.
 - **InMemoryEventStore:** Simple event store for tracking and replaying events, with retry metadata and bounded requeue support.
 
+### 📡 Pub-Sub
+
+- **Publisher:** Abstract interface for dispatching real-time events to external transports (e.g., Pusher, Socket.IO). Designed for event delivery, enabling type-safe, decoupled publishing from domain logic.
+- **Subscription:** Client-side abstraction for subscribing to real-time channels and binding event handlers. Supports channel access and dynamic event routing.
+
 ### 🧹 Formatters
 
 - **PascalCamelToSnake:** Utility for converting PascalCase or camelCase to snake_case.
