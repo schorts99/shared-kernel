@@ -1,8 +1,6 @@
 import { StateManager } from './state-manager';
 
-export class SessionStorageStateManager<Schema extends Record<string, any>> 
-  extends StateManager<Schema> {
-    
+export class SessionStorageStateManager<Schema extends Record<string, any>> extends StateManager<Schema> {
   constructor(initialState: Schema) {
     super(initialState); 
     this.loadPersistedState();

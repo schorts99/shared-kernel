@@ -79,6 +79,7 @@ Translation keys are centralized in registries for discoverability and tooling, 
 
 - **StateManager:** Abstract reactive state manager with listener support.
 - **SessionStorageStateManager:** Concrete implementation using session storage.
+- **InMemoryStateManager:** Concrete implementation using in-memory.
 
 ### 🧪 Value Objects
 
@@ -93,6 +94,7 @@ Translation keys are centralized in registries for discoverability and tooling, 
 - **BooleanValue**
 - **DateValue**
 - **ArrayValue**
+- **ObjectValue**
 
 Each value object enforces domain constraints and immutability, ensuring correctness at the boundary of your system.
 
