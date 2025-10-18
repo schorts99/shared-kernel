@@ -27,9 +27,13 @@ class JSONAPIConnector {
             this.handleError(error);
         }
     }
-    async create(url, payload) {
+    async create(url, payload, meta) {
         try {
-            return await this.http.post(url, { data: payload });
+            const body = { data: payload };
+            if (meta) {
+                body["meta"] = meta;
+            }
+            return await this.http.post(url, body);
         }
         catch (error) {
             this.handleError(error);

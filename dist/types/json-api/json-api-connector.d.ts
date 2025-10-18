@@ -15,7 +15,7 @@ export declare class JSONAPIConnector {
         id: string;
         type: string;
         attributes: Omit<Partial<EntityAttributes>, "id">;
-    }>): Promise<JSONAPISingle<EntityAttributes>>;
+    }>, meta?: Record<string, any>): Promise<JSONAPISingle<EntityAttributes>>;
     update<EntityAttributes>(url: URL, payload: {
         id: string;
         type: string;

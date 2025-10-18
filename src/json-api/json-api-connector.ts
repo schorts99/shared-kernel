@@ -47,9 +47,16 @@ export class JSONAPIConnector {
       type: string;
       attributes: Omit<Partial<EntityAttributes>, "id">;
     }>,
+    meta?: Record<string, any>,
   ): Promise<JSONAPISingle<EntityAttributes>> {
     try {
-      return await this.http.post(url, { data: payload });
+      const body: Record<string, any> = { data: payload };
+
+      if (meta) {
+        body["meta"] = meta;
+      }
+
+      return await this.http.post(url, body);
     } catch(error) {
       this.handleError(error);
     }
