@@ -11,7 +11,11 @@ export declare class JSONAPIConnector {
         id: string;
         type: string;
         attributes: Omit<Partial<EntityAttributes>, "id">;
-    }): Promise<JSONAPISingle<EntityAttributes>>;
+    } | Array<{
+        id: string;
+        type: string;
+        attributes: Omit<Partial<EntityAttributes>, "id">;
+    }>): Promise<JSONAPISingle<EntityAttributes>>;
     update<EntityAttributes>(url: URL, payload: {
         id: string;
         type: string;

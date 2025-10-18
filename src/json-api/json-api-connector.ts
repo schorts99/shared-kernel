@@ -42,7 +42,11 @@ export class JSONAPIConnector {
       id: string;
       type: string;
       attributes: Omit<Partial<EntityAttributes>, "id">;
-    }
+    } | Array<{
+      id: string;
+      type: string;
+      attributes: Omit<Partial<EntityAttributes>, "id">;
+    }>,
   ): Promise<JSONAPISingle<EntityAttributes>> {
     try {
       return await this.http.post(url, { data: payload });
