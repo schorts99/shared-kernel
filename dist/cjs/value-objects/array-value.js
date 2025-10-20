@@ -34,7 +34,7 @@ class ArrayValue {
         if ("greater_than" in rule)
             return typeof value === "number" && value > rule.greater_than;
         if ("greater_than_or_equal" in rule)
-            return value === "number" && value >= rule.greater_than_or_equal;
+            return typeof value === "number" && value >= rule.greater_than_or_equal;
         if ("less_than" in rule)
             return typeof value === "number" && value < rule.less_than;
         if ("less_than_or_equal" in rule)
