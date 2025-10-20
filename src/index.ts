@@ -1,4 +1,5 @@
 export * from "./auth";
+export * from "./converters";
 export * from "./criteria";
 export * from "./dao";
 export * from "./domain-events";

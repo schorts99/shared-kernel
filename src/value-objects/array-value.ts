@@ -59,7 +59,7 @@ export abstract class ArrayValue<Type = any> implements ValueObject {
   private validateRule(value: any, rule: ValidationRule<any>): boolean {
     if ("required" in rule) return value !== undefined && value !== null;
     if ("greater_than" in rule) return typeof value === "number" && value > rule.greater_than;
-    if ("greater_than_or_equal" in rule) return value === "number" && value >= rule.greater_than_or_equal;
+    if ("greater_than_or_equal" in rule) return typeof value === "number" && value >= rule.greater_than_or_equal;
     if ("less_than" in rule) return typeof value === "number" && value < rule.less_than;
     if ("less_than_or_equal" in rule) return typeof value === "number" && value <= rule.less_than_or_equal;
     if ("type" in rule) return typeof value === rule.type;
