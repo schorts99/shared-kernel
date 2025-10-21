@@ -82,6 +82,10 @@ Translation keys are centralized in registries for discoverability and tooling, 
 - **SessionStorageStateManager:** Concrete implementation using session storage.
 - **InMemoryStateManager:** Concrete implementation using in-memory.
 
+### 📈 Telemetry
+
+- **Telemetry:** Abstract interface for unified telemetry across frontend and backend environments. Supports initialization, error tracking, custom context attributes, and transaction naming. Enables integration with observability platforms like New Relic via a consistent API.
+
 ### 🧪 Value Objects
 
 - **CoordinatesValue**
