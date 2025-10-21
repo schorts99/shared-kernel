@@ -31,6 +31,7 @@ __exportStar(require("./pub-sub"), exports);
 __exportStar(require("./rbac"), exports);
 __exportStar(require("./result"), exports);
 __exportStar(require("./state-manager"), exports);
+__exportStar(require("./telemetry"), exports);
 __exportStar(require("./unit-of-work"), exports);
 __exportStar(require("./utils"), exports);
 __exportStar(require("./value-objects"), exports);

@@ -1,1 +1,1 @@
-export type { telemetry } from "./telemetry";
+export type { Telemetry } from "./telemetry";

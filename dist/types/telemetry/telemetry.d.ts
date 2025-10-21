@@ -1,4 +1,4 @@
-export interface telemetry {
+export interface Telemetry {
     init(): void;
     trackError(error: Error): void;
     setCustomContext(key: string, value: string): void;
