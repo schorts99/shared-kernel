@@ -18,6 +18,7 @@ npm install @schorts/shared-kernel --save
 ### 🛡️ RBAC (Role-Based Access Control)
 - **RBACPolicy:** Abstract base class for defining role-based permission logic. Supports wildcard actions (manage) and resources (*), ownership checks, and composable access control strategies.
 - **Permission:** Lightweight value object representing an action-resource pair (e.g., read:orders, manage:*).
+- **ABAC Integration:** ABAC Integration: Extend RBAC with attribute-based access control via composable predicates. Use canWithAttributes() and canAnyWithAttributes() to enforce dynamic policies based on user and resource attributes (e.g., ownership, organization, status). This enables hybrid access control strategies that combine declarative roles with contextual rules.
 
 ### 📊 Criteria
 

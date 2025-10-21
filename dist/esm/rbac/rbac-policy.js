@@ -7,11 +7,15 @@ class RBACPolicy {
         return permissions.some((perm) => (perm.resource === '*' || perm.resource === resource.name) &&
             (perm.action === action || perm.action === 'manage'));
     }
-    canAccessOwnedResource(resource) {
-        return resource.owner_id === this.userID.value;
+    canWithAttributes(user, role, action, resource, predicates) {
+        if (!this.can(role, action, resource))
+            return false;
+        return predicates.every((predicate) => predicate(user, resource));
     }
-    canWithOwnership(role, action, resource) {
-        return this.can(role, action, resource) && this.canAccessOwnedResource(resource);
+    canAnyWithAttributes(user, role, action, resource, predicates) {
+        if (!this.can(role, action, resource))
+            return false;
+        return predicates.some((predicate) => predicate(user, resource));
     }
 }
 exports.RBACPolicy = RBACPolicy;
