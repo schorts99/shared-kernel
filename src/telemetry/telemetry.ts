@@ -1,5 +1,5 @@
 export interface Telemetry {
-  init(): void;
+  init(...args: any[]): void;
   trackError(error: Error): void;
   setCustomContext(key: string, value: string): void;
   setTransaction(name: string): void;
