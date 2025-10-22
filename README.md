@@ -85,6 +85,7 @@ Translation keys are centralized in registries for discoverability and tooling, 
 ### 📈 Telemetry
 
 - **Telemetry:** Abstract interface for unified telemetry across frontend and backend environments. Supports initialization, error tracking, custom context attributes, and transaction naming. Enables integration with observability platforms like New Relic via a consistent API.
+- **ConsoleTelemetry:** Development-friendly implementation of the `Telemetry` interface that logs errors, context, and transaction names to the console. Useful for local environments, testing, or CI pipelines where external observability is not required.
 
 ### 🧪 Value Objects
 

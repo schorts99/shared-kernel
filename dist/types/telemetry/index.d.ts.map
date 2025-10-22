@@ -1,1 +1,1 @@
-{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["../../../src/telemetry/index.ts"],"names":[],"mappings":"AAAA,YAAY,EAAE,SAAS,EAAE,MAAM,aAAa,CAAC"}
+{"version":3,"file":"index.d.ts","sourceRoot":"","sources":["../../../src/telemetry/index.ts"],"names":[],"mappings":"AAAA,YAAY,EAAE,SAAS,EAAE,MAAM,aAAa,CAAC;AAC7C,OAAO,EAAE,gBAAgB,EAAE,MAAM,qBAAqB,CAAC"}
