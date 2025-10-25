@@ -101,6 +101,8 @@ Translation keys are centralized in registries for discoverability and tooling, 
 - **DateValue**
 - **ArrayValue**
 - **ObjectValue**
+- **FloatValue**
+- **URLValue**
 
 ### 🔄 Converters
 - **RemoteFileToBase64:** Utility for converting remote files (via URL) into base64-encoded strings. Accepts a URL and returns a base64 representation using an injected `HTTPProvider`, enabling infrastructure-agnostic file transformation. Useful for image uploads, previews, and binary transport across domains.

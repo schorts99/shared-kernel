@@ -19,6 +19,12 @@ class ArrayValue {
     validateObject(obj, schema) {
         return Object.entries(schema).every(([key, rulesOrNested]) => {
             const value = obj[key];
+            if (typeof rulesOrNested === "object" &&
+                !Array.isArray(rulesOrNested) &&
+                "_" in rulesOrNested &&
+                Array.isArray(value)) {
+                return value.every((item) => rulesOrNested._.every((rule) => this.validateRule(item, rule)));
+            }
             if (Array.isArray(rulesOrNested)) {
                 return rulesOrNested.every((rule) => this.validateRule(value, rule));
             }

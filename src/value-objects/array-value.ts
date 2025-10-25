@@ -15,8 +15,10 @@ export type ValidationRule<Type> =
 type ObjectSchema<Type> = {
   [Key in keyof Type]?: Type[Key] extends Primitive
     ? ValidationRule<Type[Key]>[]
-    : ObjectSchema<Type[Key]>;
-};
+    : Type[Key] extends Primitive[]
+      ? { _: ValidationRule<Type[Key][number]>[] }
+      : ObjectSchema<Type[Key]>;
+};  
 
 export abstract class ArrayValue<Type = any> implements ValueObject {
   readonly valueType = "Array";
@@ -44,18 +46,31 @@ export abstract class ArrayValue<Type = any> implements ValueObject {
   private validateObject(obj: any, schema: ObjectSchema<any>): boolean {
     return Object.entries(schema).every(([key, rulesOrNested]) => {
       const value = obj[key];
-
+  
+      if (
+        typeof rulesOrNested === "object" &&
+        !Array.isArray(rulesOrNested) &&
+        "_" in rulesOrNested &&
+        Array.isArray(value)
+      ) {
+        return value.every((item) =>
+          (rulesOrNested._ as ValidationRule<any>[]).every((rule) =>
+            this.validateRule(item, rule)
+          )
+        );
+      }
+  
       if (Array.isArray(rulesOrNested)) {
         return rulesOrNested.every((rule) => this.validateRule(value, rule));
       }
-
+  
       if (typeof rulesOrNested === "object" && value !== null && typeof value === "object") {
         return this.validateObject(value, rulesOrNested as ObjectSchema<any>);
       }
-
+  
       return true;
     });
-  }
+  }  
 
   private validateRule(value: any, rule: ValidationRule<any>): boolean {
     if ("required" in rule) return value !== undefined && value !== null;

@@ -18,7 +18,9 @@ export type ValidationRule<Type> = {
     custom: (value: Type) => boolean;
 };
 type ObjectSchema<Type> = {
-    [Key in keyof Type]?: Type[Key] extends Primitive ? ValidationRule<Type[Key]>[] : ObjectSchema<Type[Key]>;
+    [Key in keyof Type]?: Type[Key] extends Primitive ? ValidationRule<Type[Key]>[] : Type[Key] extends Primitive[] ? {
+        _: ValidationRule<Type[Key][number]>[];
+    } : ObjectSchema<Type[Key]>;
 };
 export declare abstract class ArrayValue<Type = any> implements ValueObject {
     readonly valueType = "Array";
