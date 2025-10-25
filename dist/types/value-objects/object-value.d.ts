@@ -13,6 +13,8 @@ export type ValidationRule<Type> = {
 } | {
     type: "string" | "number" | "boolean";
 } | {
+    enum: Array<string>;
+} | {
     custom: (value: Type) => boolean;
 };
 export type ObjectSchema<Type> = {

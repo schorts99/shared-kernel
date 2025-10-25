@@ -44,6 +44,8 @@ class ObjectValue {
             return typeof value === "number" && value <= rule.less_than_or_equal;
         if ("type" in rule)
             return typeof value === rule.type;
+        if ("enum" in rule)
+            return rule.enum.includes(value);
         if ("custom" in rule)
             return rule.custom(value);
         return true;

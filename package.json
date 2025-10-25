@@ -1,6 +1,6 @@
 {
   "name": "@schorts/shared-kernel",
-  "version": "4.2.1",
+  "version": "4.2.2",
   "description": "A modular, type-safe foundation for building expressive, maintainable applications. This package provides core abstractions for domain modeling, HTTP integration, authentication, state management, and more — designed to be framework-agnostic and highly extensible.",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -160,10 +160,18 @@
     "entities",
     "http",
     "domain-events",
-    "unit-of-work"
+    "unit-of-work",
+    "hexagonal-architecture",
+    "domain-model",
+    "ddd"
   ],
   "bugs": {
     "url": "https://github.com/schorts99/shared-kernel/issues"
   },
-  "homepage": "https://github.com/schorts99/shared-kernel#readme"
+  "homepage": "https://github.com/schorts99/shared-kernel#readme",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
 }

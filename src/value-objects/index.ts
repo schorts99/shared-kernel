@@ -13,5 +13,6 @@ export { DateValue } from "./date-value";
 export { FloatValue } from "./float-valuet";
 export { ArrayValue } from "./array-value";
 export { ObjectValue } from "./object-value";
+export { URLValue } from "./url-value";
 
 export * from "./exceptions";

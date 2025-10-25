@@ -9,6 +9,7 @@ export type ValidationRule<Type> =
   | { less_than: number }
   | { less_than_or_equal: number }
   | { type: "string" | "number" | "boolean" }
+  | { enum: ReadonlyArray<Type> }
   | { custom: (value: Type) => boolean };
 
 type ObjectSchema<Type> = {
@@ -63,6 +64,7 @@ export abstract class ArrayValue<Type = any> implements ValueObject {
     if ("less_than" in rule) return typeof value === "number" && value < rule.less_than;
     if ("less_than_or_equal" in rule) return typeof value === "number" && value <= rule.less_than_or_equal;
     if ("type" in rule) return typeof value === rule.type;
+    if ("enum" in rule) return rule.enum.includes(value)
     if ("custom" in rule) return rule.custom(value);
 
     return true;
