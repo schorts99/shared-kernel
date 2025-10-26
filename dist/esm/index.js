@@ -18,6 +18,7 @@ __exportStar(require("./auth"), exports);
 __exportStar(require("./converters"), exports);
 __exportStar(require("./criteria"), exports);
 __exportStar(require("./dao"), exports);
+__exportStar(require("./di"), exports);
 __exportStar(require("./domain-events"), exports);
 __exportStar(require("./entities"), exports);
 __exportStar(require("./event-bus"), exports);

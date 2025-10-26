@@ -1,0 +1,1 @@
+export { DependencyNotRegistered } from "./dependency-not-registered";
