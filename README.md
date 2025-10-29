@@ -63,6 +63,11 @@ Translation keys are centralized in registries for discoverability and tooling, 
 
 - **JSONAPIConnector:** Connector for interacting with JSON:API-compliant endpoints.
 
+### 📬 Mail
+
+- **Mailer:** Abstract interface for sending email messages. Decouples infrastructure from application logic by exposing a simple contract for outbound communication.
+- **Mail:** Type-safe structure representing an email payload, including recipients, subject, body, and optional metadata like CC, BCC, and attachments.
+
 ### 🧩 Models
 
 - **BaseModel:** Base class for serializable, type-safe models.
