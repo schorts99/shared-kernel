@@ -5,8 +5,9 @@ export type Mail = {
     html: string;
     text: string;
   };
-  cc?: string[];
-  bcc?: string[];
+  cc?: string | string[];
+  bcc?: string | string[];
+  replyTo?: string;
   attachments?: Array<{
     filename: string;
     content: string;
