@@ -5,7 +5,6 @@ export type Mail = {
     html: string;
     text: string;
   };
-  from?: string;
   cc?: string[];
   bcc?: string[];
   attachments?: Array<{
