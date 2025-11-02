@@ -40,6 +40,12 @@ npm install @schorts/shared-kernel --save
 - **EventSubscriber:** Interface for subscribing to specific event types with clean, type-safe handlers.
 - **InMemoryEventStore:** Simple event store for tracking and replaying events, with retry metadata and bounded requeue support.
 
+### 🧭 CQRS (Command Query Responsibility Segregation)
+- **Command / CommandHandler:** Define write-side operations that encapsulate intent and state changes. Handlers execute domain logic for commands like CreateUserCommand or SendReportCommand.
+- **Query / QueryHandler:** Define read-side operations for retrieving data. Handlers encapsulate query logic and return type-safe results.
+- **CommandBus / QueryBus:** Abstract dispatchers for routing commands and queries to their respective handlers. Enables decoupled, centralized execution.
+- **InMemoryCommandBus / InMemoryQueryBus:** Lightweight in-memory implementations for local development and testing. Supports dynamic registration and type-safe dispatching.
+
 ### 📡 Pub-Sub
 
 - **Publisher:** Abstract interface for dispatching real-time events to external transports (e.g., Pusher, Socket.IO). Designed for event delivery, enabling type-safe, decoupled publishing from domain logic.

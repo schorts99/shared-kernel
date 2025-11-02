@@ -1,2 +1,2 @@
-export type { BaseModel } from "./base-model";
+export type { Model } from "./model";
 //# sourceMappingURL=index.d.ts.map

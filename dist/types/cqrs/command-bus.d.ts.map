@@ -1,0 +1,1 @@
+{"version":3,"file":"command-bus.d.ts","sourceRoot":"","sources":["../../../src/cqrs/command-bus.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,OAAO,EAAE,MAAM,WAAW,CAAC;AAEpC,MAAM,WAAW,UAAU;IACzB,QAAQ,CAAC,CAAC,SAAS,OAAO,EAAE,OAAO,EAAE,CAAC,GAAG,OAAO,CAAC,IAAI,CAAC,CAAC;CACxD"}

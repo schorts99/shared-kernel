@@ -27,7 +27,6 @@ __exportStar(require("./http"), exports);
 __exportStar(require("./i18n"), exports);
 __exportStar(require("./json-api"), exports);
 __exportStar(require("./mail"), exports);
-__exportStar(require("./messages"), exports);
 __exportStar(require("./models"), exports);
 __exportStar(require("./pub-sub"), exports);
 __exportStar(require("./rbac"), exports);

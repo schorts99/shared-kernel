@@ -1,13 +1,13 @@
 import { ValueObject } from "../value-objects";
-import { BaseModel } from "../models";
+import { Model } from "../models";
 import { DomainEvent } from "../domain-events";
-export declare abstract class Entity<IDValue extends ValueObject, Model extends BaseModel> {
+export declare abstract class Entity<IDValue extends ValueObject, M extends Model> {
     readonly id: IDValue;
     private domainEvents;
     constructor(id: IDValue);
     pullDomainEvents(): Array<DomainEvent>;
     recordDomainEvent(domainEvent: DomainEvent): void;
-    abstract toPrimitives(): Model;
-    static fromPrimitives<Model extends BaseModel>(_model: Model): void;
+    abstract toPrimitives(): M;
+    static fromPrimitives<M extends Model>(_model: M): void;
 }
 //# sourceMappingURL=entity.d.ts.map

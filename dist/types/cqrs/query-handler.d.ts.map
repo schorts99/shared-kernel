@@ -1,0 +1,1 @@
+{"version":3,"file":"query-handler.d.ts","sourceRoot":"","sources":["../../../src/cqrs/query-handler.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,KAAK,EAAE,MAAM,SAAS,CAAC;AAEhC,MAAM,WAAW,YAAY,CAAC,CAAC,SAAS,KAAK,GAAG,KAAK,EAAE,CAAC,GAAG,OAAO;IAChE,MAAM,CAAC,KAAK,EAAE,CAAC,GAAG,OAAO,CAAC,CAAC,CAAC,CAAC;CAC9B"}

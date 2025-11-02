@@ -1,6 +1,5 @@
-import { Message } from "../messages";
 import { DomainEventPrimitives } from "./domain-event-primitives";
-export declare abstract class DomainEvent<PayloadSchema = {}> implements Message<DomainEventPrimitives<PayloadSchema>> {
+export declare abstract class DomainEvent<PayloadSchema = {}> {
     readonly id: string;
     readonly occurredAt: Date;
     readonly type: string;
