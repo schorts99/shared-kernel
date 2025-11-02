@@ -1,0 +1,1 @@
+{"version":3,"file":"unit-of-work-runner.d.ts","sourceRoot":"","sources":["../../../src/unit-of-work/unit-of-work-runner.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,UAAU,EAAE,MAAM,gBAAgB,CAAC;AAE5C,MAAM,WAAW,gBAAgB;IAC/B,GAAG,CAAC,MAAM,EAAE,SAAS,EAAE,CAAC,GAAG,EAAE,UAAU,KAAK,OAAO,CAAC,MAAM,CAAC,GAAG,OAAO,CAAC,MAAM,CAAC,CAAC;CAC/E"}
