@@ -1,7 +1,7 @@
 import { expectTypeOf } from "expect-type";
 
 import { JSONAPIList } from "../../src/json-api";
-import { BaseModel } from "../../src/models";
+import { Model } from "../../src/models";
 
 type ExpectedJSONAPIList<EntityAttributes> = {
   data: Array<{
@@ -19,6 +19,6 @@ type ExpectedJSONAPIList<EntityAttributes> = {
 
 describe('JSONAPIList', () => {
   it('should match the expected schema', () => {
-    expectTypeOf<JSONAPIList<BaseModel>>().toEqualTypeOf<ExpectedJSONAPIList<BaseModel>>()
+    expectTypeOf<JSONAPIList<Model>>().toEqualTypeOf<ExpectedJSONAPIList<Model>>()
   });
 });

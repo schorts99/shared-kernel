@@ -1,10 +1,10 @@
-import { BaseModel } from "../models";
+import { Model } from "../models";
 import { Entity as BaseEntity } from "../entities";
 import { Criteria } from "../criteria";
 import { UnitOfWork } from "../unit-of-work";
 import { ValueObject } from "../value-objects";
 
-export interface DAO<Model extends BaseModel, Entity extends BaseEntity<ValueObject, Model>> {
+export interface DAO<M extends Model, Entity extends BaseEntity<ValueObject, M>> {
   getAll(): Promise<Entity[]>;
   findByID(id: Entity["id"]["value"]): Promise<Entity | null>;
   findOneBy(criteria: Criteria): Promise<Entity | null>;

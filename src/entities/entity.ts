@@ -1,8 +1,8 @@
 import { ValueObject } from "../value-objects";
-import { BaseModel } from "../models";
+import { Model } from "../models";
 import { DomainEvent } from "../domain-events";
 
-export abstract class Entity<IDValue extends ValueObject, Model extends BaseModel> {
+export abstract class Entity<IDValue extends ValueObject, M extends Model> {
   private domainEvents: Array<DomainEvent> = [];
 
   constructor(readonly id: IDValue) {}
@@ -18,8 +18,8 @@ export abstract class Entity<IDValue extends ValueObject, Model extends BaseMode
     this.domainEvents.push(domainEvent);
   }
 
-  abstract toPrimitives(): Model;
-  static fromPrimitives<Model extends BaseModel>(_model: Model) {
+  abstract toPrimitives(): M;
+  static fromPrimitives<M extends Model>(_model: M) {
     throw new Error("Method not implemented.");
   }
 }

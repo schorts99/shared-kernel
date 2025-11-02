@@ -1,14 +1,14 @@
 import { EntityRegistry } from "./entity-registry";
-import { BaseModel } from "../models";
+import { Model } from "../models";
 import { Entity as BaseEntity } from "./entity";
 import { ValueObject } from "../value-objects";
 
-type EntityConstructor<Model extends BaseModel = BaseModel> = {
-  fromPrimitives(model: Model): BaseEntity<ValueObject, Model>;
+type EntityConstructor<M extends Model = Model> = {
+  fromPrimitives(model: M): BaseEntity<ValueObject, M>;
 };
 
-export function RegisterEntity<Model extends BaseModel = BaseModel>(type: string) {
-  return function <Entity extends EntityConstructor<Model>>(entity: Entity): Entity {
+export function RegisterEntity<M extends Model = Model>(type: string) {
+  return function <Entity extends EntityConstructor<M>>(entity: Entity): Entity {
     EntityRegistry.register(type, entity);
 
     return entity;
