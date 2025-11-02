@@ -76,11 +76,6 @@
       "require": "./dist/cjs/mail/index.js",
       "types": "./dist/types/mail/index.d.ts"
     },
-    "./messages": {
-      "import": "./dist/esm/messages/index.js",
-      "require": "./dist/cjs/messages/index.js",
-      "types": "./dist/types/messages/index.d.ts"
-    },
     "./models": {
       "import": "./dist/esm/models/index.js",
       "require": "./dist/cjs/models/index.js",

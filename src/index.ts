@@ -11,7 +11,6 @@ export * from "./http";
 export * from "./i18n";
 export * from "./json-api";
 export * from "./mail";
-export * from "./messages";
 export * from "./models";
 export * from "./pub-sub";
 export * from "./rbac";
