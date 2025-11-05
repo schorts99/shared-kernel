@@ -17,6 +17,7 @@ export * from "./rbac";
 export * from "./result";
 export * from "./state-manager";
 export * from "./telemetry";
+export * from "./tour-guide";
 export * from "./unit-of-work";
 export * from "./utils";
 export * from "./value-objects";

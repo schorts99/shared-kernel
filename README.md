@@ -97,6 +97,10 @@ Translation keys are centralized in registries for discoverability and tooling, 
 - **SessionStorageStateManager:** Concrete implementation using session storage.
 - **InMemoryStateManager:** Concrete implementation using in-memory.
 
+### 🧭 Guided Tours
+
+- **TourGuide:** Abstract base class for defining guided UI tours. Accepts a list of TourStep objects and exposes a fluent API for composing onboarding flows. Designed to be extended by concrete implementations (e.g., Driver.js, Intro.js) in frontend environments.
+
 ### 📈 Telemetry
 
 - **Telemetry:** Abstract interface for unified telemetry across frontend and backend environments. Supports initialization, error tracking, custom context attributes, and transaction naming. Enables integration with observability platforms like New Relic via a consistent API.

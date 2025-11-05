@@ -111,6 +111,11 @@
       "require": "./dist/cjs/telemetry/index.js",
       "types": "./dist/types/telemetry/index.d.ts"
     },
+    "./tour-guide": {
+      "import": "./dist/esm/tour-guide/index.js",
+      "require": "./dist/cjs/tour-guide/index.js",
+      "types": "./dist/types/tour-guide/index.d.ts"
+    },
     "./unit-of-work": {
       "import": "./dist/esm/unit-of-work/index.js",
       "require": "./dist/cjs/unit-of-work/index.js",
