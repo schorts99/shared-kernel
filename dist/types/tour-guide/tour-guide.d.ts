@@ -1,8 +1,6 @@
 import { TourStep } from "./tour-step";
-export declare abstract class TourGuide {
-    private readonly steps;
-    constructor(steps?: Array<TourStep>);
+export interface TourGuide {
     addStep(step: TourStep): TourGuide;
-    abstract startTour(): void;
+    startTour(): void;
 }
 //# sourceMappingURL=tour-guide.d.ts.map
