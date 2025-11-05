@@ -1,0 +1,1 @@
+{"version":3,"file":"tour-step.d.ts","sourceRoot":"","sources":["../../../src/tour-guide/tour-step.ts"],"names":[],"mappings":"AAAA,MAAM,MAAM,QAAQ,GAAG;IACrB,OAAO,CAAC,EAAE,MAAM,CAAC;IACjB,KAAK,EAAE,MAAM,CAAC;IACd,WAAW,EAAE,MAAM,CAAC;IACpB,IAAI,EAAE,KAAK,GAAG,OAAO,GAAG,QAAQ,GAAG,MAAM,CAAC;IAC1C,KAAK,EAAE,OAAO,GAAG,QAAQ,GAAG,KAAK,CAAC;CACnC,CAAA"}

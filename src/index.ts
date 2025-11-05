@@ -10,6 +10,7 @@ export * from "./formatters";
 export * from "./http";
 export * from "./i18n";
 export * from "./json-api";
+export * from "./logger";
 export * from "./mail";
 export * from "./models";
 export * from "./pub-sub";

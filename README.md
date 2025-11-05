@@ -101,6 +101,12 @@ Translation keys are centralized in registries for discoverability and tooling, 
 
 - **TourGuide:** Abstract base class for defining guided UI tours. Accepts a list of TourStep objects and exposes a fluent API for composing onboarding flows. Designed to be extended by concrete implementations (e.g., Driver.js, Intro.js) in frontend environments.
 
+### 📣 Logger
+
+- **Logger:** Abstract base class for structured, context-aware logging across environments. Supports scoped logging via child() method, enabling per-module or per-request diagnostics. Each method (log, info, debug, warn, error) accepts optional context metadata and variadic arguments for flexible message composition.
+- **ConsoleLogger:** Concrete implementation of Logger that writes to native console methods (console.log, console.info, etc.). Automatically injects timestamps and supports scoped logging via child().
+- **ScopedLogger:** Internal utility class returned by Logger.child(). Merges base context with per-call context, enabling nested, composable logging scopes.
+
 ### 📈 Telemetry
 
 - **Telemetry:** Abstract interface for unified telemetry across frontend and backend environments. Supports initialization, error tracking, custom context attributes, and transaction naming. Enables integration with observability platforms like New Relic via a consistent API.

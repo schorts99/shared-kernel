@@ -1,0 +1,1 @@
+{"version":3,"file":"tour-guide.d.ts","sourceRoot":"","sources":["../../../src/tour-guide/tour-guide.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,QAAQ,EAAE,MAAM,aAAa,CAAA;AAEtC,8BAAsB,SAAS;IAC7B,OAAO,CAAC,QAAQ,CAAC,KAAK,CAAkB;gBAE5B,KAAK,GAAE,KAAK,CAAC,QAAQ,CAAM;IAIvC,OAAO,CAAC,IAAI,EAAE,QAAQ,GAAG,SAAS;IAMlC,QAAQ,CAAC,SAAS,IAAI,IAAI;CAC3B"}
