@@ -12,19 +12,73 @@ export class URLCriteriaBuilder {
     const builder = new URLWithParamsBuilder(new URL(this.base.href));
 
     if (this.include?.length) {
-      builder.with({ include: this.include });
+      builder.with({ include: this.include.join(",") });
     }
 
     if (this.criteria) {
-      Object.entries(this.criteria.filters).forEach(([field, { operator, value }]) => {
-        const encodedField = field.replace(/\./g, "."); // allows nested filters like roles.name
+      this.criteria.filters.forEach(({ field, operator, value }) => {
+        const encodedField = field.replace(/\./g, ".");
 
-        if (operator === "EQUAL") {
-          builder.with({ [`filter[${encodedField}]`]: value });
-        } else if (operator === "IN" && Array.isArray(value)) {
-          builder.with({ [`filter[${encodedField}]`]: value.join(",") });
-        } else {
-          builder.with({ [`filter[${encodedField}][${operator}]`]: value });
+        switch (operator) {
+          case "EQUAL":
+            builder.with({ [`filter[${encodedField}]`]: value });
+            break;
+
+          case "NOT_EQUAL":
+            builder.with({ [`filter[${encodedField}][ne]`]: value });
+            break;
+
+          case "GREATER_THAN":
+            builder.with({ [`filter[${encodedField}][gt]`]: value });
+            break;
+
+          case "LESS_THAN":
+            builder.with({ [`filter[${encodedField}][lt]`]: value });
+            break;
+
+          case "GREATER_THAN_OR_EQUAL":
+            builder.with({ [`filter[${encodedField}][gte]`]: value });
+            break;
+
+          case "LESS_THAN_OR_EQUAL":
+            builder.with({ [`filter[${encodedField}][lte]`]: value });
+            break;
+
+          case "IN":
+            if (Array.isArray(value)) {
+              builder.with({ [`filter[${encodedField}][in]`]: value.join(",") });
+            }
+            break;
+
+          case "NOT_IN":
+            if (Array.isArray(value)) {
+              builder.with({ [`filter[${encodedField}][nin]`]: value.join(",") });
+            }
+            break;
+
+          case "LIKE":
+            builder.with({ [`filter[${encodedField}][like]`]: value });
+            break;
+
+          case "BETWEEN":
+            if (Array.isArray(value) && value.length === 2) {
+              builder.with({
+                [`filter[${encodedField}][between]`]: `${value[0]},${value[1]}`,
+              });
+            }
+            break;
+
+          case "GEO_RADIUS":
+            if (value && typeof value === "object") {
+              const { lat, lng, radius } = value;
+              builder.with({
+                [`filter[${encodedField}][geo_radius]`]: `${lat},${lng},${radius}`,
+              });
+            }
+            break;
+
+          default:
+            throw new Error(`Unsupported operator: ${operator satisfies never}`);
         }
       });
 
