@@ -1,5 +1,6 @@
 export * from "./auth";
 export * from "./converters";
+export * from "./cqrs";
 export * from "./criteria";
 export * from "./dao";
 export * from "./di";

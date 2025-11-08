@@ -1,7 +1,8 @@
 import { DomainEvent } from "../../domain-events";
 import { EventStore } from "../event-store";
 import { EventSubscriber } from "../event-subscriber";
-export declare class AsyncInMemoryEventBus {
+import { EventBus } from "../event-bus";
+export declare class AsyncInMemoryEventBus implements EventBus {
     private readonly subscribers;
     private readonly store;
     private readonly maxRetries;

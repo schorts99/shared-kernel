@@ -2,8 +2,9 @@ import { DomainEvent, DomainEventRegistry } from "../../domain-events";
 import { InMemoryEventStore } from "./in-memory-event-store";
 import { EventStore } from "../event-store";
 import { EventSubscriber } from "../event-subscriber";
+import { EventBus } from "../event-bus";
 
-export class AsyncInMemoryEventBus {
+export class AsyncInMemoryEventBus implements EventBus {
   private readonly subscribers = new Map<string, EventSubscriber[]>();
   private readonly store: EventStore;
   private readonly maxRetries: number;
