@@ -1,3 +1,3 @@
 export interface Query {
-  readonly type: string;
+  getType(): string;
 }

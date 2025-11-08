@@ -1,3 +1,3 @@
 export interface Command {
-  readonly type: string;
+  getType(): string;
 }

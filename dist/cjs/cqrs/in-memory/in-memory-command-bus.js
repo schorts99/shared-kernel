@@ -8,9 +8,9 @@ class InMemoryCommandBus {
         this.handlers.set(type, handler);
     }
     async dispatch(command) {
-        const handler = this.handlers.get(command.type);
+        const handler = this.handlers.get(command.getType());
         if (!handler) {
-            throw new __1.CommandNotRegistered(command.type);
+            throw new __1.CommandNotRegistered(command.getType());
         }
         await handler.handle(command);
     }

@@ -1,4 +1,4 @@
 export interface Command {
-    readonly type: string;
+    getType(): string;
 }
 //# sourceMappingURL=command.d.ts.map

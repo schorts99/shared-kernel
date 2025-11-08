@@ -8,9 +8,9 @@ class InMemoryQueryBus {
         this.handlers.set(type, handler);
     }
     async dispatch(query) {
-        const handler = this.handlers.get(query.type);
+        const handler = this.handlers.get(query.getType());
         if (!handler) {
-            throw new __1.QueryNotRegistered(query.type);
+            throw new __1.QueryNotRegistered(query.getType());
         }
         return await handler.handle(query);
     }

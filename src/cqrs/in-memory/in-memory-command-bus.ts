@@ -8,10 +8,10 @@ export class InMemoryCommandBus implements CommandBus {
   }
 
   async dispatch<C extends Command>(command: C): Promise<void> {
-    const handler = this.handlers.get(command.type);
+    const handler = this.handlers.get(command.getType());
 
     if (!handler) {
-      throw new CommandNotRegistered(command.type);
+      throw new CommandNotRegistered(command.getType());
     }
 
     await handler.handle(command);

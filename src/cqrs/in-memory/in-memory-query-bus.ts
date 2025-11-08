@@ -8,10 +8,10 @@ export class InMemoryQueryBus implements QueryBus {
   }
 
   async dispatch<Q extends Query, R>(query: Q): Promise<R> {
-    const handler = this.handlers.get(query.type) as QueryHandler<Q, R> | undefined;
+    const handler = this.handlers.get(query.getType()) as QueryHandler<Q, R> | undefined;
 
     if (!handler) {
-      throw new QueryNotRegistered(query.type);
+      throw new QueryNotRegistered(query.getType());
     }
 
     return await handler.handle(query);

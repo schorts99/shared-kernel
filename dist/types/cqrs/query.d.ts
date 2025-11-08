@@ -1,4 +1,4 @@
 export interface Query {
-    readonly type: string;
+    getType(): string;
 }
 //# sourceMappingURL=query.d.ts.map
