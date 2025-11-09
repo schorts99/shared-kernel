@@ -3,15 +3,22 @@ import { InMemoryEventStore } from "./in-memory-event-store";
 import { EventStore } from "../event-store";
 import { EventSubscriber } from "../event-subscriber";
 import { EventBus } from "../event-bus";
+import { DeadLetterStore } from "../dead-letter-store";
 
 export class AsyncInMemoryEventBus implements EventBus {
   private readonly subscribers = new Map<string, EventSubscriber[]>();
   private readonly store: EventStore;
   private readonly maxRetries: number;
+  private readonly deadLetterStore: DeadLetterStore | undefined;
 
-  constructor(store: EventStore = new InMemoryEventStore(), maxRetries = 3) {
+  constructor(
+    store: EventStore = new InMemoryEventStore(),
+    maxRetries = 3,
+    deadLetterStore?: DeadLetterStore,
+  ) {
     this.store = store;
     this.maxRetries = maxRetries;
+    this.deadLetterStore = deadLetterStore;
   }
 
   subscribe<Event extends DomainEvent>(eventName: string, subscriber: EventSubscriber<Event>): void {
@@ -47,13 +54,20 @@ export class AsyncInMemoryEventBus implements EventBus {
 
         this.store.requeue(updatedPrimitives);
         this.publish(DomainEventRegistry.create(updatedPrimitives));
-      } else {
-        console.warn(`Event ${event.id} exceeded max retries (${this.maxRetries}). Dropping.`);
+      } else if (this.deadLetterStore) {
+        const reason = `Exceeded max retries (${this.maxRetries})`;
+
+        this.deadLetterStore.add(primitives, reason);
+        console.warn(`Event ${event.id} moved to DLQ: ${reason}`);
       }
     };
 
     for (const sub of subs) {
-      await sub.handle(event);
+      try {
+        await sub.handle(event);
+      } catch (err) {
+        event.requeue?.();
+      }
     }
   }
 

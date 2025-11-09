@@ -7,9 +7,11 @@ class AsyncInMemoryEventBus {
     subscribers = new Map();
     store;
     maxRetries;
-    constructor(store = new in_memory_event_store_1.InMemoryEventStore(), maxRetries = 3) {
+    deadLetterStore;
+    constructor(store = new in_memory_event_store_1.InMemoryEventStore(), maxRetries = 3, deadLetterStore) {
         this.store = store;
         this.maxRetries = maxRetries;
+        this.deadLetterStore = deadLetterStore;
     }
     subscribe(eventName, subscriber) {
         if (!this.subscribers.has(eventName)) {
@@ -37,12 +39,19 @@ class AsyncInMemoryEventBus {
                 this.store.requeue(updatedPrimitives);
                 this.publish(domain_events_1.DomainEventRegistry.create(updatedPrimitives));
             }
-            else {
-                console.warn(`Event ${event.id} exceeded max retries (${this.maxRetries}). Dropping.`);
+            else if (this.deadLetterStore) {
+                const reason = `Exceeded max retries (${this.maxRetries})`;
+                this.deadLetterStore.add(primitives, reason);
+                console.warn(`Event ${event.id} moved to DLQ: ${reason}`);
             }
         };
         for (const sub of subs) {
-            await sub.handle(event);
+            try {
+                await sub.handle(event);
+            }
+            catch (err) {
+                event.requeue?.();
+            }
         }
     }
     async replay() {

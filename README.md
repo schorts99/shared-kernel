@@ -39,6 +39,7 @@ npm install @schorts/shared-kernel --save
 - **DomainEventRegistry:** Centralized registry for hydrating polymorphic domain events from serialized primitives.
 - **EventSubscriber:** Interface for subscribing to specific event types with clean, type-safe handlers.
 - **InMemoryEventStore:** Simple event store for tracking and replaying events, with retry metadata and bounded requeue support.
+- **DeadLetterStore / InMemoryDeadLetterStore:** Dedicated store for capturing events that failed after max retries. Provides inspection (all()), clearing, and replay support.
 
 ### 🧭 CQRS (Command Query Responsibility Segregation)
 - **Command / CommandHandler:** Define write-side operations that encapsulate intent and state changes. Handlers execute domain logic for commands like CreateUserCommand or SendReportCommand.
@@ -105,7 +106,7 @@ Translation keys are centralized in registries for discoverability and tooling, 
 ### 📣 Logger
 
 - **Logger:** Abstract base class for structured, context-aware logging across environments. Supports scoped logging via child() method, enabling per-module or per-request diagnostics. Each method (log, info, debug, warn, error) accepts optional context metadata and variadic arguments for flexible message composition.
-- **ConsoleLogger:** Concrete implementation of Logger that writes to native console methods (console.log, console.info, etc.). Automatically injects timestamps and supports scoped logging via child().
+- **ConsoleLogger:** Concrete implementation with log levels (LOG, INFO, DEBUG, WARN, ERROR) and contextual metadata injection (e.g., timestamps, custom context). Provides consistent filtering and structured output across environments.
 - **ScopedLogger:** Internal utility class returned by Logger.child(). Merges base context with per-call context, enabling nested, composable logging scopes.
 
 ### 📈 Telemetry
