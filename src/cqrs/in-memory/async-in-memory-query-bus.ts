@@ -1,6 +1,6 @@
-import { Query, QueryBus, QueryHandler, QueryNotRegistered } from "../";
+import { Query, QueryBus, QueryHandler, QueryNotRegistered } from "..";
 
-export class InMemoryQueryBus implements QueryBus {
+export class AsyncInMemoryQueryBus implements QueryBus {
   private readonly handlers = new Map<string, QueryHandler>();
 
   register<Q extends Query, R>(type: string, handler: QueryHandler<Q, R>): void {

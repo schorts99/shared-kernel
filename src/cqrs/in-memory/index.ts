@@ -1,2 +1,2 @@
-export { InMemoryCommandBus } from "./in-memory-command-bus";
-export { InMemoryQueryBus } from "./in-memory-query-bus";
+export { AsyncInMemoryCommandBus } from "./async-in-memory-command-bus";
+export { AsyncInMemoryQueryBus } from "./async-in-memory-query-bus";
