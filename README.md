@@ -70,6 +70,7 @@ Translation keys are centralized in registries for discoverability and tooling, 
 
 - **JSONAPIConnector:** Connector for interacting with JSON:API-compliant endpoints.
 - **URLCriteriaParser:** Utility for parsing JSON:API-style query parameters (`filter`, `sort`, `page[limit]`, `page[offset]`) into a type-safe `Criteria` object. Supports operators like `eq`, `ne`, `gt`, `lt`, `in`, `between`, and even geospatial filters (`geo_radius`). This enables seamless conversion from URL query strings into expressive domain queries.
+- **EntityJSONAPIMapper:** Static utility for converting domain `Entity` instances into JSON:API-compliant payloads. Provides `mapEntity` for single resources and `mapEntities` for collections, ensuring attributes are serialized consistently with the JSON:API specification.
 
 ### 📬 Mail
 

@@ -14,12 +14,14 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.URLCriteriaParser = exports.JSONAPIConnector = exports.URLCriteriaBuilder = void 0;
+exports.EntityJSONAPIMapper = exports.URLCriteriaParser = exports.JSONAPIConnector = exports.URLCriteriaBuilder = void 0;
 var url_criteria_builder_1 = require("./url-criteria-builder");
 Object.defineProperty(exports, "URLCriteriaBuilder", { enumerable: true, get: function () { return url_criteria_builder_1.URLCriteriaBuilder; } });
 var json_api_connector_1 = require("./json-api-connector");
 Object.defineProperty(exports, "JSONAPIConnector", { enumerable: true, get: function () { return json_api_connector_1.JSONAPIConnector; } });
 var url_criteria_parser_1 = require("./url-criteria-parser");
 Object.defineProperty(exports, "URLCriteriaParser", { enumerable: true, get: function () { return url_criteria_parser_1.URLCriteriaParser; } });
+var entity_json_api_mapper_1 = require("./entity-json-api-mapper");
+Object.defineProperty(exports, "EntityJSONAPIMapper", { enumerable: true, get: function () { return entity_json_api_mapper_1.EntityJSONAPIMapper; } });
 __exportStar(require("./exceptions"), exports);
 //# sourceMappingURL=index.js.map
