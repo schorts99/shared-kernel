@@ -1,3 +1,3 @@
-export { InMemoryEventStore } from "./in-memory-event-store";
+export { AsyncInMemoryEventStore } from "./async-in-memory-event-store";
 export { AsyncInMemoryEventBus } from "./async-in-memory-event-bus"
-export { InMemoryDeadLetterStore } from "./in-memory-dead-letter-store";
+export { AsyncInMemoryDeadLetterStore } from "./async-in-memory-dead-letter-store";

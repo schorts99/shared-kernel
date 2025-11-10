@@ -1,10 +1,10 @@
 import { DomainEventPrimitives } from "../domain-events";
 export interface DeadLetterStore {
-    add(primitives: DomainEventPrimitives, reason: string): void;
-    all(): Array<{
+    add(primitives: DomainEventPrimitives, reason: string): Promise<void>;
+    all(): Promise<Array<{
         primitives: DomainEventPrimitives;
         reason: string;
-    }>;
-    clear(): void;
+    }>>;
+    clear(): Promise<void>;
 }
 //# sourceMappingURL=dead-letter-store.d.ts.map

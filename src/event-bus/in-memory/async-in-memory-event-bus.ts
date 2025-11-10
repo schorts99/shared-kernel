@@ -1,5 +1,5 @@
 import { DomainEvent, DomainEventRegistry } from "../../domain-events";
-import { InMemoryEventStore } from "./in-memory-event-store";
+import { AsyncInMemoryEventStore } from "./async-in-memory-event-store";
 import { EventStore } from "../event-store";
 import { EventSubscriber } from "../event-subscriber";
 import { EventBus } from "../event-bus";
@@ -12,7 +12,7 @@ export class AsyncInMemoryEventBus implements EventBus {
   private readonly deadLetterStore: DeadLetterStore | undefined;
 
   constructor(
-    store: EventStore = new InMemoryEventStore(),
+    store: EventStore = new AsyncInMemoryEventStore(),
     maxRetries = 3,
     deadLetterStore?: DeadLetterStore,
   ) {
@@ -72,10 +72,11 @@ export class AsyncInMemoryEventBus implements EventBus {
   }
 
   async replay(): Promise<void> {
-    const events = this.store.all();
+    const events = await this.store.all();
 
     for (const primitives of events) {
       const event = DomainEventRegistry.create(primitives);
+
       await this.dispatch(event);
     }
   }

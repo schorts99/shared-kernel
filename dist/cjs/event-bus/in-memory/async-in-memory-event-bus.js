@@ -2,13 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AsyncInMemoryEventBus = void 0;
 const domain_events_1 = require("../../domain-events");
-const in_memory_event_store_1 = require("./in-memory-event-store");
+const async_in_memory_event_store_1 = require("./async-in-memory-event-store");
 class AsyncInMemoryEventBus {
     subscribers = new Map();
     store;
     maxRetries;
     deadLetterStore;
-    constructor(store = new in_memory_event_store_1.InMemoryEventStore(), maxRetries = 3, deadLetterStore) {
+    constructor(store = new async_in_memory_event_store_1.AsyncInMemoryEventStore(), maxRetries = 3, deadLetterStore) {
         this.store = store;
         this.maxRetries = maxRetries;
         this.deadLetterStore = deadLetterStore;
@@ -55,7 +55,7 @@ class AsyncInMemoryEventBus {
         }
     }
     async replay() {
-        const events = this.store.all();
+        const events = await this.store.all();
         for (const primitives of events) {
             const event = domain_events_1.DomainEventRegistry.create(primitives);
             await this.dispatch(event);
