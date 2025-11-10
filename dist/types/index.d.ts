@@ -1,3 +1,4 @@
+export * from "./abac";
 export * from "./auth";
 export * from "./converters";
 export * from "./cqrs";
