@@ -11,32 +11,32 @@ const LOG_LEVELS = {
 };
 class ConsoleLogger extends _1.Logger {
     level;
-    constructor(level = "ERROR") {
+    constructor(level) {
         super();
         this.level = level;
     }
     log(context, ...args) {
-        if (LOG_LEVELS[this.level] < LOG_LEVELS["LOG"])
+        if (!this.shouldLog("LOG"))
             return;
         console.log(this.context(context), ...args);
     }
     info(context, ...args) {
-        if (LOG_LEVELS[this.level] < LOG_LEVELS["INFO"])
+        if (!this.shouldLog("INFO"))
             return;
         console.info(this.context(context), ...args);
     }
     debug(context, ...args) {
-        if (LOG_LEVELS[this.level] < LOG_LEVELS["DEBUG"])
+        if (!this.shouldLog("DEBUG"))
             return;
         console.debug(this.context(context), ...args);
     }
     warn(context, ...args) {
-        if (LOG_LEVELS[this.level] < LOG_LEVELS["WARN"])
+        if (!this.shouldLog("WARN"))
             return;
         console.warn(this.context(context), ...args);
     }
     error(context, ...args) {
-        if (LOG_LEVELS[this.level] < LOG_LEVELS["ERROR"])
+        if (!this.shouldLog("ERROR"))
             return;
         console.error(this.context(context), ...args);
     }
@@ -45,6 +45,9 @@ class ConsoleLogger extends _1.Logger {
             timestamp: Date.now(),
             ...customContext,
         };
+    }
+    shouldLog(level) {
+        return LOG_LEVELS[this.level] >= LOG_LEVELS[level];
     }
 }
 exports.ConsoleLogger = ConsoleLogger;
