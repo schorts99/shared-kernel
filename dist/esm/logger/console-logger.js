@@ -42,12 +42,12 @@ class ConsoleLogger extends _1.Logger {
     }
     context(customContext) {
         return {
-            timestamp: Date.now(),
+            timestamp: new Date(),
             ...customContext,
         };
     }
     shouldLog(level) {
-        return LOG_LEVELS[this.level] >= LOG_LEVELS[level];
+        return LOG_LEVELS[this.level] <= LOG_LEVELS[level];
     }
 }
 exports.ConsoleLogger = ConsoleLogger;

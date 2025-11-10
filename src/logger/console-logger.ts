@@ -47,12 +47,12 @@ export class ConsoleLogger extends Logger {
 
   private context(customContext?: Record<string, unknown>) {
     return {
-      timestamp: Date.now(),
+      timestamp: new Date(),
       ...customContext,
     };
   }
 
   private shouldLog(level: keyof typeof LOG_LEVELS): boolean {
-    return LOG_LEVELS[this.level] >= LOG_LEVELS[level];
+    return LOG_LEVELS[this.level] <= LOG_LEVELS[level];
   }
 }
