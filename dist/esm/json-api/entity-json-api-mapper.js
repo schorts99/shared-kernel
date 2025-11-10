@@ -2,18 +2,22 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EntityJSONAPIMapper = void 0;
 class EntityJSONAPIMapper {
-    static mapEntity(entity) {
+    type;
+    constructor(type) {
+        this.type = type;
+    }
+    mapEntity(entity) {
         const attributes = entity.toPrimitives();
         delete attributes.id;
         return {
             data: {
-                type: entity.type,
+                type: this.type,
                 id: entity.id.value,
                 attributes: attributes,
             },
         };
     }
-    static mapEntities(entities) {
+    mapEntities(entities) {
         return { data: entities.map((e) => this.mapEntity(e).data) };
     }
 }

@@ -4,7 +4,6 @@ import { DomainEvent } from "../domain-events";
 
 export abstract class Entity<IDValue extends ValueObject, M extends Model> {
   private domainEvents: Array<DomainEvent> = [];
-  readonly abstract type: string;
 
   constructor(readonly id: IDValue) {}
 
