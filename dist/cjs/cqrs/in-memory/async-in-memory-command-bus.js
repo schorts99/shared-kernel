@@ -12,7 +12,7 @@ class AsyncInMemoryCommandBus {
         if (!handler) {
             throw new __1.CommandNotRegistered(command.getType());
         }
-        await handler.handle(command);
+        return handler.handle(command);
     }
 }
 exports.AsyncInMemoryCommandBus = AsyncInMemoryCommandBus;

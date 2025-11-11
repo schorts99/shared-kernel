@@ -1,5 +1,5 @@
 import { Command } from "./command";
 
-export interface CommandHandler<C extends Command = Command> {
-  handle(command: C): Promise<void>;
+export interface CommandHandler<C extends Command = Command, R = void> {
+  handle(command: C): Promise<R>;
 }
