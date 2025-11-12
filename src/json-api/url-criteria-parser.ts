@@ -3,14 +3,17 @@ import { Direction } from "../criteria/direction";
 import { Operator } from "../criteria/operator";
 
 export class URLCriteriaParser {
-  constructor(private readonly url: URL) {}
+  constructor(
+    private readonly url: URL,
+    private readonly allowedKeys: Array<string> = [],
+  ) {}
 
   parse(): Criteria {
     const criteria = new Criteria();
     const params = this.url.searchParams;
 
     for (const [key, value] of params.entries()) {
-      if (!key.startsWith("filter[")) continue;
+      if (!this.allowedKeys.includes(key) && this.allowedKeys.length > 0) continue;
 
       const match = key.match(/^filter\[([^\]]+)\](?:\[([^\]]+)\])?$/);
 
@@ -24,21 +27,19 @@ export class URLCriteriaParser {
     }
 
     const sortParam = params.get("sort");
+
     if (sortParam) {
       sortParam.split(",").forEach((part) => {
         const direction: Direction = part.startsWith("-") ? "DESC" : "ASC";
         const field = part.replace(/^-/, "");
-
         criteria.orderBy(field, direction);
       });
     }
 
     const limit = params.get("page[limit]");
-
     if (limit) criteria.limitResults(Number(limit));
 
     const offset = params.get("page[offset]");
-
     if (offset) criteria.offsetResults(Number(offset));
 
     return criteria;
@@ -64,10 +65,8 @@ export class URLCriteriaParser {
   private parseValue(operator: Operator, raw: string): any {
     const tryParsePrimitive = (val: string): any => {
       const maybeDate = new Date(val);
-
       if (!isNaN(maybeDate.getTime())) return maybeDate;
       if (!isNaN(Number(val)) && val.trim() !== "") return Number(val);
-
       return val;
     };
 
@@ -81,7 +80,6 @@ export class URLCriteriaParser {
         const [latStr, lngStr, radiusStr] = raw.split(",");
         const center = [parseFloat(latStr!), parseFloat(lngStr!)];
         const radiusInM = parseFloat(radiusStr!);
-
         return { center, radiusInM };
       }
 

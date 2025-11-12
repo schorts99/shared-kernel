@@ -4,14 +4,16 @@ exports.URLCriteriaParser = void 0;
 const criteria_1 = require("../criteria");
 class URLCriteriaParser {
     url;
-    constructor(url) {
+    allowedKeys;
+    constructor(url, allowedKeys = []) {
         this.url = url;
+        this.allowedKeys = allowedKeys;
     }
     parse() {
         const criteria = new criteria_1.Criteria();
         const params = this.url.searchParams;
         for (const [key, value] of params.entries()) {
-            if (!key.startsWith("filter["))
+            if (!this.allowedKeys.includes(key) && this.allowedKeys.length > 0)
                 continue;
             const match = key.match(/^filter\[([^\]]+)\](?:\[([^\]]+)\])?$/);
             if (!match)
