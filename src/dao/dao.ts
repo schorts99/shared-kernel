@@ -3,10 +3,11 @@ import { Entity as BaseEntity } from "../entities";
 import { Criteria } from "../criteria";
 import { UnitOfWork } from "../unit-of-work";
 import { ValueObject } from "../value-objects";
+import { DeleteMode } from "./delete-mode";
 
 export abstract class DAO<M extends Model, Entity extends BaseEntity<ValueObject, M>> {
   constructor(
-    protected readonly deleteMod: 'HARD' | 'SOFT' = 'HARD',
+    protected readonly deleteMode: DeleteMode = 'HARD',
   ) {}
 
   abstract getAll(): Promise<Entity[]>;
