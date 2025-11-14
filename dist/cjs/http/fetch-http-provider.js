@@ -14,8 +14,8 @@ class FetchHTTPProvider {
     useInterceptor(interceptor) {
         this.interceptors.push(interceptor);
     }
-    get(url) {
-        return this.request("GET", url);
+    get(url, body) {
+        return this.request("GET", url, body);
     }
     post(url, body) {
         return this.request("POST", url, body);
@@ -26,8 +26,8 @@ class FetchHTTPProvider {
     patch(url, body) {
         return this.request("PATCH", url, body);
     }
-    delete(url) {
-        return this.request("DELETE", url);
+    delete(url, body) {
+        return this.request("DELETE", url, body);
     }
     async request(method, url, body) {
         const key = this.generateRequestKey(method, url, body);

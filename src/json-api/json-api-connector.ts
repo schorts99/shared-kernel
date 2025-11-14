@@ -77,11 +77,12 @@ export class JSONAPIConnector {
     }
   }
 
-  async delete<EntityAttributes>(
-    url: URL
+  async delete<EntityAttributes, RequestBody = undefined>(
+    url: URL,
+    body?: RequestBody,
   ): Promise<JSONAPISingle<EntityAttributes>> {
     try {
-      return await this.http.delete(url);
+      return await this.http.delete(url, body);
     } catch(error) {
       this.handleError(error);
     }

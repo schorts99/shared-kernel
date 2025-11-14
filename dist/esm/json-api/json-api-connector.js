@@ -47,9 +47,9 @@ class JSONAPIConnector {
             this.handleError(error);
         }
     }
-    async delete(url) {
+    async delete(url, body) {
         try {
-            return await this.http.delete(url);
+            return await this.http.delete(url, body);
         }
         catch (error) {
             this.handleError(error);

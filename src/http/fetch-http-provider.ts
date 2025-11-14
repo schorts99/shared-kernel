@@ -26,8 +26,8 @@ export class FetchHTTPProvider implements HTTPProvider {
     this.interceptors.push(interceptor);
   }
 
-  get<ResponseType>(url: URL): Promise<ResponseType> {
-    return this.request("GET", url);
+  get<ResponseType, RequestBodySchema = undefined>(url: URL, body?: RequestBodySchema): Promise<ResponseType> {
+    return this.request("GET", url, body);
   }
 
   post<RequestBodySchema, ResponseType>(
@@ -51,8 +51,8 @@ export class FetchHTTPProvider implements HTTPProvider {
     return this.request("PATCH", url, body);
   }
 
-  delete<ResponseType>(url: URL): Promise<ResponseType> {
-    return this.request("DELETE", url);
+  delete<ResponseType, RequestBodySchema = undefined>(url: URL, body?: RequestBodySchema): Promise<ResponseType> {
+    return this.request("DELETE", url, body);
   }
 
   private async request<ResponseType>(
