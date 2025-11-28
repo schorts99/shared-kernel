@@ -1,1 +1,1 @@
-{"version":3,"file":"index.js","sourceRoot":"","sources":["../../../src/state-manager/index.ts"],"names":[],"mappings":";;;AAAA,iDAA+C;AAAtC,6GAAA,YAAY,OAAA;AACrB,iFAA6E;AAApE,2IAAA,0BAA0B,OAAA;AACnC,qEAAiE;AAAxD,+HAAA,oBAAoB,OAAA"}
+{"version":3,"file":"index.js","sourceRoot":"","sources":["../../../src/state-manager/index.ts"],"names":[],"mappings":";;;;;;;;;;;;;;;;;AAAA,iDAA+C;AAAtC,6GAAA,YAAY,OAAA;AACrB,4CAA0B;AAC1B,8CAA4B"}

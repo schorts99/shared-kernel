@@ -1,4 +1,4 @@
 export { StateManager } from "./state-manager";
-export { SessionStorageStateManager } from "./session-storage-state-manager";
-export { InMemoryStateManager } from "./in-memory-state-manager";
+export * from "./browser";
+export * from "./in-memory";
 //# sourceMappingURL=index.d.ts.map

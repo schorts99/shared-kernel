@@ -1,4 +1,4 @@
-import { StateManager } from "./state-manager";
+import { StateManager } from "../state-manager";
 
 export class SessionStorageStateManager<Schema extends Record<string, any>> extends StateManager<Schema> {
   constructor(initialState: Schema) {

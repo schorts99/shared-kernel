@@ -1,10 +1,22 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.InMemoryStateManager = exports.SessionStorageStateManager = exports.StateManager = void 0;
+exports.StateManager = void 0;
 var state_manager_1 = require("./state-manager");
 Object.defineProperty(exports, "StateManager", { enumerable: true, get: function () { return state_manager_1.StateManager; } });
-var session_storage_state_manager_1 = require("./session-storage-state-manager");
-Object.defineProperty(exports, "SessionStorageStateManager", { enumerable: true, get: function () { return session_storage_state_manager_1.SessionStorageStateManager; } });
-var in_memory_state_manager_1 = require("./in-memory-state-manager");
-Object.defineProperty(exports, "InMemoryStateManager", { enumerable: true, get: function () { return in_memory_state_manager_1.InMemoryStateManager; } });
+__exportStar(require("./browser"), exports);
+__exportStar(require("./in-memory"), exports);
 //# sourceMappingURL=index.js.map
