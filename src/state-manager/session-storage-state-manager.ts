@@ -1,9 +1,32 @@
-import { StateManager } from './state-manager';
+import { StateManager } from "./state-manager";
 
 export class SessionStorageStateManager<Schema extends Record<string, any>> extends StateManager<Schema> {
   constructor(initialState: Schema) {
     super(initialState); 
     this.loadPersistedState();
+  }
+
+  public getValue<Key extends keyof Schema>(key: Key) {
+    return this.state[key];
+  }
+
+  public setValue<Key extends keyof Schema>(key: Key, value: Schema[Key]) {
+    this.state = {
+      ...this.state,
+      [key]: value
+    };
+
+    this.persistValue(key, value);
+    this.notifyListeners();
+  }
+
+  public removeValue<Key extends keyof Schema>(key: Key) {
+    const storageKey = String(key);
+    const { [key]: _, ...newState } = this.state;
+    this.state = newState as Schema;
+
+    sessionStorage.removeItem(storageKey);
+    this.notifyListeners();
   }
 
   private loadPersistedState(): void {
@@ -16,32 +39,9 @@ export class SessionStorageStateManager<Schema extends Record<string, any>> exte
     }
   }
 
-  private persistValue<Key extends keyof Schema>(key: Key, value: Schema[Key]): void {
+  private persistValue<Key extends keyof Schema>(key: Key, value: Schema[Key]) {
     const storageKey = String(key); 
 
     sessionStorage.setItem(storageKey, JSON.stringify(value));
-  }
-
-  public async getValue<Key extends keyof Schema>(key: Key): Promise<Schema[Key]> {
-    return this.state[key];
-  }
-
-  public async setValue<Key extends keyof Schema>(key: Key, value: Schema[Key]): Promise<void> {
-    this.state = {
-      ...this.state,
-      [key]: value
-    };
-
-    this.persistValue(key, value);
-    this.notifyListeners();
-  }
-
-  public async removeValue<Key extends keyof Schema>(key: Key): Promise<void> {
-    const storageKey = String(key);
-    const { [key]: _, ...newState } = this.state;
-    this.state = newState as Schema;
-
-    sessionStorage.removeItem(storageKey);
-    this.notifyListeners();
   }
 }

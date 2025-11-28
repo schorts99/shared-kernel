@@ -3,7 +3,7 @@ import { NotAuthenticated, RequireAuthNotImplementedCorrectly } from './exceptio
 import { TranslationResolver } from "../i18n";
 
 export function RequireAuth(onFail?: () => any) {
-  function wrapper<T extends { authProvider?: AuthProvider<any>, translationResolver?: TranslationResolver }, A extends any[], R>(
+  function wrapper<T extends { authProvider?: AuthProvider<any, any>, translationResolver?: TranslationResolver }, A extends any[], R>(
     originalMethod: (this: T, ...args: A) => Promise<R>
   ): (this: T, ...args: A) => Promise<R> {
     return async function (this: T, ...args: A): Promise<R> {

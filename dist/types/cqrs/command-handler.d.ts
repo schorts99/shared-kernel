@@ -1,5 +1,6 @@
 import { Command } from "./command";
-export interface CommandHandler<C extends Command = Command, R = void> {
-    handle(command: C): Promise<R>;
+import { MaybePromise } from "../types";
+export interface CommandHandler<C extends Command = Command, R = void, IsAsync extends boolean = false> {
+    handle(command: C): MaybePromise<IsAsync, R>;
 }
 //# sourceMappingURL=command-handler.d.ts.map

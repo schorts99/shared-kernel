@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.DAO = void 0;
 class DAO {
     deleteMode;
-    constructor(deleteMode = 'HARD') {
+    constructor(deleteMode = "HARD") {
         this.deleteMode = deleteMode;
     }
 }

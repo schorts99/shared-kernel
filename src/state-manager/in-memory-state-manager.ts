@@ -1,21 +1,21 @@
-import { StateManager } from './state-manager';
+import { StateManager } from "./state-manager";
 
 export class InMemoryStateManager<Schema extends Record<string, any>> extends StateManager<Schema> {
   constructor(initialState: Schema = {} as Schema) {
     super(initialState);
   }
 
-  async getValue<Key extends keyof Schema>(key: Key): Promise<Schema[Key]> {
+  getValue<Key extends keyof Schema>(key: Key){
     return this.state[key];
   }
 
-  async setValue<Key extends keyof Schema>(key: Key, value: Schema[Key]): Promise<void> {
+  setValue<Key extends keyof Schema>(key: Key, value: Schema[Key]) {
     this.state[key] = value;
 
     this.notifyListeners();
   }
 
-  async removeValue<Key extends keyof Schema>(key: Key): Promise<void> {
+  removeValue<Key extends keyof Schema>(key: Key) {
     delete this.state[key];
     this.notifyListeners();
   }

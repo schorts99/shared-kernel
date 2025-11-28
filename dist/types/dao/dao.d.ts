@@ -4,16 +4,17 @@ import { Criteria } from "../criteria";
 import { UnitOfWork } from "../unit-of-work";
 import { ValueObject } from "../value-objects";
 import { DeleteMode } from "./delete-mode";
-export declare abstract class DAO<M extends Model, Entity extends BaseEntity<ValueObject, M>> {
+import { MaybePromise } from "../types";
+export declare abstract class DAO<M extends Model, Entity extends BaseEntity<ValueObject, M>, IsAsync extends boolean = false> {
     protected readonly deleteMode: DeleteMode;
     constructor(deleteMode?: DeleteMode);
-    abstract getAll(): Promise<Entity[]>;
-    abstract findByID(id: Entity["id"]["value"]): Promise<Entity | null>;
-    abstract findOneBy(criteria: Criteria): Promise<Entity | null>;
-    abstract search(criteria: Criteria): Promise<Entity[]>;
-    abstract countBy(criteria: Criteria): Promise<number>;
-    abstract create(entity: Entity, uow?: UnitOfWork): Promise<Entity>;
-    abstract update(entity: Entity, uow?: UnitOfWork): Promise<Entity>;
-    abstract delete(entity: Entity, uow?: UnitOfWork): Promise<Entity>;
+    abstract getAll(): MaybePromise<IsAsync, Entity[]>;
+    abstract findByID(id: Entity["id"]["value"]): MaybePromise<IsAsync, Entity | null>;
+    abstract findOneBy(criteria: Criteria): MaybePromise<IsAsync, Entity | null>;
+    abstract search(criteria: Criteria): MaybePromise<IsAsync, Entity[]>;
+    abstract countBy(criteria: Criteria): MaybePromise<IsAsync, number>;
+    abstract create(entity: Entity, uow?: UnitOfWork): MaybePromise<IsAsync, Entity>;
+    abstract update(entity: Entity, uow?: UnitOfWork): MaybePromise<IsAsync, Entity>;
+    abstract delete(entity: Entity, uow?: UnitOfWork): MaybePromise<IsAsync, Entity>;
 }
 //# sourceMappingURL=dao.d.ts.map

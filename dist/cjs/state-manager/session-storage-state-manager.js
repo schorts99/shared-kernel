@@ -7,6 +7,24 @@ class SessionStorageStateManager extends state_manager_1.StateManager {
         super(initialState);
         this.loadPersistedState();
     }
+    getValue(key) {
+        return this.state[key];
+    }
+    setValue(key, value) {
+        this.state = {
+            ...this.state,
+            [key]: value
+        };
+        this.persistValue(key, value);
+        this.notifyListeners();
+    }
+    removeValue(key) {
+        const storageKey = String(key);
+        const { [key]: _, ...newState } = this.state;
+        this.state = newState;
+        sessionStorage.removeItem(storageKey);
+        this.notifyListeners();
+    }
     loadPersistedState() {
         const keys = Object.keys(this.state);
         for (const key of keys) {
@@ -18,24 +36,6 @@ class SessionStorageStateManager extends state_manager_1.StateManager {
     persistValue(key, value) {
         const storageKey = String(key);
         sessionStorage.setItem(storageKey, JSON.stringify(value));
-    }
-    async getValue(key) {
-        return this.state[key];
-    }
-    async setValue(key, value) {
-        this.state = {
-            ...this.state,
-            [key]: value
-        };
-        this.persistValue(key, value);
-        this.notifyListeners();
-    }
-    async removeValue(key) {
-        const storageKey = String(key);
-        const { [key]: _, ...newState } = this.state;
-        this.state = newState;
-        sessionStorage.removeItem(storageKey);
-        this.notifyListeners();
     }
 }
 exports.SessionStorageStateManager = SessionStorageStateManager;

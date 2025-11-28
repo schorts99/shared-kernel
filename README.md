@@ -90,10 +90,6 @@ Translation keys are centralized in registries for discoverability and tooling, 
 - **DAO:** Generic interface defining data access operations for domain entities.
 - **UnitOfWork:** Interface enabling transactional coordination across multiple persistence operations.
 
-### 🧰 Dependency Injection
-
-- **DependencyRegistry:** A static, type-safe registry for managing application-level dependencies. Inspired by the EntityRegistry pattern, it enables centralized registration and resolution of services, use cases, and state managers without relying on external DI frameworks. Supports both singleton instances and factory-based registrations.
-
 ### 🧠 State Manager
 
 - **StateManager:** Abstract reactive state manager with listener support.

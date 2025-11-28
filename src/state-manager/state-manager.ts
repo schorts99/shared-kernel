@@ -1,4 +1,6 @@
-export abstract class StateManager<Schema extends Record<string, any>> {
+import { MaybePromise } from "../types";
+
+export abstract class StateManager<Schema extends Record<string, any>, IsAsync extends boolean = false> {
   protected state: Schema;
   private listeners: Array<(state: Schema) => void> = [];
 
@@ -6,9 +8,9 @@ export abstract class StateManager<Schema extends Record<string, any>> {
     this.state = initialState;
   }
 
-  abstract getValue<Key extends keyof Schema>(key: Key): Promise<Schema[Key]>;
-  abstract setValue<Key extends keyof Schema>(key: Key, value: Schema[Key]): Promise<void>;
-  abstract removeValue<Key extends keyof Schema>(key: Key): Promise<void>;
+  abstract getValue<Key extends keyof Schema>(key: Key): MaybePromise<IsAsync, Schema[Key]>;
+  abstract setValue<Key extends keyof Schema>(key: Key, value: Schema[Key]): MaybePromise<IsAsync, void>;
+  abstract removeValue<Key extends keyof Schema>(key: Key): MaybePromise<IsAsync, void>;
 
   getState(): Schema {
     return this.state;

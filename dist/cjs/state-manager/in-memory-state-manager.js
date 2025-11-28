@@ -6,14 +6,14 @@ class InMemoryStateManager extends state_manager_1.StateManager {
     constructor(initialState = {}) {
         super(initialState);
     }
-    async getValue(key) {
+    getValue(key) {
         return this.state[key];
     }
-    async setValue(key, value) {
+    setValue(key, value) {
         this.state[key] = value;
         this.notifyListeners();
     }
-    async removeValue(key) {
+    removeValue(key) {
         delete this.state[key];
         this.notifyListeners();
     }

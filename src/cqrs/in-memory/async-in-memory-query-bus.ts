@@ -1,13 +1,13 @@
 import { Query, QueryBus, QueryHandler, QueryNotRegistered } from "..";
 
-export class AsyncInMemoryQueryBus implements QueryBus {
+export class AsyncInMemoryQueryBus implements QueryBus<true> {
   private readonly handlers = new Map<string, QueryHandler>();
 
   register<Q extends Query, R>(type: string, handler: QueryHandler<Q, R>): void {
     this.handlers.set(type, handler);
   }
 
-  async dispatch<Q extends Query, R>(query: Q): Promise<R> {
+  async dispatch<Q extends Query, R>(query: Q) {
     const handler = this.handlers.get(query.getType()) as QueryHandler<Q, R> | undefined;
 
     if (!handler) {

@@ -1,28 +1,28 @@
 import { DomainEventPrimitives } from "../../domain-events";
 import { EventStore } from "../event-store";
 
-export class AsyncInMemoryEventStore implements EventStore {
+export class AsyncInMemoryEventStore implements EventStore<true> {
   private readonly events: DomainEventPrimitives[] = [];
 
-  async save(primitives: DomainEventPrimitives): Promise<void> {
+  async save(primitives: DomainEventPrimitives) {
     this.events.push(primitives);
   }
 
-  async all(): Promise<DomainEventPrimitives[]> {
+  async all() {
     return [...this.events];
   }
 
-  async delete(id: string): Promise<void> {
+  async delete(id: string) {
     const index = this.events.findIndex(e => e.id === id);
 
     if (index !== -1) this.events.splice(index, 1);
   }
 
-  async requeue(primitives: DomainEventPrimitives): Promise<void> {
+  async requeue(primitives: DomainEventPrimitives) {
     this.events.push(primitives);
   }
 
-  async clear(): Promise<void> {
+  async clear() {
     this.events.length = 0;
   }
 }

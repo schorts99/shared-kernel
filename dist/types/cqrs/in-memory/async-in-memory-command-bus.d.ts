@@ -1,5 +1,5 @@
 import { CommandBus, Command, CommandHandler } from "..";
-export declare class AsyncInMemoryCommandBus implements CommandBus {
+export declare class AsyncInMemoryCommandBus implements CommandBus<true> {
     private readonly handlers;
     register<C extends Command, R = void>(type: string, handler: CommandHandler<C, R>): void;
     dispatch<C extends Command, R = void>(command: C): Promise<R>;

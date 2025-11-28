@@ -1,6 +1,6 @@
 import { DomainEventPrimitives } from "../../domain-events";
 import { EventStore } from "../event-store";
-export declare class AsyncInMemoryEventStore implements EventStore {
+export declare class AsyncInMemoryEventStore implements EventStore<true> {
     private readonly events;
     save(primitives: DomainEventPrimitives): Promise<void>;
     all(): Promise<DomainEventPrimitives[]>;

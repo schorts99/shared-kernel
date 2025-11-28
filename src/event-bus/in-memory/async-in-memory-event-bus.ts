@@ -5,14 +5,14 @@ import { EventSubscriber } from "../event-subscriber";
 import { EventBus } from "../event-bus";
 import { DeadLetterStore } from "../dead-letter-store";
 
-export class AsyncInMemoryEventBus implements EventBus {
+export class AsyncInMemoryEventBus implements EventBus<true> {
   private readonly subscribers = new Map<string, EventSubscriber[]>();
-  private readonly store: EventStore;
+  private readonly store: EventStore<true>;
   private readonly maxRetries: number;
   private readonly deadLetterStore: DeadLetterStore | undefined;
 
   constructor(
-    store: EventStore = new AsyncInMemoryEventStore(),
+    store: EventStore<true> = new AsyncInMemoryEventStore(),
     maxRetries = 3,
     deadLetterStore?: DeadLetterStore,
   ) {
@@ -21,7 +21,7 @@ export class AsyncInMemoryEventBus implements EventBus {
     this.deadLetterStore = deadLetterStore;
   }
 
-  subscribe<Event extends DomainEvent>(eventName: string, subscriber: EventSubscriber<Event>): void {
+  subscribe<Event extends DomainEvent>(eventName: string, subscriber: EventSubscriber<Event>) {
     if (!this.subscribers.has(eventName)) {
       this.subscribers.set(eventName, []);
     }
@@ -29,7 +29,7 @@ export class AsyncInMemoryEventBus implements EventBus {
     this.subscribers.get(eventName)!.push(subscriber);
   }
 
-  async publish<Event extends DomainEvent>(event: Event): Promise<void> {
+  async publish<Event extends DomainEvent>(event: Event) {
     const primitives = event.toPrimitives();
 
     this.store.save(primitives);
@@ -37,7 +37,7 @@ export class AsyncInMemoryEventBus implements EventBus {
     await this.dispatch(event);
   }
 
-  private async dispatch(event: DomainEvent): Promise<void> {
+  private async dispatch(event: DomainEvent) {
     const eventName = event.getEventName();
     const subs = this.subscribers.get(eventName) ?? [];
     const primitives = event.toPrimitives();
@@ -71,7 +71,7 @@ export class AsyncInMemoryEventBus implements EventBus {
     }
   }
 
-  async replay(): Promise<void> {
+  async replay() {
     const events = await this.store.all();
 
     for (const primitives of events) {
