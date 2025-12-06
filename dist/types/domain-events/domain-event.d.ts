@@ -14,6 +14,6 @@ export declare abstract class DomainEvent<PayloadSchema = {}> {
     abstract getEventName(): string;
     toPrimitives(): DomainEventPrimitives<PayloadSchema>;
     ack?: () => void;
-    requeue?: () => void;
+    requeue?: (error?: Error) => void;
 }
 //# sourceMappingURL=domain-event.d.ts.map

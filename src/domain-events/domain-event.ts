@@ -24,5 +24,5 @@ export abstract class DomainEvent<PayloadSchema = {}> {
   }
 
   ack?: () => void;
-  requeue?: () => void;
+  requeue?: (error?: Error) => void;
 }

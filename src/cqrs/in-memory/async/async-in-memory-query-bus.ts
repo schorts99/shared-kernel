@@ -1,4 +1,4 @@
-import { Query, QueryBus, QueryHandler, QueryNotRegistered } from "..";
+import { Query, QueryBus, QueryHandler, QueryNotRegistered } from "../../index";
 
 export class AsyncInMemoryQueryBus implements QueryBus<true> {
   private readonly handlers = new Map<string, QueryHandler>();

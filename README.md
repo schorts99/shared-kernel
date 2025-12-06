@@ -35,7 +35,7 @@ npm install @schorts/shared-kernel --save
 
 ### 🔁 Event Bus
 
-- **AsyncInMemoryEventBus:** Lightweight, in-memory event dispatcher with support for retries, acknowledgments, and requeueing. Designed for testing, local development, or as a foundation for more robust event-driven architectures.
+- **InMemoryEventBus:** Lightweight, in-memory event dispatcher with support for retries, acknowledgments, and requeueing. Designed for testing, local development, or as a foundation for more robust event-driven architectures.
 - **DomainEventRegistry:** Centralized registry for hydrating polymorphic domain events from serialized primitives.
 - **EventSubscriber:** Interface for subscribing to specific event types with clean, type-safe handlers.
 - **InMemoryEventStore:** Simple event store for tracking and replaying events, with retry metadata and bounded requeue support.

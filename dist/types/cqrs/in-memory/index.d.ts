@@ -1,3 +1,3 @@
-export { AsyncInMemoryCommandBus } from "./async-in-memory-command-bus";
-export { AsyncInMemoryQueryBus } from "./async-in-memory-query-bus";
+export * from "./async";
+export * from "./sync";
 //# sourceMappingURL=index.d.ts.map

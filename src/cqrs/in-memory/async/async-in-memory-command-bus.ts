@@ -1,4 +1,4 @@
-import { CommandBus, Command, CommandHandler, CommandNotRegistered } from "..";
+import { CommandBus, Command, CommandHandler, CommandNotRegistered } from "../../index";
 
 export class AsyncInMemoryCommandBus implements CommandBus<true> {
   private readonly handlers = new Map<string, CommandHandler<Command, unknown>>();

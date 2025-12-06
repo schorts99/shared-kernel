@@ -1,5 +1,5 @@
-import { DomainEventPrimitives } from "../../domain-events";
-import { EventStore } from "../event-store";
+import { DomainEventPrimitives } from "../../../domain-events";
+import { EventStore } from "../../event-store";
 
 export class AsyncInMemoryEventStore implements EventStore<true> {
   private readonly events: DomainEventPrimitives[] = [];

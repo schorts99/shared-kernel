@@ -1,9 +1,9 @@
-import { DomainEvent, DomainEventRegistry } from "../../domain-events";
+import { DomainEvent, DomainEventRegistry } from "../../../domain-events";
 import { AsyncInMemoryEventStore } from "./async-in-memory-event-store";
-import { EventStore } from "../event-store";
-import { EventSubscriber } from "../event-subscriber";
-import { EventBus } from "../event-bus";
-import { DeadLetterStore } from "../dead-letter-store";
+import { EventStore } from "../../event-store";
+import { EventSubscriber } from "../../event-subscriber";
+import { EventBus } from "../../event-bus";
+import { DeadLetterStore } from "../../dead-letter-store";
 
 export class AsyncInMemoryEventBus implements EventBus<true> {
   private readonly subscribers = new Map<string, EventSubscriber[]>();
@@ -43,7 +43,7 @@ export class AsyncInMemoryEventBus implements EventBus<true> {
     const primitives = event.toPrimitives();
 
     event.ack = () => this.store.delete(event.id);
-    event.requeue = () => {
+    event.requeue = (error?: Error) => {
       event.ack?.();
 
       if (event.meta.retries < this.maxRetries) {
@@ -55,10 +55,9 @@ export class AsyncInMemoryEventBus implements EventBus<true> {
         this.store.requeue(updatedPrimitives);
         this.publish(DomainEventRegistry.create(updatedPrimitives));
       } else if (this.deadLetterStore) {
-        const reason = `Exceeded max retries (${this.maxRetries})`;
+        const reason = error ? error.message : `Exceeded max retries (${this.maxRetries})`;
 
         this.deadLetterStore.add(primitives, reason);
-        console.warn(`Event ${event.id} moved to DLQ: ${reason}`);
       }
     };
 
@@ -66,7 +65,7 @@ export class AsyncInMemoryEventBus implements EventBus<true> {
       try {
         await sub.handle(event);
       } catch (err) {
-        event.requeue?.();
+        event.requeue?.(err as Error);
       }
     }
   }

@@ -1,5 +1,5 @@
-import { DeadLetterStore } from "../dead-letter-store";
-import { DomainEventPrimitives } from "../../domain-events";
+import { DeadLetterStore } from "../../dead-letter-store";
+import { DomainEventPrimitives } from "../../../domain-events";
 
 export class AsyncInMemoryDeadLetterStore implements DeadLetterStore<true> {
   private readonly failed: Array<{ primitives: DomainEventPrimitives; reason: string }> = [];
