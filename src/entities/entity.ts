@@ -19,7 +19,8 @@ export abstract class Entity<IDValue extends ValueObject, M extends Model> {
   }
 
   abstract toPrimitives(): M;
+
   static fromPrimitives<M extends Model>(_model: M) {
-    throw new Error("Method not implemented.");
+    throw new Error("Entity reconstruction not implemented.");
   }
 }

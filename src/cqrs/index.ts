@@ -6,3 +6,5 @@ export type { QueryHandler } from "./query-handler";
 export type { Query } from "./query";
 export * from "./exceptions";
 export * from "./in-memory";
+export * from "./async";
+export * from "./sync";

@@ -1,1 +1,0 @@
-{"version":3,"file":"predicate.d.ts","sourceRoot":"","sources":["../../../src/abac/predicate.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,YAAY,EAAE,MAAM,uBAAuB,CAAC;AAE1D,MAAM,MAAM,SAAS,CAAC,IAAI,SAAS;IAAE,EAAE,EAAE,MAAM,CAAA;CAAE,EAAE,QAAQ,SAAS,YAAY,IAAI,CAAC,IAAI,EAAE,IAAI,EAAE,QAAQ,EAAE,QAAQ,KAAK,OAAO,CAAC"}

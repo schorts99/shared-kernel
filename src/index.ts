@@ -1,4 +1,5 @@
 export * from "./abac";
+export * from "./aggregates";
 export * from "./auth";
 export * from "./converters";
 export * from "./cqrs";
@@ -18,7 +19,6 @@ export * from "./pub-sub";
 export * from "./rbac";
 export * from "./result";
 export * from "./state-manager";
-export * from "./telemetry";
 export * from "./tour-guide";
 export * from "./types";
 export * from "./unit-of-work";

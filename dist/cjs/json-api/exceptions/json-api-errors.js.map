@@ -1,1 +1,0 @@
-{"version":3,"file":"json-api-errors.js","sourceRoot":"","sources":["../../../../src/json-api/exceptions/json-api-errors.ts"],"names":[],"mappings":";;;AAAA,MAAa,aAAc,SAAQ,KAAK;IAC7B,MAAM,CAQZ;IAEH,YAAY,MAA+B;QACzC,KAAK,EAAE,CAAC;QAER,IAAI,CAAC,MAAM,GAAG,MAAM,CAAC;IACvB,CAAC;CACF;AAhBD,sCAgBC"}

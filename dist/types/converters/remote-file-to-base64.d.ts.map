@@ -1,1 +1,0 @@
-{"version":3,"file":"remote-file-to-base64.d.ts","sourceRoot":"","sources":["../../../src/converters/remote-file-to-base64.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,YAAY,EAAE,MAAM,SAAS,CAAC;AAEvC,qBAAa,kBAAkB;IAE3B,OAAO,CAAC,QAAQ,CAAC,YAAY;gBAAZ,YAAY,EAAE,YAAY;IAGvC,OAAO,CAAC,GAAG,EAAE,GAAG,GAAG,OAAO,CAAC,MAAM,CAAC;CAWzC"}

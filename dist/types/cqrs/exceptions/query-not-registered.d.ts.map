@@ -1,1 +1,0 @@
-{"version":3,"file":"query-not-registered.d.ts","sourceRoot":"","sources":["../../../../src/cqrs/exceptions/query-not-registered.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,mBAAmB,EAAE,MAAM,YAAY,CAAC;AAEjD,qBAAa,kBAAmB,SAAQ,KAAK;gBAC/B,KAAK,EAAE,MAAM,EAAE,mBAAmB,CAAC,EAAE,mBAAmB;CAOrE"}

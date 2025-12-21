@@ -1,6 +1,6 @@
 {
   "name": "@schorts/shared-kernel",
-  "version": "8.2.0",
+  "version": "8.3.0",
   "description": "A modular, type-safe foundation for building expressive, maintainable applications. This package provides core abstractions for domain modeling, HTTP integration, authentication, state management, and more — designed to be framework-agnostic and highly extensible.",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -15,6 +15,11 @@
       "import": "./dist/esm/abac/index.js",
       "require": "./dist/cjs/abac/index.js",
       "types": "./dist/types/abac/index.d.ts"
+    },
+    "./aggregates": {
+      "import": "./dist/esm/aggregates/index.js",
+      "require": "./dist/cjs/aggregates/index.js",
+      "types": "./dist/types/aggregates/index.d.ts"
     },
     "./auth": {
       "import": "./dist/esm/auth/index.js",
@@ -111,11 +116,6 @@
       "require": "./dist/cjs/state-manager/index.js",
       "types": "./dist/types/state-manager/index.d.ts"
     },
-    "./telemetry": {
-      "import": "./dist/esm/telemetry/index.js",
-      "require": "./dist/cjs/telemetry/index.js",
-      "types": "./dist/types/telemetry/index.d.ts"
-    },
     "./tour-guide": {
       "import": "./dist/esm/tour-guide/index.js",
       "require": "./dist/cjs/tour-guide/index.js",
@@ -169,6 +169,8 @@
   },
   "keywords": [
     "shared-kernel",
+    "aggregates",
+    "aggregate-root",
     "auth",
     "jsonapi",
     "dao",

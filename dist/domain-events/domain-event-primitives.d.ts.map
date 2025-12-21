@@ -1,1 +1,0 @@
-{"version":3,"file":"domain-event-primitives.d.ts","sourceRoot":"","sources":["../../src/domain-events/domain-event-primitives.ts"],"names":[],"mappings":"AAAA,MAAM,MAAM,qBAAqB,CAAC,aAAa,GAAG,EAAE,IAAI;IACtD,EAAE,EAAE,MAAM,CAAC;IACX,WAAW,EAAE,MAAM,CAAC;IACpB,IAAI,EAAE,MAAM,CAAC;IACb,OAAO,EAAE,MAAM,CAAC;IAChB,OAAO,EAAE,aAAa,CAAC;CACxB,CAAC"}
