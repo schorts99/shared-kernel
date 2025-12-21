@@ -1,14 +1,25 @@
-import { Entity } from "../entities";
 import { ValueObject } from "../value-objects";
-import { Model as BaseModel } from "../models";
+import { DomainEvent } from "../domain-events";
 
-export abstract class AggregateRoot<
-  IDValue extends ValueObject,
-  Model extends BaseModel
-> extends Entity<IDValue, Model> {
-  abstract override toPrimitives(): Model;
+export abstract class AggregateRoot<IDValue extends ValueObject> {
+  private domainEvents: Array<DomainEvent> = [];
 
-  static override fromPrimitives<Model extends BaseModel>(_model: Model) {
+  constructor(readonly id: IDValue) {}
+
+  pullDomainEvents(): Array<DomainEvent> {
+    const domainEvents = [...this.domainEvents];
+    this.domainEvents = [];
+
+    return domainEvents;
+  }
+
+  recordDomainEvent(domainEvent: DomainEvent): void {
+    this.domainEvents.push(domainEvent);
+  }
+
+  abstract toPrimitives(): Record<string, any>;
+
+  static fromPrimitives<Model extends Record<string, any>>(_model: Model) {
     throw new Error("AggregateRoot reconstruction not implemented.");
   }
 }
