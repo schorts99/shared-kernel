@@ -3,6 +3,7 @@ export type JSONAPISingle<EntityAttributes> = {
     id: string;
     type: string;
     attributes: Omit<EntityAttributes, "id">;
+    relationships?: Record<string, any>;
   };
   included?: Array<{
     id: string;
