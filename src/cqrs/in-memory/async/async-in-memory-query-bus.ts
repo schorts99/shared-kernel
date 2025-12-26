@@ -1,14 +1,14 @@
-import { Query, QueryBus, QueryHandler, QueryNotRegistered } from "../../index";
+import { Query, QueryBus, AsyncQueryHandler, QueryNotRegistered } from "../../index";
 
 export class AsyncInMemoryQueryBus implements QueryBus<true> {
-  private readonly handlers = new Map<string, QueryHandler>();
+  private readonly handlers = new Map<string, AsyncQueryHandler>();
 
-  register<Q extends Query, R>(type: string, handler: QueryHandler<Q, R>): void {
+  register<Q extends Query, R>(type: string, handler: AsyncQueryHandler<Q, R>): void {
     this.handlers.set(type, handler);
   }
 
   async dispatch<Q extends Query, R>(query: Q) {
-    const handler = this.handlers.get(query.getType()) as QueryHandler<Q, R> | undefined;
+    const handler = this.handlers.get(query.getType()) as AsyncQueryHandler<Q, R> | undefined;
 
     if (!handler) {
       throw new QueryNotRegistered(query.getType());
