@@ -1,6 +1,6 @@
-import { CommandBus, Command, AsyncCommandHandler, CommandNotRegistered } from "../..";
+import { AsyncCommandBus, Command, AsyncCommandHandler, CommandNotRegistered } from "../..";
 
-export class AsyncInMemoryCommandBus implements CommandBus<true> {
+export class AsyncInMemoryCommandBus implements AsyncCommandBus {
   private readonly handlers = new Map<string, AsyncCommandHandler<Command, unknown>>();
 
   register<C extends Command, R = void>(type: string, handler: AsyncCommandHandler<C, R>) {
