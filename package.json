@@ -1,6 +1,6 @@
 {
   "name": "@schorts/shared-kernel",
-  "version": "8.6.0",
+  "version": "8.7.0",
   "description": "A modular, type-safe foundation for building expressive, maintainable applications. This package provides core abstractions for domain modeling, HTTP integration, authentication, state management, and more — designed to be framework-agnostic and highly extensible.",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -75,6 +75,11 @@
       "import": "./dist/esm/i18n/index.js",
       "require": "./dist/cjs/i18n/index.js",
       "types": "./dist/types/i18n/index.d.ts"
+    },
+    "./identity-providers": {
+      "import": "./dist/esm/identity-providers/index.js",
+      "require": "./dist/cjs/identity-providers/index.js",
+      "types": "./dist/types/identity-providers/index.d.ts"
     },
     "./json-api": {
       "import": "./dist/esm/json-api/index.js",
@@ -186,7 +191,8 @@
     "hexagonal-architecture",
     "domain-model",
     "ddd",
-    "cqrs"
+    "cqrs",
+    "identity-provider"
   ],
   "bugs": {
     "url": "https://github.com/schorts99/shared-kernel/issues"
