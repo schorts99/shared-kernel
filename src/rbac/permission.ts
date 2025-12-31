@@ -1,4 +1,6 @@
-export type Permission = {
+type BaseAction = "read" | "write" | "delete" | "manage";
+
+export type Permission<Action extends string = BaseAction> = {
   resource: string;
-  action: "read" | "write" | "delete" | "manage";
+  action: Action;
 }
