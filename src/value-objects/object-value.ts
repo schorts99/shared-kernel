@@ -18,19 +18,26 @@ export type ObjectSchema<Type> = {
     : ObjectSchema<Type[Key]>;
 };
 
-export abstract class ObjectValue<Type = any> implements ValueObject {
+export abstract class ObjectValue<Type = any, Optional extends boolean = false> implements ValueObject {
   readonly valueType = "Object";
-  readonly value: Type;
+  readonly value: Optional extends true ? Type | null : Type;
   readonly schema: ObjectSchema<Type>;
+  readonly optional: Optional;
   abstract readonly attributeName: string;
 
-  constructor(value: Type, schema: ObjectSchema<Type>) {
-    this.value = this.deepFreeze(value);
+  constructor(value: Optional extends true ? Type | null : Type, schema: ObjectSchema<Type>, optional: Optional = false as Optional) {
+    this.optional = optional;
     this.schema = schema;
+    this.value = (optional && value === null)
+      ? null as any
+      : this.deepFreeze(value);
   }
 
   get isValid(): boolean {
-    return this.validateObject(this.value, this.schema);
+    if (this.optional && this.value === null) return true;
+    if (this.value === null) return false;
+    
+    return this.validateObject(this.value as Type, this.schema);
   }
 
   equals(valueObject: unknown): boolean {
