@@ -3,7 +3,7 @@ import { BaseResource } from './base-resource';
 import { Predicate } from '../abac';
 
 export abstract class RBACPolicy<Action extends string = BaseAction> {
-  abstract getPermissions(role: string): Permission[];
+  abstract getPermissions(role: string): Permission<Action>[];
 
   can(role: string, action: Action, resource: BaseResource): boolean {
     const permissions = this.getPermissions(role);
