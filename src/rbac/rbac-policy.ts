@@ -1,11 +1,11 @@
-import { Permission } from './permission';
+import { Permission, BaseAction } from './permission';
 import { BaseResource } from './base-resource';
 import { Predicate } from '../abac';
 
-export abstract class RBACPolicy {
+export abstract class RBACPolicy<Action extends string = BaseAction> {
   abstract getPermissions(role: string): Permission[];
 
-  can(role: string, action: Permission['action'], resource: BaseResource): boolean {
+  can(role: string, action: Action, resource: BaseResource): boolean {
     const permissions = this.getPermissions(role);
 
     return permissions.some(
@@ -18,7 +18,7 @@ export abstract class RBACPolicy {
   canWithAttributes<User extends  { id: string }, Resource extends BaseResource>(
     user: User,
     role: string,
-    action: Permission['action'],
+    action: Action,
     resource: Resource,
     predicates: Predicate<User, Resource>[],
   ): boolean {
@@ -30,7 +30,7 @@ export abstract class RBACPolicy {
   canAnyWithAttributes<User extends { id: string }, Resource extends BaseResource>(
     user: User,
     role: string,
-    action: Permission['action'],
+    action: Action,
     resource: Resource,
     predicates: Predicate<User, Resource>[]
   ): boolean {
