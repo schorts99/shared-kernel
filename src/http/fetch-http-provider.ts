@@ -32,7 +32,7 @@ export class FetchHTTPProvider implements HTTPProvider {
 
   post<RequestBodySchema, ResponseType>(
     url: URL,
-    body: RequestBodySchema
+    body?: RequestBodySchema
   ): Promise<ResponseType> {
     return this.request("POST", url, body);
   }
