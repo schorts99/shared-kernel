@@ -3,9 +3,11 @@ import { EventStore } from "../../event-store";
 
 export class AsyncInMemoryEventStore implements EventStore<true> {
   private readonly events: DomainEventPrimitives[] = [];
+  private readonly processedEventIds = new Set<string>();
 
   async save(primitives: DomainEventPrimitives) {
     this.events.push(primitives);
+    this.processedEventIds.add(primitives.id);
   }
 
   async all() {
@@ -24,5 +26,10 @@ export class AsyncInMemoryEventStore implements EventStore<true> {
 
   async clear() {
     this.events.length = 0;
+    this.processedEventIds.clear();
+  }
+
+  async isProcessed(id: string): Promise<boolean> {
+    return this.processedEventIds.has(id);
   }
 }

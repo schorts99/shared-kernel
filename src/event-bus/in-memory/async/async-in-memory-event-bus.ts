@@ -42,6 +42,10 @@ export class AsyncInMemoryEventBus implements EventBus<true> {
     const subs = this.subscribers.get(eventName) ?? [];
     const primitives = event.toPrimitives();
 
+    if (await this.store.isProcessed(event.id)) {
+      return;
+    }
+
     const retrySubscriber = async (failedEvent: DomainEvent, subscriber: EventSubscriber, error?: Error) => {
       failedEvent.ack?.();
 

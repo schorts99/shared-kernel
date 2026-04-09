@@ -3,9 +3,11 @@ import { EventStore } from "../../event-store";
 
 export class SyncInMemoryEventStore implements EventStore {
   private readonly events: DomainEventPrimitives[] = [];
+  private readonly processedEventIds = new Set<string>();
 
   save(primitives: DomainEventPrimitives) {
     this.events.push(primitives);
+    this.processedEventIds.add(primitives.id);
   }
 
   all() {
@@ -24,5 +26,10 @@ export class SyncInMemoryEventStore implements EventStore {
 
   clear() {
     this.events.length = 0;
+    this.processedEventIds.clear();
+  }
+
+  isProcessed(id: string): boolean {
+    return this.processedEventIds.has(id);
   }
 }

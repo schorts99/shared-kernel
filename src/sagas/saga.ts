@@ -43,7 +43,12 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
     const persisted = await this.stateStore.load(sagaId);
     const state = persisted?.data ?? this.getInitialState();
     const completedSteps = persisted?.completedSteps ?? [];
+    const processedEventIds = persisted?.processedEventIds ?? [];
     const handler = this.handlers.get(event.getEventName());
+
+    if (processedEventIds.includes(event.id)) {
+      return;
+    }
 
     if (!handler) {
       return;
@@ -63,16 +68,16 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
         },
       });
 
-      await this.saveState(sagaId, "pending");
+      await this.saveState(sagaId, "pending", event.id);
     } catch (error) {
       await this.rollback();
-      await this.saveState(sagaId, "failed");
+      await this.saveState(sagaId, "failed", event.id);
       throw error;
     }
   }
 
-  protected async completeSaga(sagaId: string): Promise<void> {
-    await this.saveState(sagaId, "completed");
+  protected async completeSaga(sagaId: string, eventId?: string): Promise<void> {
+    await this.saveState(sagaId, "completed", eventId);
   }
 
   protected completeStep(stepId: string, compensation?: SagaCompensationAction): void {
@@ -95,10 +100,15 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
     }
   }
 
-  private async saveState(sagaId: string, status: SagaStatus): Promise<void> {
+  private async saveState(sagaId: string, status: SagaStatus, eventId?: string): Promise<void> {
+    const processedEventIds = eventId ? [eventId] : [];
+    const persisted = await this.stateStore.load(sagaId);
+    const allProcessedEventIds = [...(persisted?.processedEventIds ?? []), ...processedEventIds];
+
     await this.stateStore.save(sagaId, {
       status,
       completedSteps: this.completedSteps,
+      processedEventIds: allProcessedEventIds,
       data: this.currentState,
     });
   }

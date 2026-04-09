@@ -7,4 +7,5 @@ export interface EventStore<IsAsync extends boolean = false> {
   delete(id: string): MaybePromise<IsAsync, void>;
   requeue(primitives: DomainEventPrimitives): MaybePromise<IsAsync, void>;
   clear(): MaybePromise<IsAsync, void>;
+  isProcessed(id: string): MaybePromise<IsAsync, boolean>;
 }

@@ -42,6 +42,10 @@ export class SyncInMemoryEventBus implements EventBus {
     const subs = this.subscribers.get(eventName) ?? [];
     const primitives = event.toPrimitives();
 
+    if (this.store.isProcessed(event.id)) {
+      return;
+    }
+
     const retrySubscriber = (failedEvent: DomainEvent, subscriber: EventSubscriber, error?: Error) => {
       failedEvent.ack?.();
 

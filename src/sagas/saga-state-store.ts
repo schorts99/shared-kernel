@@ -5,6 +5,7 @@ export type SagaStatus = "pending" | "completed" | "failed";
 export type SagaInstanceState<Schema = {}> = {
   status: SagaStatus;
   completedSteps: string[];
+  processedEventIds: string[];
   data: Schema;
 };
 
