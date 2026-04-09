@@ -14,7 +14,6 @@ npm install @schorts/shared-kernel --save
 
 - **AuthProvider:** Abstract interface for authentication strategies.
 - **IdentityProvider:** Contract for external identity services (e.g., Firebase, Auth0, Cognito). Defines methods for registering users, authenticating credentials, verifying tokens, and retrieving user profiles in a vendor‑agnostic way.
-- **RequireAuthDecorator:** Method-level decorator for enforcing authentication.
 
 ### 🛡️ RBAC (Role-Based Access Control)
 - **RBACPolicy:** Abstract base class for defining role-based permission logic. Supports wildcard actions (manage) and resources (*), ownership checks, and composable access control strategies.
