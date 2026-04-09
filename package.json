@@ -116,6 +116,11 @@
       "require": "./dist/cjs/result/index.js",
       "types": "./dist/types/result/index.d.ts"
     },
+    "./sagas": {
+      "import": "./dist/esm/sagas/index.js",
+      "require": "./dist/cjs/sagas/index.js",
+      "types": "./dist/types/sagas/index.d.ts"
+    },
     "./state-manager": {
       "import": "./dist/esm/state-manager/index.js",
       "require": "./dist/cjs/state-manager/index.js",

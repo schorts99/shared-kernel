@@ -42,18 +42,19 @@ export class SyncInMemoryEventBus implements EventBus {
     const subs = this.subscribers.get(eventName) ?? [];
     const primitives = event.toPrimitives();
 
-    event.ack = () => this.store.delete(event.id);
-    event.requeue = (error?: Error) => {
-      event.ack?.();
+    const retrySubscriber = (failedEvent: DomainEvent, subscriber: EventSubscriber, error?: Error) => {
+      failedEvent.ack?.();
 
-      if (event.meta.retries < this.maxRetries) {
+      if (failedEvent.meta.retries < this.maxRetries) {
         const updatedPrimitives = {
           ...primitives,
-          meta: { ...primitives.meta, retries: event.meta.retries + 1 },
+          meta: { ...failedEvent.meta, retries: failedEvent.meta.retries + 1 },
         };
 
         this.store.requeue(updatedPrimitives);
-        this.publish(DomainEventRegistry.create(updatedPrimitives));
+
+        const retryEvent = DomainEventRegistry.create(updatedPrimitives);
+        executeSubscriber(subscriber, retryEvent);
       } else if (this.deadLetterStore) {
         const reason = error ? error.message : `Exceeded max retries (${this.maxRetries})`;
 
@@ -61,11 +62,18 @@ export class SyncInMemoryEventBus implements EventBus {
       }
     };
 
+    const executeSubscriber = (subscriber: EventSubscriber, currentEvent: DomainEvent) => {
+      currentEvent.ack = () => this.store.delete(currentEvent.id);
+      currentEvent.requeue = (error?: Error) => retrySubscriber(currentEvent, subscriber, error);
+
+      subscriber.handle(currentEvent);
+    };
+
     for (const sub of subs) {
       try {
-        sub.handle(event);
+        executeSubscriber(sub, event);
       } catch (err) {
-        event.requeue?.(err as Error);
+        retrySubscriber(event, sub, err as Error);
       }
     }
   }
