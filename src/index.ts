@@ -8,6 +8,7 @@ export * from "./dao";
 export * from "./domain-events";
 export * from "./entities";
 export * from "./event-bus";
+export * from "./sagas";
 export * from "./formatters";
 export * from "./http";
 export * from "./i18n";
