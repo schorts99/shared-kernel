@@ -56,14 +56,14 @@ export abstract class AggregateRoot<IDValue extends ValueObject> {
 
   abstract toPrimitives(): Record<string, any>;
 
-  static fromPrimitives<Model extends Record<string, any>, T extends AggregateRoot<any>>(
-    this: new (id: any, version?: number) => T,
+  static fromPrimitives<Model extends Record<string, any>>(
+    this: new (id: any, version?: number) => AggregateRoot<any>,
     model: Model & { id: any; version?: number }
-  ): T {
+  ): InstanceType<typeof this> {
     const { id, version = 0, ...data } = model;
     const instance = new this(id, version);
 
-    if (instance.restoreFromPrimitives) {
+    if ((instance as any).restoreFromPrimitives) {
       (instance as any).restoreFromPrimitives(data);
     }
 
