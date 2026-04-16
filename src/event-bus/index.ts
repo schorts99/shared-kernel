@@ -1,5 +1,5 @@
-export type { EventSubscriber } from "./event-subscriber";
+export * from "./event-subscriber";
 export type { EventStore } from "./event-store";
-export type { EventBus } from "./event-bus";
+export * from "./event-bus";
 export type { DeadLetterStore } from "./dead-letter-store";
 export * from "./in-memory";

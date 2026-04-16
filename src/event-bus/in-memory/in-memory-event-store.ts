@@ -1,13 +1,12 @@
-import { DomainEventPrimitives } from "../../../domain-events";
-import { EventStore } from "../../event-store";
+import { DomainEventPrimitives } from "../../domain-events";
+import { EventStore } from "../event-store";
 
-export class AsyncInMemoryEventStore implements EventStore<true> {
+export class InMemoryEventStore implements EventStore {
   private readonly events: DomainEventPrimitives[] = [];
   private readonly processedEventIds = new Set<string>();
 
   async save(primitives: DomainEventPrimitives) {
     this.events.push(primitives);
-    this.processedEventIds.add(primitives.id);
   }
 
   async all() {
@@ -17,7 +16,11 @@ export class AsyncInMemoryEventStore implements EventStore<true> {
   async delete(id: string) {
     const index = this.events.findIndex(e => e.id === id);
 
-    if (index !== -1) this.events.splice(index, 1);
+    if (index !== -1) {
+      this.events.splice(index, 1);
+    }
+
+    this.processedEventIds.add(id);
   }
 
   async requeue(primitives: DomainEventPrimitives) {

@@ -1,11 +1,11 @@
 import { DomainEventPrimitives } from "../domain-events";
 import { MaybePromise } from "../types";
 
-export interface EventStore<IsAsync extends boolean = false> {
-  save(primitives: DomainEventPrimitives): MaybePromise<IsAsync, void>;
-  all(): MaybePromise<IsAsync, DomainEventPrimitives[]>;
-  delete(id: string): MaybePromise<IsAsync, void>;
-  requeue(primitives: DomainEventPrimitives): MaybePromise<IsAsync, void>;
-  clear(): MaybePromise<IsAsync, void>;
-  isProcessed(id: string): MaybePromise<IsAsync, boolean>;
+export interface EventStore {
+  save(primitives: DomainEventPrimitives): Promise<void>;
+  all(): Promise<DomainEventPrimitives[]>;
+  delete(id: string): Promise<void>;
+  requeue(primitives: DomainEventPrimitives): Promise<void>;
+  clear(): Promise<void>;
+  isProcessed(id: string): Promise<boolean>;
 }

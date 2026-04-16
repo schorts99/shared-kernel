@@ -1,1 +1,1 @@
-export { PascalCamelToSnake } from "./pascal-camel-to-snake";
+export * from "./pascal-camel-to-snake";
