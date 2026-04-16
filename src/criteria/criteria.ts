@@ -4,24 +4,33 @@ import { Direction } from "./direction";
 import { OffsetNotValid, LimitNotValid } from "./exceptions";
 
 export class Criteria {
-  readonly filters: Array<{ field: string; operator: Operator; value: any }> = [];
-  readonly orders: Array<Order> = [];
-  limit?: number;
-  offset?: number;
+  constructor(
+    readonly filters: Array<{ field: string; operator: Operator; value: any }> = [],
+    readonly orders: Array<Order> = [],
+    readonly limit?: number,
+    readonly offset?: number,
+  ) { }
 
-  where(field: string, operator: Operator, value: any): Criteria {
-    this.filters.push({ field, operator, value });
-
-    return this;
+  public static none(): Criteria {
+    return new Criteria();
   }
 
-  orderBy(
-    field: string,
-    direction: Direction = "ASC",
-  ): Criteria {
-    this.orders.push({ field, direction });
+  where(field: string, operator: Operator, value: any): Criteria {
+    return new Criteria(
+      [...this.filters, { field, operator, value }],
+      this.orders,
+      this.limit,
+      this.offset,
+    );
+  }
 
-    return this;
+  orderBy(field: string, direction: Direction = "ASC"): Criteria {
+    return new Criteria(
+      this.filters,
+      [...this.orders, { field, direction }],
+      this.limit,
+      this.offset,
+    );
   }
 
   limitResults(limit: number): Criteria {
@@ -29,9 +38,7 @@ export class Criteria {
       throw new LimitNotValid(limit);
     }
 
-    this.limit = limit;
-
-    return this;
+    return new Criteria(this.filters, this.orders, limit, this.offset);
   }
 
   offsetResults(offset: number): Criteria {
@@ -39,8 +46,15 @@ export class Criteria {
       throw new OffsetNotValid(offset);
     }
 
-    this.offset = offset;
+    return new Criteria(this.filters, this.orders, this.limit, offset);
+  }
 
-    return this;
+  public hasFilters(): boolean {
+    return this.filters.length > 0;
+  }
+
+  public hasOrders(): boolean {
+    return this.orders.length > 0;
   }
 }
+
