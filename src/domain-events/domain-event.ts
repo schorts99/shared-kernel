@@ -1,28 +1,87 @@
-import { DomainEventPrimitives } from "./domain-event-primitives";
+import { DomainEventMetadata, DomainEventPrimitives } from "./domain-event-metadata";
 
-export abstract class DomainEvent<PayloadSchema = {}> {  
+export abstract class DomainEvent {
+  protected readonly metadata: DomainEventMetadata;
+
   constructor(
-    readonly id: string,
-    readonly occurredAt: Date,
-    readonly type: string,
-    readonly version: number,
-    readonly payload: PayloadSchema,
-    public meta = { retries: 0 },
-  ) {}
+    correlationId: string,
+    customMetadata?: Partial<DomainEventMetadata>,
+  ) {
+    const generateId = () =>
+      `${Date.now()}-${Math.random().toString(36).substr(2, 11)}`;
+
+    this.metadata = {
+      id: customMetadata?.id ?? generateId(),
+      occurredAt: customMetadata?.occurredAt ?? new Date(),
+      correlationId: customMetadata?.correlationId ?? correlationId,
+      causationId: customMetadata?.causationId,
+      requestId: customMetadata?.requestId,
+      version: customMetadata?.version ?? 1,
+      userId: customMetadata?.userId,
+      tenantId: customMetadata?.tenantId,
+      retries: customMetadata?.retries ?? 0,
+      headers: customMetadata?.headers,
+      context: customMetadata?.context,
+    };
+  }
 
   abstract getEventName(): string;
 
-  toPrimitives(): DomainEventPrimitives<PayloadSchema> {
+  getMetadata(): DomainEventMetadata {
+    return this.metadata;
+  }
+
+  toPrimitives(): DomainEventPrimitives {
     return {
-      id: this.id,
-      occurred_at: this.occurredAt.toString(),
-      type: this.type,
-      version: this.version,
-      payload: this.payload,
-      meta: this.meta,
+      id: this.metadata.id,
+      type: this.getEventName(),
+      occurred_at: this.metadata.occurredAt.toISOString(),
+      correlation_id: this.metadata.correlationId,
+      causation_id: this.metadata.causationId,
+      request_id: this.metadata.requestId,
+      version: this.metadata.version,
+      user_id: this.metadata.userId,
+      tenant_id: this.metadata.tenantId,
+      payload: {},
+      meta: {
+        retries: this.metadata.retries,
+        headers: this.metadata.headers,
+        context: this.metadata.context,
+      },
+    };
+  }
+
+  setCorrelationId(correlationId: string): void {
+    (this.metadata as any).correlationId = correlationId;
+  }
+
+  setCausationId(causationId: string): void {
+    (this.metadata as any).causationId = causationId;
+  }
+
+  setUserId(userId: string): void {
+    (this.metadata as any).userId = userId;
+  }
+
+  setTenantId(tenantId: string): void {
+    (this.metadata as any).tenantId = tenantId;
+  }
+
+  addHeaders(headers: Record<string, string>): void {
+    this.metadata.headers = {
+      ...(this.metadata.headers ?? {}),
+      ...headers,
+    };
+  }
+
+  addContext(key: string, value: any): void {
+    this.metadata.context = {
+      ...(this.metadata.context ?? {}),
+      [key]: value,
     };
   }
 
   ack?: () => void;
+
   requeue?: (error?: Error) => void;
 }

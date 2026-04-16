@@ -1,4 +1,3 @@
 export { DomainEvent } from "./domain-event";
-export type { DomainEventPrimitives } from "./domain-event-primitives";
+export * from "./domain-event-metadata";
 export * from "./exceptions";
-export { DomainEventRegistry } from "./domain-event-registry";
