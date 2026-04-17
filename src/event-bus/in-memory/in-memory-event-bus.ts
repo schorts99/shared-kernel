@@ -117,8 +117,6 @@ export class InMemoryEventBus implements EventBus {
     }
 
     const retrySubscriber = async (failedEvent: DomainEvent, subscriber: EventSubscriber<any>, error?: Error) => {
-      failedEvent.ack?.();
-
       const maxRetries = this.config.maxRetries ?? 0;
       const currentRetries = failedEvent.getMetadata().retries;
 
@@ -137,14 +135,13 @@ export class InMemoryEventBus implements EventBus {
         const reason = error ? error.message : `Exceeded max retries (${maxRetries})`;
 
         await this.deadLetterStore.add(primitives, reason);
+        throw new Error(`Subscriber failed permanently: ${reason}`);
+      } else {
+        throw error || new Error('Subscriber failed');
       }
     };
 
     const executeSubscriber = async (subscriber: EventSubscriber<any>, currentEvent: DomainEvent) => {
-      const currentEventId = currentEvent.getMetadata().id;
-      currentEvent.ack = () => this.store.delete(currentEventId);
-      currentEvent.requeue = (error?: Error) => retrySubscriber(currentEvent, subscriber, error);
-
       const subscriberContext: EventSubscriberContext = {
         subscriptionTime: new Date(),
         metadata: {},
@@ -154,12 +151,15 @@ export class InMemoryEventBus implements EventBus {
       await subscriber.handle(currentEvent, subscriberContext);
     };
 
-    for (const sub of subs) {
-      try {
-        await executeSubscriber(sub, event);
-      } catch (err) {
-        await retrySubscriber(event, sub, err as Error);
-      }
+    const subscriberPromises = subs.map(sub => 
+      executeSubscriber(sub, event).catch(err => retrySubscriber(event, sub, err))
+    );
+
+    try {
+      await Promise.all(subscriberPromises);
+      await this.store.delete(eventId);
+    } catch (error) {
+      console.error('Event processing failed:', error);
     }
   }
 
