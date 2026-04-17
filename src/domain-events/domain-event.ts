@@ -1,6 +1,7 @@
 import { DomainEventMetadata, DomainEventPrimitives } from "./domain-event-metadata";
 
-export abstract class DomainEvent {
+export abstract class DomainEvent<T = any> {
+  protected readonly payload: T;
   protected readonly metadata: DomainEventMetadata;
 
   get id() {
@@ -9,8 +10,10 @@ export abstract class DomainEvent {
 
   constructor(
     correlationId: string,
+    payload: T,
     customMetadata?: Partial<DomainEventMetadata>,
   ) {
+    this.payload = payload;
     const generateId = () =>
       `${Date.now()}-${Math.random().toString(36).substr(2, 11)}`;
 
@@ -46,7 +49,7 @@ export abstract class DomainEvent {
       version: this.metadata.version,
       user_id: this.metadata.userId,
       tenant_id: this.metadata.tenantId,
-      payload: {},
+      payload: this.payload as Record<string, any>,
       meta: {
         retries: this.metadata.retries,
         headers: this.metadata.headers,

@@ -1,5 +1,7 @@
 import { Query } from "./query";
 import { QueryValidationError, QueryAuthorizationError, QueryExecutionError } from "./exceptions";
+import { Logger } from "../logger";
+import { Cache } from "./cache";
 
 export interface QueryHandlerOptions {
   cache?: boolean;
@@ -7,6 +9,8 @@ export interface QueryHandlerOptions {
   logging?: boolean;
   metrics?: boolean;
   timeout?: number;
+  cacheStore?: Cache;
+  logger?: Logger;
 }
 
 export interface QueryHandlerContext {
@@ -36,6 +40,8 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
   implements QueryHandler<Q, R> {
 
   protected readonly options: QueryHandlerOptions;
+  protected readonly cache?: Cache | undefined;
+  protected readonly logger?: Logger | undefined;
 
   constructor(options: QueryHandlerOptions = {}) {
     this.options = {
@@ -45,6 +51,8 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
       metrics: false,
       ...options,
     };
+    this.cache = options.cacheStore;
+    this.logger = options.logger;
   }
 
   async handle(query: Q, context?: QueryHandlerContext): Promise<R> {
@@ -62,19 +70,25 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
       await this.validate(query);
       await this.authorize(query);
 
-      if (this.options.cache) {
+      if (this.options.cache && this.cache) {
         const cacheKey = this.getCacheKey?.(query);
         if (cacheKey) {
-          // TODO: Implement cache lookup
+          const cachedResult = await this.cache.get(cacheKey);
+          if (cachedResult !== undefined) {
+            if (this.options.logging) {
+              this.logQuery(query, cachedResult as R, startTime, true);
+            }
+            return cachedResult as R;
+          }
         }
       }
 
       const result = await this.execute(query, handlerContext);
 
-      if (this.options.cache && this.shouldCache?.(query, result)) {
+      if (this.options.cache && this.cache && this.shouldCache?.(query, result)) {
         const cacheKey = this.getCacheKey?.(query);
         if (cacheKey) {
-          // TODO: Implement cache storage
+          await this.cache.set(cacheKey, result, this.options.cacheTtl);
         }
       }
 
@@ -121,24 +135,27 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
     return true;
   }
 
-  private logQuery(query: Q, result: R, startTime: Date): void {
+  private logQuery(query: Q, result: R, startTime: Date, cached = false): void {
     const duration = Date.now() - startTime.getTime();
 
-    console.log(`[QueryHandler] ${query.getType()} completed in ${duration}ms`, {
+    this.logger?.info(`[Query ${query.getType()}] ${cached ? 'served from cache' : 'completed'} in ${duration}ms`, {
       correlationId: query.getMetadata().correlationId,
       userId: query.getMetadata().userId,
       resultSize: this.getResultSize(result),
+      cached,
+      duration,
     });
   }
 
   private logError(query: Q, error: any, startTime: Date): void {
     const duration = Date.now() - startTime.getTime();
 
-    console.error(`[QueryHandler] ${query.getType()} failed after ${duration}ms`, {
+    this.logger?.error(`[Query ${query.getType()}] failed after ${duration}ms`, {
       correlationId: query.getMetadata().correlationId,
       userId: query.getMetadata().userId,
+      duration,
       error: error instanceof Error ? error.message : String(error),
-    });
+    }, error instanceof Error ? error : undefined);
   }
 
   private getResultSize(result: R): string {

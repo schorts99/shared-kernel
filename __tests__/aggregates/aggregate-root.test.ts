@@ -24,12 +24,20 @@ class TestId implements ValueObject {
 
 // Test domain events
 class TestCreatedEvent extends DomainEvent<{ name: string }> {
+  constructor(correlationId: string, payload: { name: string }, metadata?: Partial<DomainEventMetadata>) {
+    super(correlationId, payload, metadata);
+  }
+
   getEventName(): string {
     return "test.created";
   }
 }
 
 class TestUpdatedEvent extends DomainEvent<{ newName: string }> {
+  constructor(correlationId: string, payload: { newName: string }, metadata?: Partial<DomainEventMetadata>) {
+    super(correlationId, payload, metadata);
+  }
+
   getEventName(): string {
     return "test.updated";
   }
@@ -52,10 +60,8 @@ class TestAggregate extends AggregateRoot<TestId> {
     this._name = name;
     this.recordDomainEvent(new TestCreatedEvent(
       `event-${this.id.toString()}`,
-      new Date(),
-      "test.created",
-      1,
-      { name }
+      { name },
+      { occurredAt: new Date(), version: 1 }
     ));
     this.validate();
   }
@@ -65,10 +71,8 @@ class TestAggregate extends AggregateRoot<TestId> {
     this._name = newName;
     this.recordDomainEvent(new TestUpdatedEvent(
       `event-${this.id.toString()}-update`,
-      new Date(),
-      "test.updated",
-      1,
-      { newName }
+      { newName },
+      { occurredAt: new Date(), version: 1 }
     ));
     this.validate();
   }

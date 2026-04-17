@@ -5,6 +5,8 @@ import {
   CommandExecutionError,
   CommandMaxRetriesExceeded
 } from "./exceptions";
+import { Logger } from "../logger";
+import { Cache, IdempotencyStore } from "./cache";
 
 export interface CommandHandlerOptions {
   logging?: boolean;
@@ -13,6 +15,9 @@ export interface CommandHandlerOptions {
   maxRetries?: number;
   idempotent?: boolean;
   publishEvents?: boolean;
+  cache?: Cache;
+  idempotencyStore?: IdempotencyStore;
+  logger?: Logger;
 }
 
 export interface CommandHandlerContext {
@@ -43,6 +48,9 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
   implements CommandHandler<C, R> {
 
   protected readonly options: CommandHandlerOptions;
+  protected readonly cache?: Cache | undefined;
+  protected readonly idempotencyStore?: IdempotencyStore | undefined;
+  protected readonly logger?: Logger | undefined;
   
   constructor(options: CommandHandlerOptions = {}) {
     this.options = {
@@ -53,6 +61,9 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
       publishEvents: false,
       ...options,
     };
+    this.cache = options.cache;
+    this.idempotencyStore = options.idempotencyStore;
+    this.logger = options.logger;
   }
 
   async handle(command: C, context?: CommandHandlerContext): Promise<R> {
@@ -74,20 +85,28 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
         await this.validate(command);
         await this.authorize(command);
 
-        if (this.options.idempotent) {
+        if (this.options.idempotent && this.idempotencyStore) {
           const idempotencyKey = this.getIdempotencyKey?.(command);
-          if (idempotencyKey) {
-            // TODO: Check if command was already processed
+          if (idempotencyKey && await this.idempotencyStore.isProcessed(idempotencyKey)) {
+            // Return cached result if available
+            const cachedResult = (this.idempotencyStore as any).getResult?.(idempotencyKey);
+            if (cachedResult !== undefined) {
+              return cachedResult as R;
+            }
+            // If no cached result but marked as processed, throw error
+            throw new CommandExecutionError(
+              `Command already processed: ${idempotencyKey}`,
+              "COMMAND_ALREADY_PROCESSED"
+            );
           }
         }
 
         const result = await this.execute(command, handlerContext);
 
-        if (this.options.idempotent) {
+        if (this.options.idempotent && this.idempotencyStore) {
           const idempotencyKey = this.getIdempotencyKey?.(command);
-
           if (idempotencyKey) {
-            // TODO: Store execution result
+            await this.idempotencyStore.markProcessed(idempotencyKey, result);
           }
         }
 
@@ -103,8 +122,9 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
           retryCount++;
 
           if (this.options.logging) {
-            console.warn(`[CommandHandler] ${command.getType()} retry attempt ${retryCount}`, {
+            this.logger?.warn(`[Command ${command.getType()}] retry attempt ${retryCount}`, {
               correlationId,
+              retryCount,
               error: lastError instanceof Error ? lastError.message : String(lastError),
             });
           }
@@ -167,19 +187,20 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
 
   private logCommand(command: C, result: R, startTime: Date): void {
     const duration = Date.now() - startTime.getTime();
-    console.log(`[CommandHandler] ${command.getType()} completed in ${duration}ms`, {
+    this.logger?.info(`[Command ${command.getType()}] completed in ${duration}ms`, {
       correlationId: command.getMetadata().correlationId,
       userId: command.getMetadata().userId,
+      duration,
     });
   }
 
   private logError(command: C, error: any, startTime: Date): void {
     const duration = Date.now() - startTime.getTime();
-
-    console.error(`[CommandHandler] ${command.getType()} failed after ${duration}ms`, {
+    this.logger?.error(`[Command ${command.getType()}] failed after ${duration}ms`, {
       correlationId: command.getMetadata().correlationId,
       userId: command.getMetadata().userId,
+      duration,
       error: error instanceof Error ? error.message : String(error),
-    });
+    }, error instanceof Error ? error : undefined);
   }
 }

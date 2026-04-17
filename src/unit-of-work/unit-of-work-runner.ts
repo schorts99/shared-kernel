@@ -1,4 +1,5 @@
 import { UnitOfWork } from "./unit-of-work";
+import { Logger } from "../logger";
 
 export interface UnitOfWorkRunner {
   run<Result>(
@@ -7,6 +8,12 @@ export interface UnitOfWorkRunner {
 }
 
 export abstract class AsyncUnitOfWorkRunner implements UnitOfWorkRunner {
+  protected readonly logger?: Logger | undefined;
+
+  constructor(logger?: Logger) {
+    this.logger = logger;
+  }
+
   protected abstract createUnitOfWork(): UnitOfWork;
 
   async run<Result>(
@@ -25,7 +32,9 @@ export abstract class AsyncUnitOfWorkRunner implements UnitOfWorkRunner {
       try {
         await uow.rollback();
       } catch (rollbackError) {
-        console.error("[AsyncUnitOfWorkRunner] Rollback failed:", rollbackError);
+        this.logger?.error("Unit of work rollback failed", {
+          error: rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
+        }, rollbackError instanceof Error ? rollbackError : undefined);
       }
 
       throw error;

@@ -2,11 +2,12 @@ import { DomainEvent } from "./domain-event";
 import { DomainEventMetadata, DomainEventPrimitives } from "./domain-event-metadata";
 import { DomainEventNotRegistered } from "./exceptions";
 
-export type DomainEventConstructor = {
+export type DomainEventConstructor<T = any> = {
   new(
     correlationId: string,
+    payload: T,
     metadata?: Partial<DomainEventMetadata>,
-  ): DomainEvent;
+  ): DomainEvent<T>;
 };
 
 export class DomainEventRegistry {
@@ -25,6 +26,7 @@ export class DomainEventRegistry {
 
     return new Constructor(
       primitives.correlation_id,
+      primitives.payload,
       {
         id: primitives.id,
         occurredAt: new Date(primitives.occurred_at),

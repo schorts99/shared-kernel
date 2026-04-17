@@ -23,7 +23,11 @@ interface MockModel extends Model {
   name: string;
 }
 
-class MockEvent extends DomainEvent {
+class MockEvent extends DomainEvent<{}> {
+  constructor(correlationId: string, metadata?: Partial<DomainEventMetadata>) {
+    super(correlationId, {}, metadata);
+  }
+
   getEventName(): string {
     return "mock.event";
   }
