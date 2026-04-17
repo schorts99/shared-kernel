@@ -3,6 +3,10 @@ import { DomainEventMetadata, DomainEventPrimitives } from "./domain-event-metad
 export abstract class DomainEvent {
   protected readonly metadata: DomainEventMetadata;
 
+  get id() {
+    return this.metadata.id;
+  }
+
   constructor(
     correlationId: string,
     customMetadata?: Partial<DomainEventMetadata>,

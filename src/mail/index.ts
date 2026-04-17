@@ -1,2 +1,2 @@
-export type { Mail } from "./mail";
-export type { Mailer } from "./mailer";
+export * from "./mail";
+export * from "./mailer";

@@ -1,2 +1,3 @@
-export type { TourGuide } from "./tour-guide";
-export type { TourStep } from "./tour-step";
+export * from "./tour-guide";
+export * from "./tour-step";
+export * from "./base-tour-guide";

@@ -19,5 +19,13 @@ export abstract class BooleanValue implements ValueObject {
     return this.value === valueObject.value;
   }
 
+  toString(): string {
+    return String(this.value);
+  }
+
+  toJSON(): boolean {
+    return this.value;
+  }
+
   abstract readonly attributeName: string;
 }

@@ -1,5 +1,5 @@
 import { DomainEvent } from "../domain-events";
-import { EventSubscriber } from "../event-bus";
+import { EventSubscriber, EventSubscriberContext } from "../event-bus";
 import { Command, CommandBus } from "../cqrs";
 import { SagaStateStore, SagaStatus } from "./saga-state-store";
 
@@ -13,15 +13,15 @@ export type SagaExecutionContext<Schema extends Record<string, any>> = {
 };
 
 export abstract class Saga<Schema extends Record<string, any> = {}>
-  implements EventSubscriber<DomainEvent, true> {
+  implements EventSubscriber<DomainEvent> {
   private handlers = new Map<string, (event: DomainEvent, context: SagaExecutionContext<Schema>) => Promise<void>>();
   private completedSteps: string[] = [];
   private compensationActions = new Map<string, SagaCompensationAction>();
   private currentState: Schema;
 
   constructor(
-    protected readonly commandBus: CommandBus<true>,
-    protected readonly stateStore: SagaStateStore<Schema, true>,
+    protected readonly commandBus: CommandBus<any>,
+    protected readonly stateStore: SagaStateStore<Schema>,
   ) {
     this.currentState = this.getInitialState();
     this.configure();
@@ -38,9 +38,10 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
     this.handlers.set(eventName, handler as (event: DomainEvent, context: SagaExecutionContext<Schema>) => Promise<void>);
   }
 
-  async handle(event: DomainEvent): Promise<void> {
+  async handle(event: DomainEvent, _context?: EventSubscriberContext): Promise<void> {
     const sagaId = this.getSagaId(event);
     const persisted = await this.stateStore.load(sagaId);
+
     const state = persisted?.data ?? this.getInitialState();
     const completedSteps = persisted?.completedSteps ?? [];
     const processedEventIds = persisted?.processedEventIds ?? [];
@@ -72,8 +73,13 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
     } catch (error) {
       await this.rollback();
       await this.saveState(sagaId, "failed", event.id);
+
       throw error;
     }
+  }
+
+  subscribedTo(): string[] {
+    return Array.from(this.handlers.keys());
   }
 
   protected async completeSaga(sagaId: string, eventId?: string): Promise<void> {
@@ -111,9 +117,5 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
       processedEventIds: allProcessedEventIds,
       data: this.currentState,
     });
-  }
-
-  getSubscribedEventNames(): string[] {
-    return Array.from(this.handlers.keys());
   }
 }

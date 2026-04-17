@@ -21,8 +21,16 @@ export abstract class IntegerValue implements ValueObject {
   equals(valueObject: unknown): boolean {
     if (!(valueObject instanceof IntegerValue)) return false;
     if (!this.isValid || !valueObject.isValid) return false;
-  
+
     return this.value === valueObject.value;
+  }
+
+  toString(): string {
+    return String(this.value);
+  }
+
+  toJSON(): number {
+    return this.value;
   }
 
   abstract readonly attributeName: string;

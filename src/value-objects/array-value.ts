@@ -24,7 +24,16 @@ export abstract class ArrayValue<Type = any> implements ValueObject {
   readonly valueType = "Array";
   readonly value: Type[];
   readonly schema: ObjectSchema<Type> | ValidationRule<Type>[];
+  toString(): string {
+    return JSON.stringify(this.value);
+  }
+
+  toJSON(): Type[] {
+    return this.value;
+  }
+
   abstract readonly attributeName: string;
+
   abstract readonly isPrimitive: boolean;
 
   constructor(

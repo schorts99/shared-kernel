@@ -40,5 +40,13 @@ export abstract class StringValue<Optional extends boolean = false> implements V
     return this.value === valueObject.value;
   }
 
+  toString(): string {
+    return String(this.value);
+  }
+
+  toJSON(): Optional extends true ? string | null : string {
+    return this.value;
+  }
+
   abstract readonly attributeName: string;
 }

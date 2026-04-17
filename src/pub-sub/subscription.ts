@@ -1,6 +1,13 @@
+export type MessageHandler<T = any> = (payload: T) => void | Promise<void>;
+
 export interface Subscription {
-  connect(): void;
-  subscribe(channel: string, event: string, handler: (payload: any) => void): void;
-  unsubscribe(channel: string): void;
-  disconnect(): void;
+  unsubscribe(): void | Promise<void>;
+}
+
+export interface Subscriber {
+  subscribe<T = any>(
+    channel: string,
+    event: string,
+    handler: MessageHandler<T>
+  ): Promise<Subscription>;
 }

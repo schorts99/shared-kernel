@@ -1,2 +1,2 @@
-export type { UnitOfWork } from "./unit-of-work";
-export type { UnitOfWorkRunner } from "./unit-of-work-runner";
+export * from "./unit-of-work";
+export * from "./unit-of-work-runner";

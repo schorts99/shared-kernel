@@ -1,7 +1,7 @@
-import { SagaInstanceState, SagaStateStore } from "./saga-state-store";
+import { SagaInstanceState, SagaStateStore } from "../saga-state-store";
 
 export class InMemorySagaStateStore<Schema extends Record<string, any> = {}>
-  implements SagaStateStore<Schema, true> {
+  implements SagaStateStore<Schema> {
   private readonly store = new Map<string, SagaInstanceState<Schema>>();
 
   async save(sagaId: string, state: SagaInstanceState<Schema>): Promise<void> {

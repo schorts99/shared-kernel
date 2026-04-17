@@ -1,3 +1,4 @@
-export { Logger } from "./logger";
-export { ConsoleLogger } from "./console-logger";
-export { ScopedLogger } from "./scoped-logger";
+export * from "./logger";
+export * from "./scoped-logger";
+export * from "./console";
+export { CompositeLogger, NullLogger } from "./composite-loggers";

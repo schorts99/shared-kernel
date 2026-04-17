@@ -1,34 +1,34 @@
-import { Logger } from "./";
+import { Logger, LogContext } from "./logger";
 
 export class ScopedLogger extends Logger {
   constructor(
     private readonly base: Logger,
-    private readonly baseContext: Record<string, unknown>
+    private readonly baseContext: LogContext
   ) {
     super();
   }
 
-  log(context?: Record<string, unknown>, ...args: any[]) {
-    this.base.log({ ...this.baseContext, ...context }, ...args);
+  log(message: string, context?: LogContext) {
+    this.base.log(message, { ...this.baseContext, ...context });
   }
 
-  info(context?: Record<string, unknown>, ...args: any[]) {
-    this.base.info({ ...this.baseContext, ...context }, ...args);
+  info(message: string, context?: LogContext) {
+    this.base.info(message, { ...this.baseContext, ...context });
   }
 
-  debug(context?: Record<string, unknown>, ...args: any[]) {
-    this.base.debug({ ...this.baseContext, ...context }, ...args);
+  debug(message: string, context?: LogContext) {
+    this.base.debug(message, { ...this.baseContext, ...context });
   }
 
-  warn(context?: Record<string, unknown>, ...args: any[]) {
-    this.base.warn({ ...this.baseContext, ...context }, ...args);
+  warn(message: string, context?: LogContext) {
+    this.base.warn(message, { ...this.baseContext, ...context });
   }
 
-  error(context?: Record<string, unknown>, ...args: any[]) {
-    this.base.error({ ...this.baseContext, ...context }, ...args);
+  error(message: string, context?: LogContext, error?: Error) {
+    this.base.error(message, { ...this.baseContext, ...context }, error);
   }
 
-  child(context?: Record<string, unknown>): ScopedLogger {
+  child(context: LogContext): ScopedLogger {
     return new ScopedLogger(this.base, { ...this.baseContext, ...context });
   }
 }

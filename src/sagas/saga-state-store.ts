@@ -1,5 +1,3 @@
-import { MaybePromise } from "../types";
-
 export type SagaStatus = "pending" | "completed" | "failed";
 
 export type SagaInstanceState<Schema = {}> = {
@@ -9,9 +7,9 @@ export type SagaInstanceState<Schema = {}> = {
   data: Schema;
 };
 
-export interface SagaStateStore<Schema = {}, IsAsync extends boolean = false> {
-  save(sagaId: string, state: SagaInstanceState<Schema>): MaybePromise<IsAsync, void>;
-  load(sagaId: string): MaybePromise<IsAsync, SagaInstanceState<Schema> | undefined>;
-  delete(sagaId: string): MaybePromise<IsAsync, void>;
-  all(): MaybePromise<IsAsync, Array<{ sagaId: string; state: SagaInstanceState<Schema> }>>;
+export interface SagaStateStore<Schema = {}> {
+  save(sagaId: string, state: SagaInstanceState<Schema>): Promise<void>;
+  load(sagaId: string): Promise<SagaInstanceState<Schema> | undefined>;
+  delete(sagaId: string): Promise<void>;
+  all(): Promise<Array<{ sagaId: string; state: SagaInstanceState<Schema> }>>;
 }

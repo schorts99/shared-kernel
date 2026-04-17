@@ -1,133 +1,180 @@
-import type { HTTPProvider } from "./http-provider";
+import type { HTTPProvider, HTTPRequestOptions } from "./http-provider";
 import { HTTPException } from "./exceptions";
 import type { HTTPInterceptor } from "./http-interceptor";
 
+export interface FetchHTTPProviderConfig {
+  baseUrl?: string | URL;
+  credentials?: RequestCredentials;
+  headers?: HeadersInit;
+  getAuthorization?: () => string | undefined;
+}
+
 export class FetchHTTPProvider implements HTTPProvider {
   private ongoingRequests = new Map<string, Promise<any>>();
-  private readonly init: {
-    credentials?: RequestCredentials;
-    headers?: HeadersInit;
-  } | undefined;
-  private readonly getAuthorization: (() => string) | undefined;
   private readonly interceptors: HTTPInterceptor[] = [];
+  private readonly config: FetchHTTPProviderConfig;
 
-  constructor(
-    getAuthorization?: () => string,
-    init?: {
-      credentials?: RequestCredentials;
-      headers?: HeadersInit;
-    }
-  ) {
-    this.getAuthorization = getAuthorization;
-    this.init = init;
+  constructor(config: FetchHTTPProviderConfig = {}) {
+    this.config = config;
   }
 
   useInterceptor(interceptor: HTTPInterceptor) {
     this.interceptors.push(interceptor);
   }
 
-  get<ResponseType, RequestBodySchema = undefined>(url: URL, body?: RequestBodySchema): Promise<ResponseType> {
-    return this.request("GET", url, body);
+  get<R, B = any>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
+    return this.request("GET", url, options);
   }
 
-  post<RequestBodySchema, ResponseType>(
-    url: URL,
-    body?: RequestBodySchema
-  ): Promise<ResponseType> {
-    return this.request("POST", url, body);
+  post<R, B = any>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
+    return this.request("POST", url, options);
   }
 
-  put<RequestBodySchema, ResponseType>(
-    url: URL,
-    body: RequestBodySchema
-  ): Promise<ResponseType> {
-    return this.request("PUT", url, body);
+  put<R, B = any>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
+    return this.request("PUT", url, options);
   }
 
-  patch<RequestBodySchema, ResponseType>(
-    url: URL,
-    body: RequestBodySchema
-  ): Promise<ResponseType> {
-    return this.request("PATCH", url, body);
+  patch<R, B = any>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
+    return this.request("PATCH", url, options);
   }
 
-  delete<ResponseType, RequestBodySchema = undefined>(url: URL, body?: RequestBodySchema): Promise<ResponseType> {
-    return this.request("DELETE", url, body);
+  delete<R, B = any>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
+    return this.request("DELETE", url, options);
   }
 
-  private async request<ResponseType>(
+  private async request<R>(
     method: string,
-    url: URL,
-    body?: unknown
-  ): Promise<ResponseType> {
-    const key = this.generateRequestKey(method, url, body);
+    url: string | URL,
+    options?: HTTPRequestOptions
+  ): Promise<R> {
+    const fullUrl = this.buildUrl(url, options?.query);
+    const key = this.generateRequestKey(method, fullUrl, options?.body);
 
     if (this.ongoingRequests.has(key)) {
-      return this.ongoingRequests.get(key) as Promise<ResponseType>;
+      return this.ongoingRequests.get(key) as Promise<R>;
     }
 
-    const baseHeaders = this.init?.headers ?? {};
-    const authHeader = this.getAuthorization ? { Authorization: this.getAuthorization() } : {};
-    const contentTypeHeader = body !== undefined ? { "Content-Type": "application/json" } : {};
-
-    const headers: HeadersInit = {
-      ...baseHeaders,
-      ...contentTypeHeader,
-      ...authHeader,
-    };
-
-    let init: RequestInit = {
-      method,
-      body: body !== undefined ? JSON.stringify(body) : null,
-      headers,
-    };
-    
-    if (this.init?.credentials !== undefined) {
-      init.credentials = this.init.credentials;
-    }
-
-    for (const interceptor of this.interceptors) {
-      init = interceptor.intercept(init, url);
-    }
-
-    const request = (async () => {
-      const response = await fetch(url.href, init);
-
-      if (!response) {
-        throw new HTTPException(0, undefined);
-      }
-
-      if (response.status === 204) {
-        return undefined as ResponseType;
-      }
-
-      const contentType = response.headers.get("Content-Type") ?? "";
-      let parsed: any;
-
+    const requestTask = (async () => {
       try {
-        if (contentType.includes("application/json")) {
-          parsed = await response.json();
-        } else if (contentType.includes("text/")) {
-          parsed = await response.text();
-        } else {
-          parsed = await response.blob();
+        let init = await this.prepareRequest(method, options);
+
+        for (const interceptor of this.interceptors) {
+          if (interceptor.request) {
+            init = await interceptor.request(init, fullUrl);
+          }
         }
-      } catch {
-        parsed = undefined;
-      }
 
-      if (!response.ok) {
-        throw new HTTPException(response.status, parsed);
-      }
+        let response = await fetch(fullUrl.href, init);
 
-      return parsed as ResponseType;
+        for (const interceptor of this.interceptors) {
+          if (interceptor.response) {
+            response = await interceptor.response(response);
+          }
+        }
+
+        return await this.handleResponse<R>(response);
+      } catch (error) {
+        let finalError = error as Error;
+
+        for (const interceptor of this.interceptors) {
+          if (interceptor.error) {
+            finalError = await interceptor.error(finalError);
+          }
+        }
+
+        throw finalError;
+      }
     })().finally(() => {
       this.ongoingRequests.delete(key);
     });
 
-    this.ongoingRequests.set(key, request);
+    this.ongoingRequests.set(key, requestTask);
 
-    return request;
+    return requestTask;
+  }
+
+  private buildUrl(url: string | URL, query?: Record<string, any>): URL {
+    let finalUrl: URL;
+
+    if (typeof url === "string") {
+      if (url.startsWith("http")) {
+        finalUrl = new URL(url);
+      } else {
+        const base = this.config.baseUrl ?? (typeof window !== "undefined" ? window.location.origin : "http://localhost");
+
+        finalUrl = new URL(url, base);
+      }
+    } else {
+      finalUrl = url;
+    }
+
+    if (query) {
+      Object.entries(query).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          finalUrl.searchParams.append(key, String(value));
+        }
+      });
+    }
+
+    return finalUrl;
+  }
+
+  private async prepareRequest(method: string, options?: HTTPRequestOptions): Promise<RequestInit> {
+    const headers = new Headers(this.config.headers);
+
+    if (options?.headers) {
+      Object.entries(options.headers).forEach(([k, v]) => headers.set(k, v));
+    }
+
+    if (options?.body !== undefined && !headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
+    }
+
+    if (this.config.getAuthorization) {
+      const auth = this.config.getAuthorization();
+
+      if (auth) headers.set("Authorization", auth);
+    }
+
+    const init: RequestInit = {
+      method,
+      headers,
+      body: options?.body !== undefined ? JSON.stringify(options.body) : null,
+    };
+
+    if (this.config.credentials) {
+      init.credentials = this.config.credentials;
+    }
+
+    return init;
+  }
+
+
+  private async handleResponse<R>(response: Response): Promise<R> {
+    if (response.status === 204) {
+      return undefined as any;
+    }
+
+    const contentType = response.headers.get("Content-Type") ?? "";
+    let data: any;
+
+    try {
+      if (contentType.includes("application/json")) {
+        data = await response.json();
+      } else if (contentType.includes("text/")) {
+        data = await response.text();
+      } else {
+        data = await response.blob();
+      }
+    } catch {
+      data = undefined;
+    }
+
+    if (!response.ok) {
+      throw new HTTPException(response.status, data);
+    }
+
+    return data as R;
   }
 
   private generateRequestKey(method: string, url: URL, body?: unknown): string {

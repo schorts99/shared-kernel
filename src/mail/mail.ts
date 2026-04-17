@@ -1,16 +1,21 @@
-export type Mail = {
-  to: string | string[];
-  subject: string;
-  body: {
-    html: string;
-    text: string;
-  };
-  cc?: string | string[];
-  bcc?: string | string[];
-  replyTo?: string;
-  attachments?: Array<{
-    filename: string;
-    content: string;
-    mimeType?: string;
-  }>;
+export type MailAddress = string | { name: string; email: string };
+
+export type MailAttachment = {
+  filename: string;
+  content: string | Buffer;
+  contentType?: string;
 };
+
+export interface Mail {
+  from?: MailAddress;
+  to: MailAddress | MailAddress[];
+  cc?: MailAddress | MailAddress[];
+  bcc?: MailAddress | MailAddress[];
+  replyTo?: MailAddress;
+  subject: string;
+  text?: string;
+  html?: string;
+  attachments?: MailAttachment[];
+  tags?: string[];
+  metadata?: Record<string, string>;
+}

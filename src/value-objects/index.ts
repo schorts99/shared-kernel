@@ -1,5 +1,5 @@
 export type { ValueObject } from "./value-object";
-
+export { BaseValueObject } from "./base-value-object";
 export { UUIDValue } from "./uuid-value";
 export { StringValue } from "./string-value";
 export { EnumValue } from "./enum-value";
@@ -14,5 +14,4 @@ export { FloatValue } from "./float-valuet";
 export { ArrayValue } from "./array-value";
 export { ObjectValue } from "./object-value";
 export { URLValue } from "./url-value";
-
 export * from "./exceptions";

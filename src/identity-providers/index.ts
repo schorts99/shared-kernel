@@ -1,1 +1,1 @@
-export type { IdentityProvider } from "./identity-provider";
+export * from "./identity-provider";

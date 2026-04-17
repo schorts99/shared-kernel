@@ -1,6 +1,13 @@
-export type BaseAction = "read" | "write" | "delete" | "manage";
+export type BaseAction = "read" | "write" | "delete" | "manage" | "create" | "update" | "*";
 
-export type Permission<Action extends string = BaseAction> = {
+export interface Permission<Action extends string = string> {
   resource: string;
-  action: Action;
+  action: Action | BaseAction;
+}
+
+export function createPermission<Action extends string = BaseAction>(
+  resource: string,
+  action: Action | BaseAction
+): Permission<Action> {
+  return { resource, action };
 }

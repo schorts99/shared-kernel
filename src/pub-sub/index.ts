@@ -1,2 +1,3 @@
-export type { Publisher } from "./publisher";
-export type { Subscription } from "./subscription";
+export * from "./publisher";
+export * from "./subscription";
+export * from "./in-memory-pub-sub";

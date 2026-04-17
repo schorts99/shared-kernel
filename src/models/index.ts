@@ -1,1 +1,1 @@
-export type { Model } from "./model";
+export * from "./model";

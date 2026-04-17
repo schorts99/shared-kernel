@@ -5,37 +5,52 @@ import { Predicate } from '../abac';
 export abstract class RBACPolicy<Action extends string = BaseAction> {
   abstract getPermissions(role: string): Permission<Action>[];
 
-  can(role: string, action: Action, resource: BaseResource): boolean {
-    const permissions = this.getPermissions(role);
+  can(roles: string | string[], action: Action | BaseAction, resource: string | BaseResource): boolean {
+    const roleList = Array.isArray(roles) ? roles : [roles];
+    const resourceName = typeof resource === 'string' ? resource : resource.name;
 
-    return permissions.some(
-      (perm) =>
-        (perm.resource === '*' || perm.resource === resource.name) &&
-        (perm.action === action || perm.action === 'manage')
-    );
+    return roleList.some((role) => {
+      const permissions = this.getPermissions(role);
+
+      return permissions.some(
+        (perm) =>
+          (perm.resource === '*' || perm.resource === resourceName) &&
+          (perm.action === '*' || perm.action === 'manage' || perm.action === action)
+      );
+    });
   }
 
-  canWithAttributes<User extends  { id: string }, Resource extends BaseResource>(
+  canWithAttributes<User extends { id: string }, Resource extends BaseResource>(
     user: User,
-    role: string,
-    action: Action,
+    roles: string | string[],
+    action: Action | BaseAction,
     resource: Resource,
     predicates: Predicate<User, Resource>[],
   ): boolean {
-    if (!this.can(role, action, resource)) return false;
+    if (!this.can(roles, action, resource)) return false;
 
     return predicates.every((predicate) => predicate(user, resource));
   }
 
   canAnyWithAttributes<User extends { id: string }, Resource extends BaseResource>(
     user: User,
-    role: string,
-    action: Action,
+    roles: string | string[],
+    action: Action | BaseAction,
     resource: Resource,
     predicates: Predicate<User, Resource>[]
   ): boolean {
-    if (!this.can(role, action, resource)) return false;
+    if (!this.can(roles, action, resource)) return false;
 
     return predicates.some((predicate) => predicate(user, resource));
+  }
+}
+
+export class StaticRBACPolicy<Action extends string = BaseAction> extends RBACPolicy<Action> {
+  constructor(private readonly roles: Record<string, Permission<Action>[]>) {
+    super();
+  }
+
+  getPermissions(role: string): Permission<Action>[] {
+    return this.roles[role] ?? [];
   }
 }

@@ -1,13 +1,15 @@
-import { ScopedLogger } from "./";
+import { ScopedLogger } from "./scoped-logger";
+
+export type LogContext = Record<string, unknown>;
 
 export abstract class Logger {
-  abstract log(context?: Record<string, unknown>, ...args: any[]): void;
-  abstract info(context?: Record<string, unknown>, ...args: any[]): void;
-  abstract debug(context?: Record<string, unknown>, ...args: any[]): void;
-  abstract warn(context?: Record<string, unknown>, ...args: any[]): void;
-  abstract error(context?: Record<string, unknown>, ...args: any[]): void;
-  
-  child(context: Record<string, unknown>): ScopedLogger {
+  abstract log(message: string, context?: LogContext): void;
+  abstract info(message: string, context?: LogContext): void;
+  abstract debug(message: string, context?: LogContext): void;
+  abstract warn(message: string, context?: LogContext): void;
+  abstract error(message: string, context?: LogContext, error?: Error): void;
+
+  child(context: LogContext): Logger {
     return new ScopedLogger(this, context);
   }
 }
