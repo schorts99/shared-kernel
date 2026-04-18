@@ -13,15 +13,15 @@ export abstract class DAO<
   constructor(
     protected readonly deleteMode: DeleteMode = "HARD",
   ) { }
-  abstract getAll(): Promise<Entity[]>;
+  abstract getAll(uow?: UnitOfWork): Promise<Entity[]>;
 
-  abstract findByID(id: ID): Promise<Entity | null>;
+  abstract findByID(id: ID, uow?: UnitOfWork): Promise<Entity | null>;
 
-  abstract findOneBy(criteria: Criteria): Promise<Entity | null>;
+  abstract findOneBy(criteria: Criteria, uow?: UnitOfWork): Promise<Entity | null>;
 
-  abstract countBy(criteria: Criteria): Promise<number>;
+  abstract countBy(criteria: Criteria, uow?: UnitOfWork): Promise<number>;
 
-  abstract exists(criteria: Criteria): Promise<boolean>;
+  abstract exists(criteria: Criteria, uow?: UnitOfWork): Promise<boolean>;
 
   abstract create(entity: Entity, uow?: UnitOfWork): Promise<Entity>;
 
