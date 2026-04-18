@@ -34,4 +34,6 @@ export abstract class DAO<
   abstract deleteByID(id: ID, uow?: UnitOfWork): Promise<void>;
 
   abstract saveMany(entities: Entity[], uow?: UnitOfWork): Promise<Entity[]>;
+
+  abstract restore(entity: Entity, uow?: UnitOfWork): Promise<Entity>;
 }
