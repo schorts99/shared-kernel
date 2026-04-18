@@ -1,4 +1,3 @@
-export * from "./logger";
-export * from "./scoped-logger";
-export * from "./console";
+export { type LogContext, Logger, ScopedLogger } from "./logger";
+export { ConsoleLogger } from "./console";
 export { CompositeLogger, NullLogger } from "./composite-loggers";
