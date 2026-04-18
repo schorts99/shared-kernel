@@ -25,4 +25,4 @@ export type { QueryMetadata, QueryPrimitives } from "./query-metadata";
 export type { Cache, IdempotencyStore } from "./cache";
 export * from "./in-memory";
 export * from "./exceptions";
-export * from "./in-memory";
+export * from "./cache-invalidation-middleware";

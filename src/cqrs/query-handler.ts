@@ -34,6 +34,8 @@ export interface QueryHandler<Q extends Query = Query, R = unknown> {
   getCacheKey?(query: Q): string | null;
 
   shouldCache?(query: Q, result: R): boolean;
+
+  getCacheTags?(query: Q, result: R): string[];
 }
 
 export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
@@ -72,12 +74,15 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
 
       if (this.options.cache && this.cache) {
         const cacheKey = this.getCacheKey?.(query);
+
         if (cacheKey) {
           const cachedResult = await this.cache.get(cacheKey);
+
           if (cachedResult !== undefined) {
             if (this.options.logging) {
               this.logQuery(query, cachedResult as R, startTime, true);
             }
+
             return cachedResult as R;
           }
         }
@@ -87,8 +92,11 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
 
       if (this.options.cache && this.cache && this.shouldCache?.(query, result)) {
         const cacheKey = this.getCacheKey?.(query);
+
         if (cacheKey) {
-          await this.cache.set(cacheKey, result, this.options.cacheTtl);
+          const tags = this.getCacheTags?.(query, result);
+
+          await this.cache.set(cacheKey, result, this.options.cacheTtl, tags);
         }
       }
 
@@ -104,8 +112,8 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
       }
 
       if (error instanceof QueryValidationError ||
-          error instanceof QueryAuthorizationError ||
-          error instanceof QueryExecutionError) {
+        error instanceof QueryAuthorizationError ||
+        error instanceof QueryExecutionError) {
         throw error;
       }
 
@@ -121,9 +129,9 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
     return this.options;
   }
 
-  public async validate(_: Q): Promise<void> {}
+  public async validate(_: Q): Promise<void> { }
 
-  public async authorize(_: Q): Promise<void> {}
+  public async authorize(_: Q): Promise<void> { }
 
   public abstract execute(query: Q, context: QueryHandlerContext): Promise<R>;
 
@@ -133,6 +141,10 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
 
   shouldCache?(_: Q, __: R): boolean {
     return true;
+  }
+
+  getCacheTags?(_: Q, __: R): string[] {
+    return [];
   }
 
   private logQuery(query: Q, result: R, startTime: Date, cached = false): void {

@@ -42,6 +42,8 @@ export interface CommandHandler<C extends Command = Command, R = void> {
   getIdempotencyKey?(command: C): string | null;
 
   canRetry?(command: C, error: Error): boolean;
+
+  getInvalidationTags?(command: C, result: R): string[];
 }
 
 export abstract class AbstractCommandHandler<C extends Command = Command, R = void>
@@ -51,7 +53,7 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
   protected readonly cache?: Cache | undefined;
   protected readonly idempotencyStore?: IdempotencyStore | undefined;
   protected readonly logger?: Logger | undefined;
-  
+
   constructor(options: CommandHandlerOptions = {}) {
     this.options = {
       logging: false,
@@ -87,13 +89,14 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
 
         if (this.options.idempotent && this.idempotencyStore) {
           const idempotencyKey = this.getIdempotencyKey?.(command);
+
           if (idempotencyKey && await this.idempotencyStore.isProcessed(idempotencyKey)) {
-            // Return cached result if available
             const cachedResult = (this.idempotencyStore as any).getResult?.(idempotencyKey);
+
             if (cachedResult !== undefined) {
               return cachedResult as R;
             }
-            // If no cached result but marked as processed, throw error
+
             throw new CommandExecutionError(
               `Command already processed: ${idempotencyKey}`,
               "COMMAND_ALREADY_PROCESSED"
@@ -107,6 +110,13 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
           const idempotencyKey = this.getIdempotencyKey?.(command);
           if (idempotencyKey) {
             await this.idempotencyStore.markProcessed(idempotencyKey, result);
+          }
+        }
+
+        if (this.cache && this.getInvalidationTags) {
+          const tags = this.getInvalidationTags(command, result);
+          if (tags && tags.length > 0 && this.cache.deleteByTags) {
+            await this.cache.deleteByTags(tags);
           }
         }
 
@@ -148,8 +158,8 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
         }
 
         if (lastError instanceof CommandValidationError ||
-            lastError instanceof CommandAuthorizationError ||
-            lastError instanceof CommandExecutionError) {
+          lastError instanceof CommandAuthorizationError ||
+          lastError instanceof CommandExecutionError) {
           throw lastError;
         }
 
@@ -171,9 +181,9 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
     return this.options;
   }
 
-  public async validate(_: C): Promise<void> {}
+  public async validate(_: C): Promise<void> { }
 
-  public async authorize(_: C): Promise<void> {}
+  public async authorize(_: C): Promise<void> { }
 
   public abstract execute(command: C, context: CommandHandlerContext): Promise<R>;
 
@@ -183,6 +193,10 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
 
   canRetry(_: C, error: Error): boolean {
     return error instanceof CommandExecutionError;
+  }
+
+  getInvalidationTags?(_: C, __: R): string[] {
+    return [];
   }
 
   private logCommand(command: C, result: R, startTime: Date): void {
