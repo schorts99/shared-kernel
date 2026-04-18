@@ -21,14 +21,14 @@ export abstract class DomainEvent<T = any> {
       id: customMetadata?.id ?? generateId(),
       occurredAt: customMetadata?.occurredAt ?? new Date(),
       correlationId: customMetadata?.correlationId ?? correlationId,
-      causationId: customMetadata?.causationId,
-      requestId: customMetadata?.requestId,
+      causationId: customMetadata?.causationId || null,
+      requestId: customMetadata?.requestId || null,
       version: customMetadata?.version ?? 1,
-      userId: customMetadata?.userId,
-      tenantId: customMetadata?.tenantId,
+      userId: customMetadata?.userId || null,
+      tenantId: customMetadata?.tenantId || null,
       retries: customMetadata?.retries ?? 0,
-      headers: customMetadata?.headers,
-      context: customMetadata?.context,
+      headers: customMetadata?.headers || null,
+      context: customMetadata?.context || null,
     };
   }
 
