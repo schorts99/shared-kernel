@@ -134,7 +134,7 @@ export class InMemoryEventBus implements EventBus {
       } else if (this.deadLetterStore) {
         const reason = error ? error.message : `Exceeded max retries (${maxRetries})`;
 
-        await this.deadLetterStore.add(primitives, reason);
+        await this.deadLetterStore.add(primitives, reason, subscriber);
         throw new Error(`Subscriber failed permanently: ${reason}`);
       } else {
         throw error || new Error('Subscriber failed');
