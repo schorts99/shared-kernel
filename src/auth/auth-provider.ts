@@ -1,7 +1,6 @@
 import { Entity } from "../entities";
 import { Model } from "../models";
 import { ValueObject } from "../value-objects";
-import { MaybePromise } from "../types";
 import { Permission } from "../rbac";
 
 export interface AuthCredentials {
@@ -32,26 +31,25 @@ export type AuthChangeCallback<UserEntity extends Entity<ValueObject, Model>> =
 export type AuthChangeUnsubscribe = () => void;
 
 export interface AuthProvider<
-  UserEntity extends Entity<ValueObject, Model>,
-  IsAsync extends boolean = false
+  UserEntity extends Entity<ValueObject, Model>
 > {
-  authenticate(credentials: AuthCredentials): MaybePromise<IsAsync, AuthenticationResult>;
+  authenticate(credentials: AuthCredentials): Promise<AuthenticationResult>;
 
-  logout(): MaybePromise<IsAsync, void>;
+  logout(): Promise<void>;
 
-  isAuthenticated(): MaybePromise<IsAsync, boolean>;
+  isAuthenticated(): Promise<boolean>;
 
-  getCurrentUser(): MaybePromise<IsAsync, UserEntity | null>;
+  getCurrentUser(): Promise<UserEntity | null>;
 
-  getCurrentUserPermissions(): MaybePromise<IsAsync, Permission[]>;
+  getCurrentUserPermissions(): Promise<Permission[]>;
 
-  getCurrentSession(): MaybePromise<IsAsync, UserSession<UserEntity> | null>;
+  getCurrentSession(): Promise<UserSession<UserEntity> | null>;
 
   refreshToken(
     refreshToken?: string
-  ): MaybePromise<IsAsync, AuthenticationResult>;
+  ): Promise<AuthenticationResult>;
 
-  revokeToken(token?: string): MaybePromise<IsAsync, void>;
+  revokeToken(token?: string): Promise<void>;
 
   onAuthChange(callback: AuthChangeCallback<UserEntity>): AuthChangeUnsubscribe;
 }
