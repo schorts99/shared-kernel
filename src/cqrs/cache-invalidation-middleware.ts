@@ -6,7 +6,7 @@ export interface CacheInvalidationEvent {
   getInvalidationTags(): string[];
 }
 
-export class CacheInvalidationMiddleware implements CommandBusMiddleware<true> {
+export class CacheInvalidationMiddleware implements CommandBusMiddleware {
   constructor(private readonly cache: Cache) {}
 
   async onEvents<C extends Command>(

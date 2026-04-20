@@ -1,7 +1,7 @@
 import { Command } from "./command";
 import { CommandHandler } from "./command-handler";
 
-export interface CommandBusMiddleware<IsAsync extends boolean = false> {
+export interface CommandBusMiddleware {
   beforeDispatch?<C extends Command>(
     command: C,
     context: CommandBusContext
@@ -43,7 +43,7 @@ export interface CommandBusConfig {
   transactional?: boolean;
 }
 
-export interface CommandBus<IsAsync extends boolean = false> {
+export interface CommandBus {
   register<C extends Command, R = void>(
     type: string,
     handler: CommandHandler<C, R>
@@ -61,9 +61,9 @@ export interface CommandBus<IsAsync extends boolean = false> {
     commands: readonly C[]
   ): Promise<R[]>;
 
-  use(middleware: CommandBusMiddleware<IsAsync>): void;
+  use(middleware: CommandBusMiddleware): void;
 
-  removeMiddleware(middleware: CommandBusMiddleware<IsAsync>): boolean;
+  removeMiddleware(middleware: CommandBusMiddleware): boolean;
 
   getConfig(): CommandBusConfig;
 

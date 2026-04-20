@@ -20,10 +20,11 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
   private currentState: Schema;
 
   constructor(
-    protected readonly commandBus: CommandBus<any>,
+    protected readonly commandBus: CommandBus,
     protected readonly stateStore: SagaStateStore<Schema>,
   ) {
     this.currentState = this.getInitialState();
+
     this.configure();
   }
 
@@ -41,7 +42,6 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
   async handle(event: DomainEvent, _context?: EventSubscriberContext): Promise<void> {
     const sagaId = this.getSagaId(event);
     const persisted = await this.stateStore.load(sagaId);
-
     const state = persisted?.data ?? this.getInitialState();
     const completedSteps = persisted?.completedSteps ?? [];
     const processedEventIds = persisted?.processedEventIds ?? [];

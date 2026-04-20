@@ -10,7 +10,7 @@ import {
 
 export class InMemoryCommandBus implements CommandBus {
   private readonly handlers = new Map<string, CommandHandler<Command, unknown>>();
-  private readonly middleware: CommandBusMiddleware<true>[] = [];
+  private readonly middleware: CommandBusMiddleware[] = [];
   private config: CommandBusConfig = {
     enableMetrics: false,
     enableLogging: false,
@@ -112,11 +112,11 @@ export class InMemoryCommandBus implements CommandBus {
     return results;
   }
 
-  use(middleware: CommandBusMiddleware<true>): void {
+  use(middleware: CommandBusMiddleware): void {
     this.middleware.push(middleware);
   }
 
-  removeMiddleware(middleware: CommandBusMiddleware<true>): boolean {
+  removeMiddleware(middleware: CommandBusMiddleware): boolean {
     const index = this.middleware.indexOf(middleware);
 
     if (index >= 0) {
