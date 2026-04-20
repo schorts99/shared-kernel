@@ -9,7 +9,7 @@ export class URLCriteriaParser {
   ) {}
 
   parse(): Criteria {
-    const criteria = new Criteria();
+    let criteria = new Criteria();
     const params = this.url.searchParams;
 
     for (const [key, value] of params.entries()) {
@@ -23,7 +23,7 @@ export class URLCriteriaParser {
       const operator = this.mapOperator(op);
       const parsedValue = this.parseValue(operator, value);
 
-      criteria.where(field!, operator, parsedValue);
+      criteria = criteria.where(field!, operator, parsedValue);
     }
 
     const sortParam = params.get("sort");
@@ -32,15 +32,17 @@ export class URLCriteriaParser {
       sortParam.split(",").forEach((part) => {
         const direction: Direction = part.startsWith("-") ? "DESC" : "ASC";
         const field = part.replace(/^-/, "");
-        criteria.orderBy(field, direction);
+        criteria = criteria.orderBy(field, direction);
       });
     }
 
     const limit = params.get("page[limit]");
-    if (limit) criteria.limitResults(Number(limit));
+
+    if (limit) criteria = criteria.limitResults(Number(limit));
 
     const offset = params.get("page[offset]");
-    if (offset) criteria.offsetResults(Number(offset));
+
+    if (offset) criteria = criteria.offsetResults(Number(offset));
 
     return criteria;
   }
@@ -65,8 +67,10 @@ export class URLCriteriaParser {
   private parseValue(operator: Operator, raw: string): any {
     const tryParsePrimitive = (val: string): any => {
       const maybeDate = new Date(val);
+
       if (!isNaN(maybeDate.getTime())) return maybeDate;
       if (!isNaN(Number(val)) && val.trim() !== "") return Number(val);
+
       return val;
     };
 
@@ -75,14 +79,13 @@ export class URLCriteriaParser {
       case "NOT_IN":
       case "BETWEEN":
         return raw.split(",").map((v) => tryParsePrimitive(v.trim()));
-
       case "GEO_RADIUS": {
         const [latStr, lngStr, radiusStr] = raw.split(",");
         const center = [parseFloat(latStr!), parseFloat(lngStr!)];
         const radiusInM = parseFloat(radiusStr!);
+
         return { center, radiusInM };
       }
-
       default:
         return tryParsePrimitive(raw);
     }
