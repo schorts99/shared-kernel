@@ -14,7 +14,7 @@ export class InMemoryEventStore implements EventStore {
   }
 
   async delete(id: string) {
-    const index = this.events.findIndex(e => e.id === id);
+    const index = this.events.findIndex((e) => e.id === id);
 
     if (index !== -1) {
       this.events.splice(index, 1);

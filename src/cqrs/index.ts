@@ -26,3 +26,4 @@ export type { Cache, IdempotencyStore } from "./cache";
 export * from "./in-memory";
 export * from "./exceptions";
 export * from "./cache-invalidation-middleware";
+export * from "./error-tracking-middleware";

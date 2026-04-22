@@ -8,136 +8,113 @@ A modular, type-safe foundation for building expressive, maintainable applicatio
 npm install @schorts/shared-kernel --save
 ```
 
-## 🧱 Modules
+## 🏗️ Architecture & Modules
 
-### 🔐 Auth
+The Shared Kernel is organized into several domains of functionality, providing robust primitives for your applications.
 
-- **AuthProvider:** Abstract interface for authentication strategies.
-- **IdentityProvider:** Contract for external identity services (e.g., Firebase, Auth0, Cognito). Defines methods for registering users, authenticating credentials, verifying tokens, and retrieving user profiles in a vendor‑agnostic way.
+### 🧬 Core Domain & DDD
+Primitives for expressing your business domain cleanly and enforcing invariants.
 
-### 🛡️ RBAC (Role-Based Access Control)
-- **RBACPolicy:** Abstract base class for defining role-based permission logic. Supports wildcard actions (manage) and resources (*), ownership checks, and composable access control strategies.
-- **Permission:** Lightweight value object representing an action-resource pair (e.g., read:orders, manage:*).
-- **ABAC Integration:** ABAC Integration: Extend RBAC with attribute-based access control via composable predicates. Use canWithAttributes() and canAnyWithAttributes() to enforce dynamic policies based on user and resource attributes (e.g., ownership, organization, status). This enables hybrid access control strategies that combine declarative roles with contextual rules.
+- **Aggregates:** 
+  - `AggregateRoot`: Base class for a cluster of domain objects that can be treated as a single unit. Inherits from `Entity` and provides built-in domain event recording capabilities.
+- **Entities:** 
+  - `Entity`: Base class for identity-based domain entities.
+  - `EntityRegistry`: Dynamic registry for entity constructors, enabling polymorphic instantiation.
+- **Value Objects:** A vast collection of primitives that enforce domain constraints and immutability (e.g., `CoordinatesValue`, `EmailValue`, `StringValue`, `UUIDValue`, `URLValue`, `DateValue`, etc.).
+- **Domain Events:**
+  - `DomainEvent`: Base class for domain-driven event dispatching.
+- **Result:**
+  - `Result`: Type-safe wrapper for success/failure outcomes. Enforces disciplined error handling without exceptions. Includes accessors (`getValue`, `getError`) and guards.
+- **Models:**
+  - `BaseModel`: Base class for serializable, type-safe models.
 
-### 📊 Criteria
+### ⚙️ Command & Event Processing
+Abstractions for CQRS, Event Sourcing, and orchestrating complex distributed workflows.
 
+- **CQRS:** 
+  - `Command` / `CommandHandler`: Encapsulate intent and state changes.
+  - `Query` / `QueryHandler`: Define read-side operations.
+  - `CommandBus` / `QueryBus`: Centralized dispatchers (includes `InMemoryCommandBus` and `InMemoryQueryBus`).
+- **Sagas:**
+  - `Saga`: Abstract base for defining long-running, stateful business processes.
+  - `SagaManager`: Orchestrates saga execution and event routing.
+  - `SagaStateStore`: Stores the ongoing state of a Saga to resume across restarts.
+- **Event Bus:**
+  - `EventSubscriber`: Clean, type-safe event handlers.
+  - `InMemoryEventBus`: Dispatcher with support for retries and requeueing.
+  - `DomainEventRegistry`: Centralized registry for hydrating polymorphic domain events.
+  - `InMemoryEventStore`: Tracks and replays events.
+  - `DeadLetterStore`: Captures events that failed after maximum retries.
+
+### 🛡️ Security & Access Control
+Tools for managing identities and permissions across applications.
+
+- **Auth:**
+  - `AuthProvider`: Abstract interface for authentication strategies.
+  - `IdentityProvider`: Contract for external identity services (Firebase, Auth0, Cognito).
+- **RBAC (Role-Based Access Control):**
+  - `RBACPolicy`: Base class for defining role-based permission logic.
+  - `Permission`: Lightweight value object for action-resource pairs (e.g., `read:orders`).
+- **ABAC (Attribute-Based Access Control):** Extend RBAC with dynamic, contextual attributes using composable predicates.
+
+### 💾 Persistence & Data Access
+Interfaces to decouple application logic from database engines.
+
+- **DAO (Data Access Object):** Generic interface defining CRUD operations for entities.
+- **UnitOfWork:** Enables transactional coordination across multiple persistence operations.
 - **Criteria:** Fluent query builder for filtering, sorting, and pagination.
 
-### 📣 Domain Events
+### 🌐 Networking & APIs
+Integrate seamlessly with external services and clients.
 
-- **DomainEvent:** Base class for domain-driven event dispatching.
+- **HTTP:**
+  - `HTTPProvider`: Abstract interface for HTTP transport.
+  - `FetchHTTPProvider`: Concrete implementation using `fetch`.
+- **JSON:API:**
+  - `JSONAPIConnector`: Interact with JSON:API-compliant endpoints.
+  - `URLCriteriaParser`: Parses JSON:API-style URL parameters into a type-safe `Criteria` object.
+  - `EntityJSONAPIMapper`: Converts `Entity` instances into JSON:API-compliant payloads.
+- **Pub-Sub:**
+  - `Publisher`: Dispatch real-time events to external transports (Pusher, Socket.IO).
+  - `Subscription`: Client-side abstraction for subscribing to real-time channels.
+- **Mail:**
+  - `Mailer`: Interface for sending email messages.
+  - `Mail`: Type-safe structure representing an email payload.
 
-### 🧬 Entities
+### 💻 State & UI
+Helpers for building robust frontend experiences.
 
-- **Entity:** Base class for identity-based domain entities.
-- **EntityRegistry:** Dynamic registry for entity constructors, enabling polymorphic and type-safe instantiation of domain entities from serialized data.
+- **State Manager:**
+  - `StateManager`: Abstract reactive state manager with listener support.
+  - Includes `SessionStorageStateManager`, `LocalStorageStateManager`, and `InMemoryStateManager`.
+- **Guided Tours:**
+  - `TourGuide`: Abstract base class for defining UI onboarding tours. Integrates with libraries like Driver.js or Intro.js.
+- **i18n (Internationalization):**
+  - `TranslationResolver`: Infrastructure-agnostic interface for resolving localized strings within the domain.
 
-### 🔁 Event Bus
+### 🩺 Observability & Tracking
+Diagnostics, error handling, and structured logging.
 
-- **InMemoryEventBus:** Lightweight, in-memory event dispatcher with support for retries, acknowledgments, and requeueing. Designed for testing, local development, or as a foundation for more robust event-driven architectures.
-- **DomainEventRegistry:** Centralized registry for hydrating polymorphic domain events from serialized primitives.
-- **EventSubscriber:** Interface for subscribing to specific event types with clean, type-safe handlers.
-- **InMemoryEventStore:** Simple event store for tracking and replaying events, with retry metadata and bounded requeue support.
-- **DeadLetterStore / InMemoryDeadLetterStore:** Dedicated store for capturing events that failed after max retries. Provides inspection (all()), clearing, and replay support.
+- **Logger:**
+  - `Logger`: Structured, context-aware logging (`log`, `info`, `debug`, `warn`, `error`).
+  - `ConsoleLogger`: Local development implementation.
+  - `ScopedLogger`: Composable logging scopes via `.child()`.
+- **Error Tracking:**
+  - `ErrorTracker`: Coordinator class to track, store, and upload errors robustly with configurable ignore rules.
+  - `ErrorStore` & `ErrorUploader`: Interfaces to plug into telemetry systems (Sentry, Datadog).
+  - `TrackedError`: Generic model for a tracked error payload.
 
-### 🧭 CQRS (Command Query Responsibility Segregation)
-- **Command / CommandHandler:** Define write-side operations that encapsulate intent and state changes. Handlers execute domain logic for commands like CreateUserCommand or SendReportCommand.
-- **Query / QueryHandler:** Define read-side operations for retrieving data. Handlers encapsulate query logic and return type-safe results.
-- **CommandBus / QueryBus:** Abstract dispatchers for routing commands and queries to their respective handlers. Enables decoupled, centralized execution.
-- **InMemoryCommandBus / InMemoryQueryBus:** Lightweight in-memory implementations for local development and testing. Supports dynamic registration and type-safe dispatching.
+### 🛠️ Utilities
+Essential helper functions and types used across bounded contexts.
 
-### 📡 Pub-Sub
-
-- **Publisher:** Abstract interface for dispatching real-time events to external transports (e.g., Pusher, Socket.IO). Designed for event delivery, enabling type-safe, decoupled publishing from domain logic.
-- **Subscription:** Client-side abstraction for subscribing to real-time channels and binding event handlers. Supports channel access and dynamic event routing.
-
-### 🧹 Formatters
-
-- **PascalCamelToSnake:** Utility for converting PascalCase or camelCase to snake_case.
-
-### 🌐 HTTP
-
-- **HTTPProvider:** Abstract interface for HTTP transport.
-- **FetchHTTPProvider:** Concrete implementation using fetch.
-
-### 🌐 Internationalization (i18n)
-
-- **TranslationResolver:** Infrastructure-agnostic interface for resolving localized strings within the domain. Enables domain errors, validations, and events to be presented in different languages without coupling to any specific i18n implementation. Supports injection into domain exceptions, decorators, and services.
-Translation keys are centralized in registries for discoverability and tooling, with patterns to extend keys per bounded context.
-
-### 🔗 JSON:API
-
-- **JSONAPIConnector:** Connector for interacting with JSON:API-compliant endpoints.
-- **URLCriteriaParser:** Utility for parsing JSON:API-style query parameters (`filter`, `sort`, `page[limit]`, `page[offset]`) into a type-safe `Criteria` object. Supports operators like `eq`, `ne`, `gt`, `lt`, `in`, `between`, and even geospatial filters (`geo_radius`). This enables seamless conversion from URL query strings into expressive domain queries.
-- **EntityJSONAPIMapper:** Static utility for converting domain `Entity` instances into JSON:API-compliant payloads. Provides `mapEntity` for single resources and `mapEntities` for collections, ensuring attributes are serialized consistently with the JSON:API specification.
-
-### 📬 Mail
-
-- **Mailer:** Abstract interface for sending email messages. Decouples infrastructure from application logic by exposing a simple contract for outbound communication.
-- **Mail:** Type-safe structure representing an email payload, including recipients, subject, body, and optional metadata like CC, BCC, and attachments.
-
-### 🧩 Models
-
-- **BaseModel:** Base class for serializable, type-safe models.
-
-### 🎯 Result
-
-- **Result:** Type-safe wrapper for success/failure outcomes. Encapsulates either a value or an error, enforcing disciplined error handling without exceptions. Includes static factories (`success`, `error`), accessors (`getValue`, `getError`), and guards (`isSuccess`, `isFailure`).
-
-### 🛠 Persistence
-
-- **DAO:** Generic interface defining data access operations for domain entities.
-- **UnitOfWork:** Interface enabling transactional coordination across multiple persistence operations.
-
-### 🧠 State Manager
-
-- **StateManager:** Abstract reactive state manager with listener support.
-- **SessionStorageStateManager:** Concrete implementation using session storage.
-- **LocalStorageStateManager:** Concrete implementation using local storage.
-- **InMemoryStateManager:** Concrete implementation using in-memory.
-
-### 🧭 Guided Tours
-
-- **TourGuide:** Abstract base class for defining guided UI tours. Accepts a list of TourStep objects and exposes a fluent API for composing onboarding flows. Designed to be extended by concrete implementations (e.g., Driver.js, Intro.js) in frontend environments.
-
-### 📣 Logger
-
-- **Logger:** Abstract base class for structured, context-aware logging across environments. Supports scoped logging via child() method, enabling per-module or per-request diagnostics. Each method (log, info, debug, warn, error) accepts optional context metadata and variadic arguments for flexible message composition.
-- **ConsoleLogger:** Concrete implementation with log levels (LOG, INFO, DEBUG, WARN, ERROR) and contextual metadata injection (e.g., timestamps, custom context). Provides consistent filtering and structured output across environments.
-- **ScopedLogger:** Internal utility class returned by Logger.child(). Merges base context with per-call context, enabling nested, composable logging scopes.
-
-### 📈 Telemetry
-
-- **Telemetry:** Abstract interface for unified telemetry across frontend and backend environments. Supports initialization, error tracking, custom context attributes, and transaction naming. Enables integration with observability platforms like New Relic via a consistent API.
-- **ConsoleTelemetry:** Development-friendly implementation of the `Telemetry` interface that logs errors, context, and transaction names to the console. Useful for local environments, testing, or CI pipelines where external observability is not required.
-
-### 🧪 Value Objects
-
-- **CoordinatesValue**
-- **EmailValue**
-- **EnumValue**
-- **IntegerValue**
-- **PhoneValue**
-- **SlugValue**
-- **StringValue**
-- **UUIDValue**
-- **BooleanValue**
-- **DateValue**
-- **ArrayValue**
-- **ObjectValue**
-- **FloatValue**
-- **URLValue**
-
-### 🔄 Converters
-- **RemoteFileToBase64:** Utility for converting remote files (via URL) into base64-encoded strings. Accepts a URL and returns a base64 representation using an injected `HTTPProvider`, enabling infrastructure-agnostic file transformation. Useful for image uploads, previews, and binary transport across domains.
-
-Each value object enforces domain constraints and immutability, ensuring correctness at the boundary of your system.
+- **Types:** Core utility types such as `Constructor`, `DeepPartial`, `Dictionary`, `JSON`, `MaybePromise`, `Nullable`, and `Optional`.
+- **Utils:** Common functions for `assertion`, `async` flows, `object` manipulation, `string` handling, and `url` parsing.
+- **Formatters:** Utilities like `PascalCamelToSnake` case conversion.
+- **Converters:** Utilities like `RemoteFileToBase64`.
 
 ## 🧠 Philosophy
 
 This kernel is built around:
-
 - **Type safety:** Every abstraction is strongly typed and composable.
 - **Domain expressiveness:** Value objects, entities, and events encode business logic directly.
 - **Extensibility:** Plug in your own HTTP, auth, or state strategies.
@@ -150,8 +127,7 @@ import { Criteria } from "@schorts/shared-kernel/criteria";
 import { FetchHTTPProvider } from "@schorts/shared-kernel/http";
 import { JSONAPIConnector } from "@schorts/shared-kernel/json-api";
 
-// Didn't know what url use for the example hehe
-const usersURL = new URL("https://github.com/schorts99");
+const usersURL = new URL("https://api.example.com/users");
 
 const criteria = new Criteria()
   .where("status", "EQUAL", "active")
@@ -160,13 +136,13 @@ const criteria = new Criteria()
 
 const connector = new JSONAPIConnector(new FetchHTTPProvider());
 
-// UserModel is your own Model
+// UserModel is your own Model class
 const users = await connector.findMany<UserModel>(usersURL, criteria);
 ```
 
 ## 🧪 Testing
 
-Each module is fully covered with unit tests. To run them:
+Each module is fully covered with unit tests using Jest. To run them:
 
 ```bash
 npm run test
@@ -174,4 +150,4 @@ npm run test
 
 ## 📜 License
 
-LGPL
+LGPL-3.0-or-later

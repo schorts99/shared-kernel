@@ -26,3 +26,4 @@ export * from "./types";
 export * from "./unit-of-work";
 export * from "./utils";
 export * from "./value-objects";
+export * from "./error-tracking";
