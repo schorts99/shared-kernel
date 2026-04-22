@@ -1,7 +1,7 @@
 import { Query } from "./query";
 import { QueryValidationError, QueryAuthorizationError, QueryExecutionError } from "./exceptions";
 import { Logger } from "../logger";
-import { Cache } from "./cache";
+import { Cache } from "../cache";
 
 export interface QueryHandlerOptions {
   cache?: boolean;

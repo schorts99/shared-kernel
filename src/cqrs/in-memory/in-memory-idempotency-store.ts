@@ -1,4 +1,4 @@
-import { IdempotencyStore } from "../cache";
+import { IdempotencyStore } from "../idempotency-store";
 
 export class InMemoryIdempotencyStore implements IdempotencyStore {
   private readonly processed = new Map<string, { result: unknown; expiresAt?: number }>();

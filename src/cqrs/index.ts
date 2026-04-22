@@ -22,7 +22,7 @@ export type { QueryHandlerOptions, QueryHandlerContext } from "./query-handler";
 export type { Query } from "./query";
 export { AbstractQuery } from "./query";
 export type { QueryMetadata, QueryPrimitives } from "./query-metadata";
-export type { Cache, IdempotencyStore } from "./cache";
+export type { IdempotencyStore } from "./idempotency-store";
 export * from "./in-memory";
 export * from "./exceptions";
 export * from "./cache-invalidation-middleware";

@@ -1,4 +1,4 @@
-import { Cache } from "../cache";
+import { Cache } from "../../cache";
 
 export class InMemoryCache<T = unknown> implements Cache<T> {
   private readonly cache = new Map<string, { value: T; expiresAt?: number; tags?: string[] }>();

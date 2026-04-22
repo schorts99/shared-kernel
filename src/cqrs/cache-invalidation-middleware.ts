@@ -1,6 +1,6 @@
 import { CommandBusMiddleware, CommandBusContext } from "./command-bus";
 import { Command } from "./command";
-import { Cache } from "./cache";
+import { Cache } from "../cache";
 
 export interface CacheInvalidationEvent {
   getInvalidationTags(): string[];

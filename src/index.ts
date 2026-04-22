@@ -1,6 +1,7 @@
 export * from "./abac";
 export * from "./aggregates";
 export * from "./auth";
+export * from "./cache";
 export * from "./converters";
 export * from "./cqrs";
 export * from "./criteria";
