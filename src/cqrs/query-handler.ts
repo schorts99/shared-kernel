@@ -36,6 +36,10 @@ export interface QueryHandler<Q extends Query = Query, R = unknown> {
   shouldCache?(query: Q, result: R): boolean;
 
   getCacheTags?(query: Q, result: R): string[];
+
+  serializeResult?(result: R): unknown;
+
+  deserializeResult?(payload: unknown): R;
 }
 
 export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
@@ -83,7 +87,7 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
               this.logQuery(query, cachedResult as R, startTime, true);
             }
 
-            return cachedResult as R;
+            return this.deserializeResult(cachedResult)
           }
         }
       }
@@ -96,7 +100,12 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
         if (cacheKey) {
           const tags = this.getCacheTags?.(query, result);
 
-          await this.cache.set(cacheKey, result, this.options.cacheTtl, tags);
+          await this.cache.set(
+            cacheKey,
+            this.serializeResult(result),
+            this.options.cacheTtl,
+            tags,
+          );
         }
       }
 
@@ -145,6 +154,14 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
 
   getCacheTags?(_: Q, __: R): string[] {
     return [];
+  }
+
+  serializeResult(result: R): unknown {
+    return result;
+  }
+
+  deserializeResult(payload: unknown): R {
+    return payload as R;
   }
 
   private logQuery(query: Q, result: R, startTime: Date, cached = false): void {
