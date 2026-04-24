@@ -114,7 +114,6 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
       }
 
       return result;
-
     } catch (error) {
       if (this.options.logging) {
         this.logError(query, error, startTime);
@@ -122,7 +121,8 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
 
       if (error instanceof QueryValidationError ||
         error instanceof QueryAuthorizationError ||
-        error instanceof QueryExecutionError) {
+        error instanceof QueryExecutionError
+      ) {
         throw error;
       }
 

@@ -109,6 +109,7 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
 
         if (this.options.idempotent && this.idempotencyStore) {
           const idempotencyKey = this.getIdempotencyKey?.(command);
+
           if (idempotencyKey) {
             await this.idempotencyStore.markProcessed(idempotencyKey, result);
           }
@@ -116,6 +117,7 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
 
         if (this.cache && this.getInvalidationTags) {
           const tags = this.getInvalidationTags(command, result);
+
           if (tags && tags.length > 0 && this.cache.deleteByTags) {
             await this.cache.deleteByTags(tags);
           }
@@ -139,6 +141,7 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
               error: lastError instanceof Error ? lastError.message : String(lastError),
             });
           }
+
           continue;
         }
 
@@ -160,7 +163,8 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
 
         if (lastError instanceof CommandValidationError ||
           lastError instanceof CommandAuthorizationError ||
-          lastError instanceof CommandExecutionError) {
+          lastError instanceof CommandExecutionError
+        ) {
           throw lastError;
         }
 
@@ -202,6 +206,7 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
 
   private logCommand(command: C, result: R, startTime: Date): void {
     const duration = Date.now() - startTime.getTime();
+
     this.logger?.info(`[Command ${command.getType()}] completed in ${duration}ms`, {
       correlationId: command.getMetadata().correlationId,
       userId: command.getMetadata().userId,
@@ -211,6 +216,7 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
 
   private logError(command: C, error: any, startTime: Date): void {
     const duration = Date.now() - startTime.getTime();
+
     this.logger?.error(`[Command ${command.getType()}] failed after ${duration}ms`, {
       correlationId: command.getMetadata().correlationId,
       userId: command.getMetadata().userId,
