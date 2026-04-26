@@ -45,6 +45,10 @@ export interface CommandHandler<C extends Command = Command, R = void> {
   canRetry?(command: C, error: Error): boolean;
 
   getInvalidationTags?(command: C, result: R): string[];
+
+  serializeResult?(result: R): unknown;
+
+  deserializeResult?(payload: unknown): R;
 }
 
 export abstract class AbstractCommandHandler<C extends Command = Command, R = void>
@@ -82,8 +86,9 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
     };
     let lastError: Error | null = null;
     let retryCount = 0;
+    const maxAttempts = (this.options.maxRetries ?? 0) + 1;
 
-    while (retryCount <= (this.options.maxRetries ?? 0)) {
+    while (retryCount < maxAttempts) {
       try {
         await this.validate(command);
         await this.authorize(command);
@@ -92,16 +97,9 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
           const idempotencyKey = this.getIdempotencyKey?.(command);
 
           if (idempotencyKey && await this.idempotencyStore.isProcessed(idempotencyKey)) {
-            const cachedResult = (this.idempotencyStore as any).getResult?.(idempotencyKey);
+            const cachedResult = await this.idempotencyStore.getResult(idempotencyKey);
 
-            if (cachedResult !== undefined) {
-              return cachedResult as R;
-            }
-
-            throw new CommandExecutionError(
-              `Command already processed: ${idempotencyKey}`,
-              "COMMAND_ALREADY_PROCESSED"
-            );
+            return this.deserializeResult(cachedResult) as R;
           }
         }
 
@@ -111,7 +109,10 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
           const idempotencyKey = this.getIdempotencyKey?.(command);
 
           if (idempotencyKey) {
-            await this.idempotencyStore.markProcessed(idempotencyKey, result);
+            await this.idempotencyStore.markProcessed(
+              idempotencyKey,
+              this.serializeResult(result),
+            );
           }
         }
 
@@ -202,6 +203,14 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
 
   getInvalidationTags?(_: C, __: R): string[] {
     return [];
+  }
+
+  serializeResult(result: R): unknown {
+    return result;
+  }
+
+  deserializeResult(payload: unknown): R {
+    return payload as R;
   }
 
   private logCommand(command: C, result: R, startTime: Date): void {

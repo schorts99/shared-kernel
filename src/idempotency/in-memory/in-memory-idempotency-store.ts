@@ -29,7 +29,7 @@ export class InMemoryIdempotencyStore implements IdempotencyStore {
     return this.processed.delete(key);
   }
 
-  getResult(key: string): unknown {
+  async getResult(key: string): Promise<unknown | undefined> {
     const entry = this.processed.get(key);
 
     if (!entry) return undefined;
