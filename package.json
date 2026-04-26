@@ -1,6 +1,6 @@
 {
   "name": "@schorts/shared-kernel",
-  "version": "9.4.1",
+  "version": "9.4.3",
   "description": "A modular, type-safe foundation for building expressive, maintainable applications. This package provides core abstractions for domain modeling, HTTP integration, authentication, state management, and more — designed to be framework-agnostic and highly extensible.",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -80,6 +80,11 @@
       "import": "./dist/esm/i18n/index.js",
       "require": "./dist/cjs/i18n/index.js",
       "types": "./dist/types/i18n/index.d.ts"
+    },
+    "./idempotency": {
+      "import": "./dist/esm/idempotency/index.js",
+      "require": "./dist/cjs/idempotency/index.js",
+      "types": "./dist/types/idempotency/index.d.ts"
     },
     "./identity-providers": {
       "import": "./dist/esm/identity-providers/index.js",

@@ -6,7 +6,7 @@ import {
   CommandMaxRetriesExceeded
 } from "./exceptions";
 import { Logger } from "../logger";
-import { IdempotencyStore } from "./idempotency-store";
+import { IdempotencyStore } from "../idempotency";
 import { Cache } from "../cache";
 
 export interface CommandHandlerOptions {

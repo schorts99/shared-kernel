@@ -13,6 +13,7 @@ export * from "./sagas";
 export * from "./formatters";
 export * from "./http";
 export * from "./i18n";
+export * from "./idempotency";
 export * from "./identity-providers";
 export * from "./json-api";
 export * from "./logger";
