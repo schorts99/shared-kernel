@@ -106,62 +106,63 @@ export class InMemoryEventBus implements EventBus {
     }
   }
 
-  private async dispatch(event: DomainEvent) {
-    const eventName = event.getEventName();
-    const subs = this.subscribers.get(eventName) ?? [];
-    const primitives = event.toPrimitives();
-    const eventId = event.getMetadata().id;
+	private async dispatch(event: DomainEvent) {
+		const eventName = event.getEventName();
+		const subs = this.subscribers.get(eventName) ?? [];
+		const primitives = event.toPrimitives();
+		const eventId = event.getMetadata().id;
 
-    if (await this.store.isProcessed(eventId)) {
-      return;
-    }
+		if (await this.store.isProcessed(eventId)) {
+			return;
+		}
 
-    const retrySubscriber = async (failedEvent: DomainEvent, subscriber: EventSubscriber<any>, error?: Error) => {
-      const maxRetries = this.config.maxRetries ?? 0;
-      const currentRetries = failedEvent.getMetadata().retries;
+		const executeSubscriber = async (subscriber: EventSubscriber<any>, currentEvent: DomainEvent) => {
+			const subscriberContext: EventSubscriberContext = {
+				subscriptionTime: new Date(),
+				metadata: {},
+				options: subscriber.getOptions?.() ?? {},
+			};
 
-      if (currentRetries < maxRetries) {
-        const updatedPrimitives = {
-          ...primitives,
-          meta: { ...primitives.meta, retries: currentRetries + 1 },
-        };
+			await subscriber.handle(currentEvent, subscriberContext);
+		};
 
-        await this.store.requeue(updatedPrimitives);
+		const retrySubscriber = async (failedEvent: DomainEvent, subscriber: EventSubscriber<any>, error?: Error) => {
+			const maxRetries = this.config.maxRetries ?? 0;
+			const currentRetries = failedEvent.getMetadata().retries;
 
-        const retryEvent = DomainEventRegistry.fromPrimitives(updatedPrimitives);
+			if (currentRetries < maxRetries) {
+				const updatedPrimitives = {
+					...primitives,
+					meta: { ...primitives.meta, retries: currentRetries + 1 },
+				};
 
-        await executeSubscriber(subscriber, retryEvent);
-      } else if (this.deadLetterStore) {
-        const reason = error ? error.message : `Exceeded max retries (${maxRetries})`;
+				await this.store.requeue(updatedPrimitives);
 
-        await this.deadLetterStore.add(primitives, reason, subscriber);
-        throw new Error(`Subscriber failed permanently: ${reason}`);
-      } else {
-        throw error || new Error('Subscriber failed');
-      }
-    };
+				const retryEvent = DomainEventRegistry.fromPrimitives(updatedPrimitives);
 
-    const executeSubscriber = async (subscriber: EventSubscriber<any>, currentEvent: DomainEvent) => {
-      const subscriberContext: EventSubscriberContext = {
-        subscriptionTime: new Date(),
-        metadata: {},
-        options: subscriber.getOptions?.() ?? {},
-      };
+				await executeSubscriber(subscriber, retryEvent);
+			} else if (this.deadLetterStore) {
+				const reason = error ? error.message : `Exceeded max retries (${maxRetries})`;
 
-      await subscriber.handle(currentEvent, subscriberContext);
-    };
+				await this.deadLetterStore.add(primitives, reason, subscriber);
 
-    const subscriberPromises = subs.map(sub => 
-      executeSubscriber(sub, event).catch(err => retrySubscriber(event, sub, err))
-    );
+				throw new Error(`Subscriber failed permanently: ${reason}`);
+			} else {
+				throw error || new Error("Subscriber failed");
+			}
+		};
 
-    try {
-      await Promise.all(subscriberPromises);
-      await this.store.delete(eventId);
-    } catch (error) {
-      console.error('Event processing failed:', error);
-    }
-  }
+		const subscriberPromises = subs.map(sub =>
+			executeSubscriber(sub, event).catch(err => retrySubscriber(event, sub, err))
+		);
+
+		try {
+			await Promise.all(subscriberPromises);
+			await this.store.delete(eventId);
+		} catch (error) {
+			console.error("Event processing failed:", error);
+		}
+	}
 
   async replay() {
     const events = await this.store.all();
