@@ -5,3 +5,4 @@ export { JSONAPIConnector } from "./json-api-connector";
 export { URLCriteriaParser } from "./url-criteria-parser";
 export * from "./mappers";
 export * from "./exceptions";
+export { PaginationLinksGenerator } from "./pagination-links-generator";
