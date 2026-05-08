@@ -126,25 +126,34 @@ export class InMemoryEventBus implements EventBus {
 			await subscriber.handle(currentEvent, subscriberContext);
 		};
 
-		const retrySubscriber = async (failedEvent: DomainEvent, subscriber: EventSubscriber<any>, error?: Error) => {
+		const retrySubscriber = async (
+			failedEvent: DomainEvent,
+			subscriber: EventSubscriber<any>,
+			error?: Error,
+		) => {
 			const maxRetries = this.config.maxRetries ?? 0;
 			const currentRetries = failedEvent.getMetadata().retries;
 
 			if (currentRetries < maxRetries) {
 				const updatedPrimitives = {
-					...primitives,
-					meta: { ...primitives.meta, retries: currentRetries + 1 },
+					...failedEvent.toPrimitives(),
+					meta: { ...failedEvent.toPrimitives().meta, retries: currentRetries + 1 },
 				};
 
 				await this.store.requeue(updatedPrimitives);
 
 				const retryEvent = DomainEventRegistry.fromPrimitives(updatedPrimitives);
 
-				await executeSubscriber(subscriber, retryEvent);
+				try {
+					await executeSubscriber(subscriber, retryEvent);
+				} catch (err) {
+					await retrySubscriber(retryEvent, subscriber, err as Error);
+				}
 			} else if (this.deadLetterStore) {
 				const reason = error ? error.message : `Exceeded max retries (${maxRetries})`;
 
-				await this.deadLetterStore.add(primitives, reason, subscriber);
+				await this.deadLetterStore.add(failedEvent.toPrimitives(), reason, subscriber);
+				await this.store.delete(failedEvent.getMetadata().id);
 
 				throw new Error(`Subscriber failed permanently: ${reason}`);
 			} else {
