@@ -19,7 +19,7 @@ export abstract class DAO<
 
   abstract findOneBy(criteria: Criteria, uow?: UnitOfWork): Promise<Entity | null>;
 
-  abstract search(criteria: Criteria, uow?: UnitOfWork): Promise<Entity[] | null>;
+  abstract search(criteria: Criteria, uow?: UnitOfWork): Promise<Entity[]>;
 
   abstract countBy(criteria: Criteria, uow?: UnitOfWork): Promise<number>;
 
