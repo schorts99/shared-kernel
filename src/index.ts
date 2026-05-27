@@ -19,6 +19,7 @@ export * from "./json-api";
 export * from "./logger";
 export * from "./mail";
 export * from "./models";
+export * from "./offline";
 export * from "./pub-sub";
 export * from "./rbac";
 export * from "./result";
