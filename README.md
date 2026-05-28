@@ -64,6 +64,15 @@ Interfaces to decouple application logic from database engines.
 - **UnitOfWork:** Enables transactional coordination across multiple persistence operations.
 - **Criteria:** Fluent query builder for filtering, sorting, and pagination.
 
+### 📡 Offline & Resilience
+
+Infrastructure for offline persistence, replay, and durability.
+
+- **OfflineStore:**
+  - Contract for queuing and replaying commands or service calls when offline.
+  - Methods: `enqueue`, `list`, `dequeue`, `clear`.
+  - Default payload type: { type: string; args: any[]; meta?: { userId, tenantId, timestamp, retries, correlationId, origin, version } }.
+
 ### 🌐 Networking & APIs
 Integrate seamlessly with external services and clients.
 
