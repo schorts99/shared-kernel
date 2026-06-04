@@ -4,3 +4,4 @@ export * from "./async";
 export * from "./assertion";
 export * from "./object";
 export * from "./string";
+export * from "./debounce";
