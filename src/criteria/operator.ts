@@ -9,4 +9,6 @@ export type Operator =
   | "NOT_IN"
   | "LIKE"
   | "BETWEEN"
-  | "GEO_RADIUS";
+  | "GEO_RADIUS"
+	|	"ARRAY_CONTAINS"
+	| "ARRAY_CONTAINS_ANY";

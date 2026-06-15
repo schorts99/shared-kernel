@@ -56,6 +56,8 @@ export class URLCriteriaParser {
       case "gte": return "GREATER_THAN_OR_EQUAL";
       case "lte": return "LESS_THAN_OR_EQUAL";
       case "in": return "IN";
+			case "array_contains": return "ARRAY_CONTAINS";
+			case "array_contains_any": return "ARRAY_CONTAINS_ANY";
       case "nin": return "NOT_IN";
       case "like": return "LIKE";
       case "between": return "BETWEEN";

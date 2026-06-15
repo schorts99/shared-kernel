@@ -22,31 +22,44 @@ export class URLCriteriaBuilder {
         switch (operator) {
           case "EQUAL":
             builder.with({ [`filter[${encodedField}]`]: value });
-            break;
 
+            break;
           case "NOT_EQUAL":
             builder.with({ [`filter[${encodedField}][ne]`]: value });
+
             break;
 
           case "GREATER_THAN":
             builder.with({ [`filter[${encodedField}][gt]`]: value });
-            break;
 
+            break;
           case "LESS_THAN":
             builder.with({ [`filter[${encodedField}][lt]`]: value });
-            break;
 
+            break;
           case "GREATER_THAN_OR_EQUAL":
             builder.with({ [`filter[${encodedField}][gte]`]: value });
-            break;
 
+            break;
           case "LESS_THAN_OR_EQUAL":
             builder.with({ [`filter[${encodedField}][lte]`]: value });
-            break;
 
+            break;
           case "IN":
             if (Array.isArray(value)) {
               builder.with({ [`filter[${encodedField}][in]`]: value.join(",") });
+            }
+
+            break;
+					case "ARRAY_CONTAINS":
+            builder.with({ [`filter[${encodedField}][array_contains]`]: value });
+	
+            break;
+          case "ARRAY_CONTAINS_ANY":
+            if (Array.isArray(value)) {
+              builder.with({
+                [`filter[${encodedField}][array_contains_any]`]: value.join(","),
+              });
             }
             break;
 
@@ -54,29 +67,30 @@ export class URLCriteriaBuilder {
             if (Array.isArray(value)) {
               builder.with({ [`filter[${encodedField}][nin]`]: value.join(",") });
             }
-            break;
 
+            break;
           case "LIKE":
             builder.with({ [`filter[${encodedField}][like]`]: value });
+	
             break;
-
           case "BETWEEN":
             if (Array.isArray(value) && value.length === 2) {
               builder.with({
                 [`filter[${encodedField}][between]`]: `${value[0]},${value[1]}`,
               });
             }
+	
             break;
-
           case "GEO_RADIUS":
             if (value && typeof value === "object") {
               const { lat, lng, radius } = value;
+	
               builder.with({
                 [`filter[${encodedField}][geo_radius]`]: `${lat},${lng},${radius}`,
               });
             }
+	
             break;
-
           default:
             throw new Error(`Unsupported operator: ${operator satisfies never}`);
         }
@@ -86,6 +100,7 @@ export class URLCriteriaBuilder {
         const sortParam = this.criteria.orders
           .map(({ field, direction }) => (direction === "DESC" ? `-${field}` : field))
           .join(",");
+	
         builder.with({ sort: sortParam });
       }
 
