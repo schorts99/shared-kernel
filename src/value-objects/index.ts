@@ -16,4 +16,5 @@ export { ObjectValue } from "./object-value";
 export { URLValue } from "./url-value";
 export { HTMLValue } from "./html.value";
 export { MarkdownValue } from "./markdown.value";
+export { PathValue } from "./path-value";
 export * from "./exceptions";
