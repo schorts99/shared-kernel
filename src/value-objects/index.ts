@@ -14,4 +14,6 @@ export { FloatValue } from "./float-valuet";
 export { ArrayValue } from "./array-value";
 export { ObjectValue } from "./object-value";
 export { URLValue } from "./url-value";
+export { HTMLValue } from "./html.value";
+export { MarkdownValue } from "./markdown.value";
 export * from "./exceptions";

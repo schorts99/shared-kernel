@@ -1,6 +1,6 @@
 {
   "name": "@schorts/shared-kernel",
-  "version": "9.12.0",
+  "version": "9.13.0",
   "description": "A modular, type-safe foundation for building expressive, maintainable applications. This package provides core abstractions for domain modeling, HTTP integration, authentication, state management, and more — designed to be framework-agnostic and highly extensible.",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -185,7 +185,7 @@
     "expect-type": "^1.2.2",
     "jest": "^30.4.2",
     "jest-html-reporter": "^3.10.2",
-    "ts-jest": "^29.1.2",
+    "ts-jest": "^27.0.3",
     "typescript": "^5.9.2"
   },
   "repository": {
