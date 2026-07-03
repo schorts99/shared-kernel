@@ -21,6 +21,8 @@ export abstract class DAO<
 
   abstract search(criteria: Criteria, uow?: UnitOfWork): Promise<Entity[]>;
 
+  abstract count(uow?: UnitOfWork): Promise<number>;
+
   abstract countBy(criteria: Criteria, uow?: UnitOfWork): Promise<number>;
 
   abstract exists(criteria: Criteria, uow?: UnitOfWork): Promise<boolean>;
