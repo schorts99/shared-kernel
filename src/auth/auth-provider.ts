@@ -1,7 +1,7 @@
 import { Entity } from "../entities";
 import { Model } from "../models";
 import { ValueObject } from "../value-objects";
-import { Permission } from "../rbac";
+import { Permission, BaseAction } from "../rbac";
 
 export interface AuthCredentials {
   username?: string;
@@ -13,25 +13,29 @@ export interface AuthCredentials {
 
 export interface AuthenticationResult {
   token: string;
-  expiresAt?: Date;
+ expiresAt?: Date;
   refreshToken?: string;
 }
 
-export interface UserSession<UserEntity extends Entity<ValueObject, Model>> {
+export interface UserSession<
+  UserEntity extends Entity<ValueObject, Model>,
+  Action extends string = BaseAction
+> {
   user: UserEntity;
   token: string;
-  permissions: Permission[];
+  permissions: Permission<Action>[];
   expiresAt?: Date;
   refreshToken?: string;
 }
 
-export type AuthChangeCallback<UserEntity extends Entity<ValueObject, Model>> = 
+export type AuthChangeCallback<UserEntity extends Entity<ValueObject, Model>> =
   (user: UserEntity | null) => void | Promise<void>;
 
 export type AuthChangeUnsubscribe = () => void;
 
 export interface AuthProvider<
-  UserEntity extends Entity<ValueObject, Model>
+  UserEntity extends Entity<ValueObject, Model>,
+  Action extends string = BaseAction
 > {
   authenticate(credentials: AuthCredentials): Promise<AuthenticationResult>;
 
@@ -41,13 +45,11 @@ export interface AuthProvider<
 
   getCurrentUser(): Promise<UserEntity | null>;
 
-  getCurrentUserPermissions(): Promise<Permission[]>;
+  getCurrentUserPermissions(): Promise<Permission<Action>[]>;
 
-  getCurrentSession(): Promise<UserSession<UserEntity> | null>;
+  getCurrentSession(): Promise<UserSession<UserEntity, Action> | null>;
 
-  refreshToken(
-    refreshToken?: string
-  ): Promise<AuthenticationResult>;
+  refreshToken(refreshToken?: string): Promise<AuthenticationResult>;
 
   revokeToken(token?: string): Promise<void>;
 
