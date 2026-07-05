@@ -46,13 +46,12 @@ export class LocalStorageStateManager<Schema extends Record<string, any>> extend
   }
 
   public reset(): void {
-    // Clear all current keys from storage
     Object.keys(this.state).forEach((key) => {
       localStorage.removeItem(String(key));
     });
 
-    // Restore and persist initial state
     this.state = { ...this.initialState };
+
     Object.entries(this.state).forEach(([key, value]) => {
       this.persistValue(key as keyof Schema, value as Schema[keyof Schema]);
     });

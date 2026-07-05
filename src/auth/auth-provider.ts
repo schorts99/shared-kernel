@@ -38,20 +38,13 @@ export interface AuthProvider<
   Action extends string = BaseAction
 > {
   authenticate(credentials: AuthCredentials): Promise<AuthenticationResult>;
-
   logout(): Promise<void>;
-
   isAuthenticated(): Promise<boolean>;
-
   getCurrentUser(): Promise<UserEntity | null>;
-
   getCurrentUserPermissions(): Promise<Permission<Action>[]>;
-
   getCurrentSession(): Promise<UserSession<UserEntity, Action> | null>;
-
   refreshToken(refreshToken?: string): Promise<AuthenticationResult>;
-
+  refreshCurrentUser(): Promise<UserEntity | null>;
   revokeToken(token?: string): Promise<void>;
-
   onAuthChange(callback: AuthChangeCallback<UserEntity>): AuthChangeUnsubscribe;
 }
