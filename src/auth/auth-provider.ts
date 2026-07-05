@@ -19,32 +19,41 @@ export interface AuthenticationResult {
 
 export interface UserSession<
   UserEntity extends Entity<ValueObject, Model>,
-  Action extends string = BaseAction
+  Action extends string = BaseAction,
+  Role extends string = string
 > {
   user: UserEntity;
   token: string;
+  roles: Role[];
   permissions: Permission<Action>[];
   expiresAt?: Date;
   refreshToken?: string;
 }
 
-export type AuthChangeCallback<UserEntity extends Entity<ValueObject, Model>> =
-  (user: UserEntity | null) => void | Promise<void>;
+export type AuthChangeCallback<
+  UserEntity extends Entity<ValueObject, Model>,
+  Action extends string = BaseAction,
+  Role extends string = string
+> = (
+  session: UserSession<UserEntity, Action, Role> | null
+) => void | Promise<void>;
 
 export type AuthChangeUnsubscribe = () => void;
 
 export interface AuthProvider<
   UserEntity extends Entity<ValueObject, Model>,
-  Action extends string = BaseAction
+  Action extends string = BaseAction,
+  Role extends string = string
 > {
   authenticate(credentials: AuthCredentials): Promise<AuthenticationResult>;
   logout(): Promise<void>;
   isAuthenticated(): Promise<boolean>;
   getCurrentUser(): Promise<UserEntity | null>;
+  getCurrentUserRoles(): Promise<Role[]>;
   getCurrentUserPermissions(): Promise<Permission<Action>[]>;
-  getCurrentSession(): Promise<UserSession<UserEntity, Action> | null>;
+  getCurrentSession(): Promise<UserSession<UserEntity, Action, Role> | null>;
   refreshToken(refreshToken?: string): Promise<AuthenticationResult>;
   refreshCurrentUser(): Promise<UserEntity | null>;
   revokeToken(token?: string): Promise<void>;
-  onAuthChange(callback: AuthChangeCallback<UserEntity>): AuthChangeUnsubscribe;
+  onAuthChange(callback: AuthChangeCallback<UserEntity, Action, Role>): AuthChangeUnsubscribe;
 }
