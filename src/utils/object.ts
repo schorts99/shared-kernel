@@ -24,7 +24,7 @@ export function isObject(value: any): value is object {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function hasAllKeys<T extends object, K extends keyof T>(
+export function hasAllKeys<T extends object, K extends keyof T>(
   obj: T,
   keys: K[]
 ): obj is T & Record<K, unknown> {
