@@ -2,10 +2,11 @@ import { Order } from "./order";
 import { Operator } from "./operator";
 import { Direction } from "./direction";
 import { OffsetNotValid, LimitNotValid } from "./exceptions";
+import { Filters } from "./filters";
 
 export class Criteria {
   constructor(
-    readonly filters: Array<{ field: string; operator: Operator; value: any }> = [],
+    readonly filters: Filters = [],
     readonly orders: Array<Order> = [],
     readonly limit?: number,
     readonly offset?: number,
