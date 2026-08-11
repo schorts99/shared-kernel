@@ -2,19 +2,22 @@ import { CommandMetadata, CommandPrimitives } from "./command-metadata";
 
 export interface Command {
   getType(): string;
-
   getMetadata(): CommandMetadata;
-
-  toPrimitives?(): CommandPrimitives;
+  toPrimitives(): CommandPrimitives;
 }
 
-export abstract class AbstractCommand implements Command {
+export abstract class AbstractCommand<T = any> implements Command {
+  protected readonly payload: T;
   protected readonly metadata: CommandMetadata;
 
-  constructor(correlationId: string, customMetadata?: Partial<CommandMetadata>) {
+  constructor(
+    correlationId: string,
+    payload: T,
+    customMetadata?: Partial<CommandMetadata>,
+  ) {
+    this.payload = payload;
     const generateId = () =>
       `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
     this.metadata = {
       id: customMetadata?.id ?? generateId(),
       createdAt: customMetadata?.createdAt ?? new Date(),
@@ -47,7 +50,7 @@ export abstract class AbstractCommand implements Command {
       version: this.metadata.version,
       user_id: this.metadata.userId,
       tenant_id: this.metadata.tenantId,
-      payload: {},
+      payload: this.payload as Record<string, any>,
       headers: this.metadata.headers,
       context: this.metadata.context,
     };

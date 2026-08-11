@@ -2,19 +2,22 @@ import { QueryMetadata, QueryPrimitives } from "./query-metadata";
 
 export interface Query {
   getType(): string;
-
   getMetadata(): QueryMetadata;
-
-  toPrimitives?(): QueryPrimitives;
+  toPrimitives(): QueryPrimitives;
 }
 
-export abstract class AbstractQuery implements Query {
+export abstract class AbstractQuery<T = any> implements Query {
+  protected readonly payload: T;
   protected readonly metadata: QueryMetadata;
 
-  constructor(correlationId: string, customMetadata?: Partial<QueryMetadata>) {
+  constructor(
+    correlationId: string,
+    payload: T,
+    customMetadata?: Partial<QueryMetadata>,
+  ) {
+    this.payload = payload;
     const generateId = () =>
       `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
     this.metadata = {
       id: customMetadata?.id ?? generateId(),
       createdAt: customMetadata?.createdAt ?? new Date(),
@@ -47,7 +50,7 @@ export abstract class AbstractQuery implements Query {
       version: this.metadata.version,
       user_id: this.metadata.userId,
       tenant_id: this.metadata.tenantId,
-      payload: {},
+      payload: this.payload as Record<string, any>,
       headers: this.metadata.headers,
       context: this.metadata.context,
     };

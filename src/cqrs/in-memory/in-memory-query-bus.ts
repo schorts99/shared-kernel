@@ -5,7 +5,8 @@ import {
   QueryNotRegistered,
   QueryBusMiddleware,
   QueryBusContext,
-  QueryBusConfig
+  QueryBusConfig,
+  QueryRegistry,
 } from "..";
 
 export class InMemoryQueryBus implements QueryBus {
@@ -19,7 +20,10 @@ export class InMemoryQueryBus implements QueryBus {
     maxConcurrency: 1,
   };
 
-  register<Q extends Query, R>(type: string, handler: QueryHandler<Q, R>): void {
+  register<Q extends Query, R>(
+    type: string,
+    handler: QueryHandler<Q, R>,
+  ): void {
     if (this.handlers.has(type)) {
       throw new Error(`Handler for query type '${type}' is already registered`);
     }
@@ -40,33 +44,45 @@ export class InMemoryQueryBus implements QueryBus {
   }
 
   async dispatch<Q extends Query, R>(query: Q): Promise<R> {
-    const handler = this.handlers.get(query.getType()) as QueryHandler<Q, R> | undefined;
+    const queryType = query.getType();
+
+    const handler = this.handlers.get(queryType) as
+      | QueryHandler<Q, R>
+      | undefined;
 
     if (!handler) {
-      throw new QueryNotRegistered(query.getType());
+      throw new QueryNotRegistered(queryType);
     }
 
+    const primitives = query.toPrimitives();
+    const deserializedQuery = QueryRegistry.fromPrimitives(
+      primitives,
+    ) as Q;
     const startTime = new Date();
-    const correlationId = query.getMetadata().correlationId;
+    const correlationId = deserializedQuery.getMetadata().correlationId;
     const context: QueryBusContext = {
       correlationId,
       startTime,
-      metadata: query.getMetadata() as Record<string, any>,
+      metadata: deserializedQuery.getMetadata() as Record<string, any>,
       config: this.config,
     };
 
     try {
       for (const mw of this.middleware) {
         if (mw.beforeDispatch) {
-          await mw.beforeDispatch(query, context);
+          await mw.beforeDispatch(deserializedQuery, context);
         }
       }
 
-      const result = await handler.handle(query);
+      const result = await handler.handle(deserializedQuery);
 
       for (const mw of this.middleware) {
         if (mw.afterDispatch) {
-          await mw.afterDispatch(query, result, context);
+          await mw.afterDispatch(
+            deserializedQuery,
+            result,
+            context,
+          );
         }
       }
 
@@ -74,7 +90,11 @@ export class InMemoryQueryBus implements QueryBus {
     } catch (error) {
       for (const mw of this.middleware) {
         if (mw.onError) {
-          await mw.onError(query, error as Error, context);
+          await mw.onError(
+            deserializedQuery,
+            error as Error,
+            context,
+          );
         }
       }
 
@@ -82,22 +102,27 @@ export class InMemoryQueryBus implements QueryBus {
     }
   }
 
-  async dispatchMany<Q extends Query, R>(queries: readonly Q[]): Promise<R[]> {
+  async dispatchMany<Q extends Query, R>(
+    queries: readonly Q[],
+  ): Promise<R[]> {
     const results: R[] = [];
     const errors: Array<{ index: number; error: Error }> = [];
 
-    for (const query of queries) {
+    for (const [index, query] of queries.entries()) {
       try {
-        results.push(await this.dispatch(query));
+        results.push(await this.dispatch<Q, R>(query));
       } catch (error) {
-        errors.push({ index: results.length, error: error as Error });
+        errors.push({
+          index,
+          error: error as Error,
+        });
       }
     }
 
     if (errors.length > 0) {
       throw new AggregateError(
         errors.map((e) => e.error),
-        `${errors.length} query(s) failed during bulk dispatch`
+        `${errors.length} query(s) failed during bulk dispatch`,
       );
     }
 
@@ -124,7 +149,10 @@ export class InMemoryQueryBus implements QueryBus {
   }
 
   setConfig(config: Partial<QueryBusConfig>): void {
-    this.config = { ...this.config, ...config };
+    this.config = {
+      ...this.config,
+      ...config,
+    };
   }
 
   clear(): void {

@@ -25,3 +25,5 @@ export type { QueryMetadata, QueryPrimitives } from "./query-metadata";
 export * from "./in-memory";
 export * from "./exceptions";
 export * from "./error-tracking-middleware";
+export * from "./query-registry";
+export * from "./command-registry";
