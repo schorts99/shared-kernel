@@ -2,11 +2,11 @@ import {
   Query,
   QueryBus,
   QueryHandler,
-  QueryNotRegistered,
   QueryBusMiddleware,
   QueryBusContext,
   QueryBusConfig,
   QueryRegistry,
+  QueryHandlerNotRegistered,
 } from "..";
 
 export class InMemoryQueryBus implements QueryBus {
@@ -51,7 +51,7 @@ export class InMemoryQueryBus implements QueryBus {
       | undefined;
 
     if (!handler) {
-      throw new QueryNotRegistered(queryType);
+      throw new QueryHandlerNotRegistered(queryType);
     }
 
     const primitives = query.toPrimitives();

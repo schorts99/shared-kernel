@@ -2,7 +2,7 @@ import {
   CommandBus,
   Command,
   CommandHandler,
-  CommandNotRegistered,
+  CommandHandlerNotRegistered,
   CommandBusMiddleware,
   CommandBusContext,
   CommandBusConfig,
@@ -61,7 +61,7 @@ export class InMemoryCommandBus implements CommandBus {
       | undefined;
 
     if (!handler) {
-      throw new CommandNotRegistered(commandType);
+      throw new CommandHandlerNotRegistered(commandType);
     }
 
     const primitives = command.toPrimitives();
