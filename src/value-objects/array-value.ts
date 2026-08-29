@@ -59,9 +59,18 @@ export abstract class ArrayValue<Type = any> implements ValueObject {
       if (
         typeof rulesOrNested === "object" &&
         !Array.isArray(rulesOrNested) &&
-        "_" in rulesOrNested &&
-        Array.isArray(value)
+        "_" in rulesOrNested
       ) {
+        const isRequired = (rulesOrNested._ as ValidationRule<any>[]).some(
+          (r) => "required" in r
+        );
+
+        if (!isRequired && (value === undefined || value === null)) {
+          return true;
+        }
+
+        if (!Array.isArray(value)) return false;
+
         return value.every((item) =>
           (rulesOrNested._ as ValidationRule<any>[]).every((rule) =>
             this.validateRule(item, rule)
@@ -70,18 +79,25 @@ export abstract class ArrayValue<Type = any> implements ValueObject {
       }
 
       if (Array.isArray(rulesOrNested)) {
+        const isRequired = rulesOrNested.some((r) => "required" in r);
+
+        if (!isRequired && (value === undefined || value === null)) {
+          return true;
+        }
+
         return rulesOrNested.every((rule) => this.validateRule(value, rule));
       }
 
-      if (
-        typeof rulesOrNested === "object" &&
-        rulesOrNested !== null
-      ) {
-        if (
-          value === null ||
-          typeof value !== "object" ||
-          Array.isArray(value)
-        ) {
+      if (typeof rulesOrNested === "object" && rulesOrNested !== null) {
+        const isRequired = Object.values(rulesOrNested).some((v) =>
+          Array.isArray(v) ? v.some((r) => "required" in r) : false
+        );
+
+        if (value === undefined || value === null) {
+          return !isRequired;
+        }
+
+        if (typeof value !== "object" || Array.isArray(value)) {
           return false;
         }
 
@@ -99,7 +115,7 @@ export abstract class ArrayValue<Type = any> implements ValueObject {
     if ("less_than" in rule) return typeof value === "number" && value < rule.less_than;
     if ("less_than_or_equal" in rule) return typeof value === "number" && value <= rule.less_than_or_equal;
     if ("type" in rule) return typeof value === rule.type;
-    if ("enum" in rule) return rule.enum.includes(value)
+    if ("enum" in rule) return rule.enum.includes(value);
     if ("custom" in rule) return rule.custom(value);
 
     return true;
