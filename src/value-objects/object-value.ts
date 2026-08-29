@@ -52,6 +52,12 @@ export abstract class ObjectValue<Type = any, Optional extends boolean = false> 
       const value = obj[key];
 
       if (Array.isArray(rulesOrNested)) {
+        const isRequired = rulesOrNested.some(r => "required" in r);
+
+        if (!isRequired && (value === undefined || value === null)) {
+          return true;
+        }
+
         return rulesOrNested.every(rule => this.validateRule(value, rule));
       }
 
@@ -70,7 +76,7 @@ export abstract class ObjectValue<Type = any, Optional extends boolean = false> 
     if ("less_than" in rule) return typeof value === "number" && value < rule.less_than;
     if ("less_than_or_equal" in rule) return typeof value === "number" && value <= rule.less_than_or_equal;
     if ("type" in rule) return typeof value === rule.type;
-    if ("enum" in rule) return rule.enum.includes(value)
+    if ("enum" in rule) return rule.enum.includes(value);
     if ("custom" in rule) return rule.custom(value);
 
     return true;
