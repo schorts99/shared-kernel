@@ -10,5 +10,11 @@ export type JSONAPIList<EntityAttributes> = {
     type: string;
     attributes: Record<string, any>;
   }>;
+  links?: Partial<{
+    first: string;
+    last: string;
+    prev: string;
+    next: string;
+  } & Record<string, string>>;
   meta?: Record<string, any>;
 };
