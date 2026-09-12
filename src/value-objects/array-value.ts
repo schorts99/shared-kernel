@@ -1,16 +1,8 @@
 import { ValueObject } from "./value-object";
+import type { ValidationRule } from "../utils/value-objects";
+
 
 type Primitive = string | number | boolean | null | undefined;
-
-export type ValidationRule<Type> =
-  | { required: true }
-  | { greater_than: number }
-  | { greater_than_or_equal: number }
-  | { less_than: number }
-  | { less_than_or_equal: number }
-  | { type: "string" | "number" | "boolean" }
-  | { enum: ReadonlyArray<Type> }
-  | { custom: (value: Type) => boolean };
 
 type ObjectSchema<Type> = {
   [Key in keyof Type]?: Type[Key] extends Primitive
