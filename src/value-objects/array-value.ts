@@ -17,6 +17,7 @@ export abstract class ArrayValue<Type = any> implements ValueObject {
   readonly valueType = "Array";
   readonly value: Type[];
   readonly schema: ObjectSchema<Type> | ValidationRule<Type>[];
+
   toString(): string {
     return JSON.stringify(this.value);
   }
@@ -33,11 +34,13 @@ export abstract class ArrayValue<Type = any> implements ValueObject {
     value: Type[],
     schema: ObjectSchema<Type> | ValidationRule<Type>[],
   ) {
-    this.value = this.deepFreeze(value);
+    this.value = Array.isArray(value) ? this.deepFreeze(value) : value;
     this.schema = schema;
   }
 
   get isValid(): boolean {
+    if (!Array.isArray(this.value)) return false;
+
     return this.value.every((item) => {
       return this.isPrimitive
         ? (this.schema as ValidationRule<Type>[]).every(rule => this.validateRule(item, rule))
@@ -112,6 +115,8 @@ export abstract class ArrayValue<Type = any> implements ValueObject {
     if ("type" in rule) return typeof value === rule.type;
     if ("enum" in rule) return rule.enum.includes(value);
     if ("regex" in rule) return typeof value === "string" && rule.regex.test(value);
+    if ("minLength" in rule) return typeof value === "string" && value.length >= rule.minLength;
+    if ("maxLength" in rule) return typeof value === "string" && value.length <= rule.maxLength;
     if ("custom" in rule) return rule.custom(value);
 
     return true;

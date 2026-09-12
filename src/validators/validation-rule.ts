@@ -15,4 +15,6 @@ export type ValidationRule<Type> =
   | { type: "string" | "number" | "boolean" }
   | { enum: ReadonlyArray<Type> }
   | { regex: RegExp }
+  | { minLength: number }
+  | { maxLength: number }
   | { custom: (value: Type) => boolean };

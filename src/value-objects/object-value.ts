@@ -23,14 +23,23 @@ export abstract class ObjectValue<Type = any, Optional extends boolean = false> 
   constructor(value: Optional extends true ? Type | null : Type, schema: ObjectSchema<Type>, optional: Optional = false as Optional) {
     this.optional = optional;
     this.schema = schema;
-    this.value = (optional && value === null)
-      ? null as any
-      : this.deepFreeze(value);
+
+    if (optional && value === null) {
+      this.value = null as any;
+    } else if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+      this.value = this.deepFreeze(value);
+    } else {
+      this.value = value as any;
+    }
   }
 
   get isValid(): boolean {
     if (this.optional && this.value === null) return true;
     if (this.value === null) return false;
+
+    if (typeof this.value !== "object" || Array.isArray(this.value)) {
+      return false;
+    }
 
     return this.validateObject(this.value as Type, this.schema);
   }
@@ -109,6 +118,8 @@ export abstract class ObjectValue<Type = any, Optional extends boolean = false> 
     if ("type" in rule) return typeof value === rule.type;
     if ("enum" in rule) return rule.enum.includes(value);
     if ("regex" in rule) return typeof value === "string" && rule.regex.test(value);
+    if ("minLength" in rule) return typeof value === "string" && value.length >= rule.minLength;
+    if ("maxLength" in rule) return typeof value === "string" && value.length <= rule.maxLength;
     if ("custom" in rule) return rule.custom(value);
 
     return true;
