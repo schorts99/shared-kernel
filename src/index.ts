@@ -29,5 +29,6 @@ export * from "./tour-guide";
 export * from "./types";
 export * from "./unit-of-work";
 export * from "./utils";
+export * from "./validators";
 export * from "./value-objects";
 export * from "./error-tracking";

@@ -3,12 +3,14 @@ import type { ValidationRule } from "../validators";
 
 type Primitive = string | number | boolean | null | undefined;
 
-type ObjectSchema<Type> = {
+export type ObjectSchema<Type> = {
   [Key in keyof Type]?: Type[Key] extends Primitive
-  ? ValidationRule<Type[Key]>[]
-  : Type[Key] extends Primitive[]
-  ? { _: ValidationRule<Type[Key][number]>[] }
-  : ObjectSchema<Type[Key]>;
+    ? ValidationRule<Type[Key]>[]
+    : Type[Key] extends Primitive[]
+      ? { _: ValidationRule<Type[Key][number]>[] }
+      : Type[Key] extends (infer U)[]
+        ? { _: ObjectSchema<U> }
+        : ObjectSchema<Type[Key]>;
 };
 
 export abstract class ArrayValue<Type = any> implements ValueObject {
@@ -50,11 +52,13 @@ export abstract class ArrayValue<Type = any> implements ValueObject {
       if (
         typeof rulesOrNested === "object" &&
         !Array.isArray(rulesOrNested) &&
+        rulesOrNested !== null &&
         "_" in rulesOrNested
       ) {
-        const isRequired = (rulesOrNested._ as ValidationRule<any>[]).some(
-          (r) => "required" in r
-        );
+        const itemSchema = rulesOrNested._;
+        const isRequired = Array.isArray(itemSchema)
+          ? itemSchema.some((r) => "required" in r)
+          : false;
 
         if (!isRequired && (value === undefined || value === null)) {
           return true;
@@ -62,10 +66,14 @@ export abstract class ArrayValue<Type = any> implements ValueObject {
 
         if (!Array.isArray(value)) return false;
 
+        if (Array.isArray(itemSchema)) {
+          return value.every((item) =>
+            itemSchema.every((rule) => this.validateRule(item, rule)),
+          );
+        }
+
         return value.every((item) =>
-          (rulesOrNested._ as ValidationRule<any>[]).every((rule) =>
-            this.validateRule(item, rule)
-          )
+          this.validateObject(item, itemSchema as ObjectSchema<any>),
         );
       }
 
@@ -80,12 +88,8 @@ export abstract class ArrayValue<Type = any> implements ValueObject {
       }
 
       if (typeof rulesOrNested === "object" && rulesOrNested !== null) {
-        const isRequired = Object.values(rulesOrNested).some((v) =>
-          Array.isArray(v) ? v.some((r) => "required" in r) : false
-        );
-
         if (value === undefined || value === null) {
-          return !isRequired;
+          return true;
         }
 
         if (typeof value !== "object" || Array.isArray(value)) {
@@ -101,12 +105,13 @@ export abstract class ArrayValue<Type = any> implements ValueObject {
 
   private validateRule(value: any, rule: ValidationRule<any>): boolean {
     if ("required" in rule) return value !== undefined && value !== null;
-    if ("greaterThan" in rule) return typeof value === "number" && value > rule.greaterThan;
-    if ("greaterThanOrEqual" in rule) return typeof value === "number" && value >= rule.greaterThanOrEqual;
-    if ("lessThan" in rule) return typeof value === "number" && value < rule.lessThan;
-    if ("lessThanOrEqual" in rule) return typeof value === "number" && value <= rule.lessThanOrEqual;
+    if ("greaterThan" in rule || "greater_than" in rule) return typeof value === "number" && ("greaterThan" in rule ? value > rule.greaterThan : value > rule.greater_than);
+    if ("greaterThanOrEqual" in rule || "greater_than_or_equal" in rule) return typeof value === "number" && ("greaterThanOrEqual" in rule ? value >= rule.greaterThanOrEqual : value >= rule.greater_than_or_equal);
+    if ("lessThan" in rule || "less_than" in rule) return typeof value === "number" && ("lessThan" in rule ? value < rule.lessThan : value < rule.less_than);
+    if ("lessThanOrEqual" in rule || "less_than_or_equal" in rule) return typeof value === "number" && ("lessThanOrEqual" in rule ? value <= rule.lessThanOrEqual : value <= rule.less_than_or_equal);
     if ("type" in rule) return typeof value === rule.type;
     if ("enum" in rule) return rule.enum.includes(value);
+    if ("regex" in rule) return typeof value === "string" && rule.regex.test(value);
     if ("custom" in rule) return rule.custom(value);
 
     return true;
