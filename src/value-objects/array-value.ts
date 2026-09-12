@@ -1,6 +1,5 @@
 import { ValueObject } from "./value-object";
-import type { ValidationRule } from "../utils/value-objects";
-
+import type { ValidationRule } from "../validators";
 
 type Primitive = string | number | boolean | null | undefined;
 
@@ -102,10 +101,10 @@ export abstract class ArrayValue<Type = any> implements ValueObject {
 
   private validateRule(value: any, rule: ValidationRule<any>): boolean {
     if ("required" in rule) return value !== undefined && value !== null;
-    if ("greater_than" in rule) return typeof value === "number" && value > rule.greater_than;
-    if ("greater_than_or_equal" in rule) return typeof value === "number" && value >= rule.greater_than_or_equal;
-    if ("less_than" in rule) return typeof value === "number" && value < rule.less_than;
-    if ("less_than_or_equal" in rule) return typeof value === "number" && value <= rule.less_than_or_equal;
+    if ("greaterThan" in rule) return typeof value === "number" && value > rule.greaterThan;
+    if ("greaterThanOrEqual" in rule) return typeof value === "number" && value >= rule.greaterThanOrEqual;
+    if ("lessThan" in rule) return typeof value === "number" && value < rule.lessThan;
+    if ("lessThanOrEqual" in rule) return typeof value === "number" && value <= rule.lessThanOrEqual;
     if ("type" in rule) return typeof value === rule.type;
     if ("enum" in rule) return rule.enum.includes(value);
     if ("custom" in rule) return rule.custom(value);
