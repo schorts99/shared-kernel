@@ -42,9 +42,17 @@ export abstract class ArrayValue<Type = any> implements ValueObject {
     if (!Array.isArray(this.value)) return false;
 
     return this.value.every((item) => {
-      return this.isPrimitive
-        ? (this.schema as ValidationRule<Type>[]).every(rule => this.validateRule(item, rule))
-        : this.validateObject(item, this.schema as ObjectSchema<Type>);
+      if (this.isPrimitive) {
+        return (this.schema as ValidationRule<Type>[]).every((rule) =>
+          this.validateRule(item, rule),
+        );
+      }
+
+      if (item === null || typeof item !== "object" || Array.isArray(item)) {
+        return false;
+      }
+
+      return this.validateObject(item, this.schema as ObjectSchema<Type>);
     });
   }
 
