@@ -82,6 +82,10 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
     return Array.from(this.handlers.keys());
   }
 
+  getName(): string {
+    return this.constructor.name;
+  }
+
   protected async completeSaga(sagaId: string, eventId?: string): Promise<void> {
     await this.saveState(sagaId, "completed", eventId);
   }

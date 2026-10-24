@@ -18,16 +18,14 @@ export interface EventSubscriber<
   E extends DomainEvent = DomainEvent
 > {
   handle(event: E, context?: EventSubscriberContext): Promise<void>;
-
   subscribedTo(): string[];
-
+  getName(): string;
   getOptions?(): EventSubscriberOptions;
 }
 
 export abstract class AbstractEventSubscriber<
   E extends DomainEvent = DomainEvent
 > implements EventSubscriber<E> {
-
   protected readonly options: EventSubscriberOptions;
 
   constructor(options: EventSubscriberOptions = {}) {
@@ -42,8 +40,11 @@ export abstract class AbstractEventSubscriber<
   }
 
   abstract handle(event: E, context?: EventSubscriberContext): Promise<void>;
-
   abstract subscribedTo(): string[];
+
+  getName(): string {
+    return this.constructor.name;
+  };
 
   getOptions(): EventSubscriberOptions {
     return this.options;
