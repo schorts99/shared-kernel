@@ -1,7 +1,7 @@
 import { Command } from "./command";
 import { CommandHandler } from "./command-handler";
 import type { DomainEvent } from "../domain-events";
-import type { BusMetrics } from "./bus-runtime";
+import type { BusMetrics, BusRuntimeConfig, BusDispatchOptions, BusCloseOptions } from "./bus-runtime";
 
 export interface CommandBusMiddleware {
   beforeDispatch?<C extends Command>(
@@ -37,7 +37,7 @@ export interface CommandBusContext {
   events: DomainEvent[];
 }
 
-export interface CommandBusConfig {
+export interface CommandBusConfig extends BusRuntimeConfig {
   enableMetrics?: boolean;
   enableLogging?: boolean;
   timeout?: number;
@@ -58,10 +58,11 @@ export interface CommandBus {
 
   getRegisteredTypes(): string[];
 
-  dispatch<C extends Command, R = void>(command: C): Promise<R>;
+  dispatch<C extends Command, R = void>(command: C, options?: BusDispatchOptions): Promise<R>;
 
   dispatchMany<C extends Command, R = void>(
-    commands: readonly C[]
+    commands: readonly C[],
+    options?: BusDispatchOptions
   ): Promise<R[]>;
 
   use(middleware: CommandBusMiddleware): void;
@@ -74,4 +75,6 @@ export interface CommandBus {
 
   clear(): void;
   getMetrics(): BusMetrics;
+  drain(): Promise<void>;
+  close(options?: BusCloseOptions): Promise<void>;
 }

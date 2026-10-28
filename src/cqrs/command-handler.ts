@@ -31,6 +31,10 @@ export interface CommandHandlerContext {
   events: DomainEvent[];
   signal?: AbortSignal;
   unitOfWork?: UnitOfWork;
+  /** Custom handle implementations must not acquire a second idempotency claim when true. */
+  idempotencyManagedByBus?: boolean;
+  /** The bus performs invalidation after commit when true. */
+  deferCacheInvalidation?: boolean;
 }
 
 export interface CommandHandler<C extends Command = Command, R = void> {
@@ -90,7 +94,8 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
     };
     let lastError: Error | null = null;
     let retryCount = 0;
-    const maxAttempts = (this.options.maxRetries ?? 0) + 1;
+    const maxRetries = handlerContext.unitOfWork ? 0 : this.options.maxRetries ?? 0;
+    const maxAttempts = maxRetries + 1;
 
     while (retryCount < maxAttempts) {
       try {
@@ -99,7 +104,7 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
 
         const execute = async (): Promise<R> => {
           const result = await this.execute(command, handlerContext);
-          if (this.cache && this.getInvalidationTags) {
+          if (!handlerContext.deferCacheInvalidation && this.cache && this.getInvalidationTags) {
             const tags = this.getInvalidationTags(command, result);
             if (tags.length > 0 && this.cache.deleteByTags) {
               await this.cache.deleteByTags(tags);
@@ -107,7 +112,8 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
           }
           return result;
         };
-        const idempotencyKey = this.options.idempotent ? this.getIdempotencyKey(command) : null;
+        const idempotencyKey = this.options.idempotent && !handlerContext.idempotencyManagedByBus
+          ? this.getIdempotencyKey(command) : null;
         if (idempotencyKey && !this.idempotencyStore) {
           throw new Error("Idempotent commands require an IdempotencyStore");
         }
@@ -126,7 +132,7 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
       } catch (error) {
         lastError = error as Error;
 
-        if (retryCount < (this.options.maxRetries ?? 0) && this.canRetry?.(command, lastError)) {
+        if (retryCount < maxRetries && this.canRetry?.(command, lastError)) {
           retryCount++;
 
           if (this.options.logging) {
@@ -140,7 +146,7 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
           continue;
         }
 
-        if (retryCount > 0 && retryCount >= (this.options.maxRetries ?? 0)) {
+        if (retryCount > 0 && retryCount >= maxRetries) {
           if (this.options.logging) {
             this.logError(command, lastError, startTime);
           }

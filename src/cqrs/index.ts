@@ -27,4 +27,5 @@ export * from "./exceptions";
 export * from "./error-tracking-middleware";
 export * from "./query-registry";
 export * from "./command-registry";
-export type { BusMetrics } from "./bus-runtime";
+export type { BusMetrics, BusDispatchOptions, BusCloseOptions } from "./bus-runtime";
+export type { QueryCachePolicy } from "./query-cache-policy";

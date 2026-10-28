@@ -5,3 +5,4 @@ export * from "./deep-partial";
 export * from "./json";
 export * from "./dictionary";
 export * from "./constructor";
+export type { ExecutionContext, ExecutionContextStorage } from "./execution-context";

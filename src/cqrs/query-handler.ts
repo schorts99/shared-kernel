@@ -15,6 +15,8 @@ export interface QueryHandlerOptions {
 
 export interface QueryHandlerContext {
   signal?: AbortSignal;
+  /** The bus has already validated and authorized this request before looking in its cache. */
+  validationManagedByBus?: boolean;
   metadata: Query["getMetadata"];
   options: QueryHandlerOptions;
   startTime: Date;
@@ -74,8 +76,10 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
     };
 
     try {
-      await this.validate(query);
-      await this.authorize(query);
+      if (!handlerContext.validationManagedByBus) {
+        await this.validate(query);
+        await this.authorize(query);
+      }
 
       if (this.options.cache && this.cache) {
         const cacheKey = this.getCacheKey?.(query);
@@ -88,7 +92,7 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
               this.logQuery(query, cachedResult as R, startTime, true);
             }
 
-            return this.deserializeResult(cachedResult)
+            return this.deserializeResult(structuredClone(cachedResult));
           }
         }
       }
@@ -103,7 +107,7 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
 
           await this.cache.set(
             cacheKey,
-            this.serializeResult(result),
+            structuredClone(this.serializeResult(result)),
             this.options.cacheTtl,
             tags,
           );

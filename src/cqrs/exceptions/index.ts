@@ -14,3 +14,4 @@ export {
 } from "./command-handler-errors";
 export { QueryHandlerNotRegistered } from "./query-handler-not-registered";
 export { CommandHandlerNotRegistered } from "./command-handler-not-registered";
+export { CommandPostCommitError } from "./command-post-commit-error";

@@ -1,5 +1,7 @@
 import { IdempotencyStore } from "../idempotency-store";
 import { getExpirationTime } from "../../utils/expiration";
+import type { IdempotencyExecution } from "../idempotency-executor";
+import { CommitOutcomeUnknownError } from "../../unit-of-work/commit-outcome-unknown-error";
 
 export interface InMemoryIdempotencyStoreOptions {
   /** Bounds completed and in-progress keys (default 10,000); new keys reject at capacity. */
@@ -7,7 +9,12 @@ export interface InMemoryIdempotencyStoreOptions {
 }
 
 export class InMemoryIdempotencyStore implements IdempotencyStore {
-  private readonly processed = new Map<string, { result: unknown; expiresAt?: number }>();
+  private readonly processed = new Map<string, {
+    result: unknown;
+    expiresAt?: number;
+    completion?: { run: () => Promise<void>; ttl: number | undefined };
+    unknownCommit?: CommitOutcomeUnknownError;
+  }>();
   private readonly inProgress = new Map<string, Promise<unknown>>();
 
   constructor(private readonly options: InMemoryIdempotencyStoreOptions = {}) {
@@ -18,18 +25,41 @@ export class InMemoryIdempotencyStore implements IdempotencyStore {
   }
 
   async execute<T>(key: string, operation: () => Promise<T>, ttl?: number): Promise<T> {
+    return this.executeWithCompletion(key, async () => ({ result: await operation() }), ttl);
+  }
+
+  async executeWithCompletion<T>(
+    key: string,
+    operation: () => Promise<IdempotencyExecution<T>>,
+    ttl?: number,
+  ): Promise<T> {
     getExpirationTime(ttl);
     this.pruneExpired();
     const ongoing = this.inProgress.get(key);
 
     if (ongoing) return ongoing as Promise<T>;
-    if (this.processed.has(key)) return Promise.resolve(this.processed.get(key)!.result as T);
+    const stored = this.processed.get(key);
+    if (stored?.unknownCommit) throw stored.unknownCommit;
+    if (stored && !stored.completion) return stored.result as T;
 
     this.checkCapacity(key);
 
-    const execution = Promise.resolve().then(operation).then(async result => {
-      this.storeResult(key, result, ttl);
+    const execution = Promise.resolve().then(async () => {
+      const outcome = stored ? undefined : await operation();
+      const record = stored ?? outcome!;
+      const completion = stored?.completion ?? (outcome?.complete ? { run: outcome.complete, ttl } : undefined);
+      if (completion) {
+        this.processed.set(key, { result: record.result, completion });
+        await completion.run();
+      }
+      const result = record.result as T;
+      this.storeResult(key, result, completion ? completion.ttl : ttl);
       return result;
+    }).catch(error => {
+      if (error instanceof CommitOutcomeUnknownError) {
+        this.processed.set(key, { result: undefined, unknownCommit: error });
+      }
+      throw error;
     }).finally(() => {
       this.inProgress.delete(key);
     });
@@ -60,10 +90,25 @@ export class InMemoryIdempotencyStore implements IdempotencyStore {
     return this.pruneExpired();
   }
 
+  async resolveUnknownCommit(key: string, outcome:
+    | { status: "not-committed" }
+    | { status: "committed"; execution: IdempotencyExecution<unknown> }): Promise<void> {
+    if (this.inProgress.has(key)) throw new Error("Cannot reconcile an in-progress key");
+    if (!this.processed.get(key)?.unknownCommit) throw new Error("Key has no unknown commit outcome");
+    if (outcome.status === "not-committed") {
+      this.processed.delete(key);
+    } else {
+      this.processed.set(key, {
+        result: outcome.execution.result,
+        ...(outcome.execution.complete ? { completion: { run: outcome.execution.complete, ttl: undefined } } : {}),
+      });
+    }
+  }
+
   async isProcessed(key: string): Promise<boolean> {
     const entry = this.processed.get(key);
 
-    if (!entry) return false;
+    if (!entry || entry.completion || entry.unknownCommit) return false;
 
     if (entry.expiresAt !== undefined && Date.now() >= entry.expiresAt) {
       this.processed.delete(key);
@@ -75,7 +120,9 @@ export class InMemoryIdempotencyStore implements IdempotencyStore {
   }
 
   async markProcessed(key: string, result: unknown, ttl?: number): Promise<void> {
-    if (this.inProgress.has(key)) throw new Error("Cannot replace an in-progress idempotency key");
+    if (this.inProgress.has(key) || this.processed.get(key)?.completion || this.processed.get(key)?.unknownCommit) {
+      throw new Error("Cannot replace an in-progress or pending-completion idempotency key");
+    }
     this.storeResult(key, result, ttl);
   }
 
@@ -94,19 +141,24 @@ export class InMemoryIdempotencyStore implements IdempotencyStore {
   }
 
   async clear(key: string): Promise<boolean> {
-    if (this.inProgress.has(key)) throw new Error("Cannot clear an in-progress idempotency key");
+    if (this.inProgress.has(key) || this.processed.get(key)?.completion || this.processed.get(key)?.unknownCommit) {
+      throw new Error("Cannot clear an in-progress or pending-completion idempotency key");
+    }
     return this.processed.delete(key);
   }
 
   async clearStore(): Promise<void> {
     if (this.inProgress.size > 0) throw new Error("Cannot clear idempotency store while operations are in progress");
+    if ([...this.processed.values()].some(entry => entry.completion || entry.unknownCommit)) {
+      throw new Error("Cannot clear idempotency store while committed completion is pending");
+    }
     this.processed.clear();
   }
 
   async getResult(key: string): Promise<unknown | undefined> {
     const entry = this.processed.get(key);
 
-    if (!entry) return undefined;
+    if (!entry || entry.completion || entry.unknownCommit) return undefined;
 
     if (entry.expiresAt !== undefined && Date.now() >= entry.expiresAt) {
       this.processed.delete(key);

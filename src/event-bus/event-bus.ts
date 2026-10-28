@@ -1,6 +1,6 @@
 import { DomainEvent } from "../domain-events";
 import { EventSubscriber } from "./event-subscriber";
-import type { BusMetrics } from "../cqrs/bus-runtime";
+import type { BusMetrics, BusRuntimeConfig, BusDispatchOptions, BusCloseOptions } from "../cqrs/bus-runtime";
 
 export interface EventBusMiddleware {
   beforePublish?<E extends DomainEvent>(
@@ -21,13 +21,14 @@ export interface EventBusMiddleware {
 }
 
 export interface EventBusContext {
+  signal?: AbortSignal;
   correlationId?: string;
   startTime: Date;
   metadata: Record<string, any>;
   config: EventBusConfig;
 }
 
-export interface EventBusConfig {
+export interface EventBusConfig extends BusRuntimeConfig {
   enableLogging?: boolean;
   enableMetrics?: boolean;
   autoReplay?: boolean;
@@ -39,9 +40,9 @@ export interface EventBus {
 
   unsubscribe<E extends DomainEvent>(eventName: string, subscriber: EventSubscriber<E>): boolean;
 
-  publish<E extends DomainEvent>(event: E): Promise<void>;
+  publish<E extends DomainEvent>(event: E, options?: BusDispatchOptions): Promise<void>;
 
-  publishMany<E extends DomainEvent>(events: readonly E[]): Promise<void>;
+  publishMany<E extends DomainEvent>(events: readonly E[], options?: BusDispatchOptions): Promise<void>;
 
   use(middleware: EventBusMiddleware): void;
 
@@ -53,4 +54,6 @@ export interface EventBus {
   /** With autoReplay enabled, replay after subscriptions are registered; publish also awaits readiness. */
   ready(): Promise<void>;
   getMetrics(): BusMetrics;
+  drain(): Promise<void>;
+  close(options?: BusCloseOptions): Promise<void>;
 }

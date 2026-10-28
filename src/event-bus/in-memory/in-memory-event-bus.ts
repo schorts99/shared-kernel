@@ -4,8 +4,15 @@ import { EventStore } from "../event-store";
 import { EventSubscriber } from "../event-subscriber";
 import { EventBus, EventBusConfig, EventBusContext, EventBusMiddleware } from "..";
 import { DeadLetterStore } from "../dead-letter-store";
-import { BusRuntime } from "../../cqrs/bus-runtime";
+import { BusRuntime, validateBusConfig } from "../../cqrs/bus-runtime";
+import type { BusDispatchOptions, BusCloseOptions } from "../../cqrs/bus-runtime";
 import type { Logger } from "../../logger";
+import type { ExecutionContext, ExecutionContextStorage } from "../../types/execution-context";
+
+interface DeliveryFrame {
+  active: boolean;
+  eventIds: ReadonlySet<string>;
+}
 
 export class InMemoryEventBus implements EventBus {
   private readonly subscribers = new Map<string, EventSubscriber<any>[]>();
@@ -16,16 +23,19 @@ export class InMemoryEventBus implements EventBus {
   private readonly runtime: BusRuntime;
   private readonly inProgress = new Map<string, Promise<void>>();
   private replayTask: Promise<void> | undefined;
+  private readonly deliveryContext: ExecutionContextStorage<DeliveryFrame> | undefined;
 
   constructor(
     store: EventStore = new InMemoryEventStore(),
     config: EventBusConfig = {},
     deadLetterStore?: DeadLetterStore,
     logger?: Logger,
+    executionContext?: ExecutionContext,
   ) {
     this.store = store;
     this.deadLetterStore = deadLetterStore;
-    this.runtime = new BusRuntime(logger);
+    this.runtime = new BusRuntime(logger, executionContext);
+    this.deliveryContext = executionContext?.createStorage<DeliveryFrame>();
     this.config = {
       enableLogging: false,
       enableMetrics: false,
@@ -34,22 +44,30 @@ export class InMemoryEventBus implements EventBus {
       ...config,
     };
     this.validateConfig(this.config);
+    this.runtime.setConcurrency(this.config.maxConcurrency, this.config.maxQueueSize);
   }
 
   getMetrics() {
     return this.runtime.getMetrics();
   }
+  drain(): Promise<void> { return this.runtime.drain(); }
+  close(options?: BusCloseOptions): Promise<void> { return this.runtime.close(options); }
 
   ready(): Promise<void> {
+    if (this.runtime.isExecuting()) return Promise.resolve();
     if (!this.config.autoReplay) return Promise.resolve();
     this.replayTask ??= this.replay().catch(error => {
       this.replayTask = undefined;
       throw error;
     });
-    return this.replayTask;
+    return this.runtime.waitFor(this.replayTask, this.config);
   }
 
   private validateConfig(config: EventBusConfig): void {
+    validateBusConfig(config);
+    if (config.autoReplay && !this.deliveryContext) {
+      throw new Error("autoReplay requires an executionContext adapter for reentrant publication");
+    }
     if (config.maxRetries !== undefined && (!Number.isSafeInteger(config.maxRetries) || config.maxRetries < 0)) {
       throw new RangeError("maxRetries must be a non-negative safe integer");
     }
@@ -81,38 +99,61 @@ export class InMemoryEventBus implements EventBus {
     return true;
   }
 
-  async publish<Event extends DomainEvent>(event: Event) {
-    await this.ready();
-    return this.deliver(event, true);
+  async publish<Event extends DomainEvent>(event: Event, options?: BusDispatchOptions) {
+    options?.signal?.throwIfAborted();
+    await this.runtime.waitFor(this.ready(), this.config, options?.signal);
+    return this.deliver(event, true, options);
   }
 
-  private async deliver(event: DomainEvent, save: boolean): Promise<void> {
+  private async deliver(event: DomainEvent, save: boolean, options?: BusDispatchOptions): Promise<void> {
+    const parent = this.deliveryContext?.getStore();
+    if (parent?.active && parent.eventIds.has(event.id)) {
+      throw new Error(`Recursive publication of event '${event.id}' would wait on its own delivery`);
+    }
     const ongoing = this.inProgress.get(event.id);
-    if (ongoing) return ongoing;
+    if (ongoing) return this.runtime.waitFor(ongoing, this.config, options?.signal);
     const config = this.getConfig();
-    const execution = this.runtime.run(event.getEventName(), config, async () => {
+    const frame: DeliveryFrame = {
+      active: true,
+      eventIds: new Set([...(parent?.active ? parent.eventIds : []), event.id]),
+    };
+    let started = false;
+    const operation = async (signal: AbortSignal) => {
+      started = true;
       const context = this.createContext(event, config);
+      context.signal = signal;
 
       try {
+        signal.throwIfAborted();
         await this.applyMiddlewares("beforePublish", event, context);
+        signal.throwIfAborted();
         if (save) await this.store.save(event.toPrimitives());
-        await this.dispatch(event, config);
+        await this.dispatch(event, config, signal);
         await this.applyMiddlewares("afterPublish", event, context);
       } catch (error) {
         await this.applyMiddlewares("onError", event, context,
           error instanceof Error ? error : new Error(String(error)));
         throw error;
+      } finally {
+        frame.active = false;
+        this.inProgress.delete(event.id);
       }
-    }).finally(() => {
-      this.inProgress.delete(event.id);
+    };
+    const execution = this.runtime.run(event.getEventName(), config, signal => this.deliveryContext
+      ? this.deliveryContext.run(frame, () => operation(signal))
+      : operation(signal), options).finally(() => {
+      if (!started) {
+        frame.active = false;
+        this.inProgress.delete(event.id);
+      }
     });
     this.inProgress.set(event.id, execution);
     return execution;
   }
 
-  async publishMany<Event extends DomainEvent>(events: readonly Event[]) {
+  async publishMany<Event extends DomainEvent>(events: readonly Event[], options?: BusDispatchOptions) {
     for (const event of events) {
-      await this.publish(event);
+      await this.publish(event, options);
     }
   }
 
@@ -144,7 +185,7 @@ export class InMemoryEventBus implements EventBus {
     }
   }
 
-  private async dispatch(event: DomainEvent, config: EventBusConfig): Promise<void> {
+  private async dispatch(event: DomainEvent, config: EventBusConfig, signal: AbortSignal): Promise<void> {
     if (await this.store.isProcessed(event.id)) return;
 
     const subscribers = [...(this.subscribers.get(event.getEventName()) ?? [])]
@@ -162,8 +203,13 @@ export class InMemoryEventBus implements EventBus {
 
       for (let attempt = 0; ; attempt++) {
         try {
-          await subscriber.handle(currentEvent, { subscriptionTime: new Date(), metadata: {}, options });
+          signal.throwIfAborted();
+          await subscriber.handle(currentEvent, { signal, subscriptionTime: new Date(), metadata: {}, options });
         } catch (error) {
+          if (signal.aborted) {
+            retainForReplay = true;
+            throw error;
+          }
           if (attempt < maxRetries) {
             const primitives = event.toPrimitives();
             currentEvent = DomainEventRegistry.fromPrimitives({
@@ -220,6 +266,7 @@ export class InMemoryEventBus implements EventBus {
   setConfig(config: Partial<EventBusConfig>): void {
     const next = { ...this.config, ...config };
     this.validateConfig(next);
+    this.runtime.setConcurrency(next.maxConcurrency, next.maxQueueSize);
     if (next.autoReplay && !this.config.autoReplay) this.replayTask = undefined;
     this.config = next;
   }

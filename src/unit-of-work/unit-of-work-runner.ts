@@ -1,5 +1,6 @@
 import { UnitOfWork } from "./unit-of-work";
 import { Logger } from "../logger";
+import { CommitOutcomeUnknownError } from "./commit-outcome-unknown-error";
 
 export interface UnitOfWorkRunner {
   run<Result>(
@@ -21,14 +22,21 @@ export abstract class AsyncUnitOfWorkRunner implements UnitOfWorkRunner {
   ): Promise<Result> {
     const uow = this.createUnitOfWork();
     await uow.begin();
+    let commitAttempted = false;
 
     try {
       const result = await operation(uow);
 
-      await uow.commit();
+      commitAttempted = true;
+      try {
+        await uow.commit();
+      } catch (error) {
+        throw new CommitOutcomeUnknownError(error);
+      }
 
       return result;
     } catch (error) {
+      if (commitAttempted) throw error;
       try {
         await uow.rollback();
       } catch (rollbackError) {

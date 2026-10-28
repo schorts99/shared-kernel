@@ -1,20 +1,27 @@
 import { Cache } from "../../cache";
 import { getExpirationTime } from "../../utils/expiration";
 
-export interface InMemoryCacheOptions {
+export interface InMemoryCacheOptions<T = unknown> {
   /** Maximum retained entries; defaults to 10,000. Evicts the oldest entry when full. */
   maxEntries?: number;
+  /** Defaults to structuredClone; supply a copier for domain classes or non-cloneable values. */
+  cloneValue?: (value: T) => T;
 }
 
 export class InMemoryCache<T = unknown> implements Cache<T> {
   private readonly cache = new Map<string, { value: T; expiresAt?: number; tags?: string[] }>();
   private readonly tagMap = new Map<string, Set<string>>();
 
-  constructor(private readonly options: InMemoryCacheOptions = {}) {
+  constructor(private readonly options: InMemoryCacheOptions<T> = {}) {
     if (options.maxEntries !== undefined && (!Number.isSafeInteger(options.maxEntries) || options.maxEntries < 1)) {
       throw new RangeError("maxEntries must be a positive safe integer");
     }
-    this.options = { maxEntries: options.maxEntries ?? 10_000 };
+    this.options = { maxEntries: options.maxEntries ?? 10_000,
+      ...(options.cloneValue ? { cloneValue: options.cloneValue } : {}) };
+  }
+
+  private clone(value: T): T {
+    return this.options.cloneValue ? this.options.cloneValue(value) : structuredClone(value);
   }
 
   async prune(): Promise<number> {
@@ -43,11 +50,12 @@ export class InMemoryCache<T = unknown> implements Cache<T> {
       return undefined;
     }
 
-    return entry.value;
+    return this.clone(entry.value);
   }
 
   async set(key: string, value: T, ttl?: number, tags?: string[]): Promise<void> {
     const expiresAt = getExpirationTime(ttl);
+    const storedValue = ttl === 0 ? value : this.clone(value);
     this.pruneExpired();
 
     this.deleteEntry(key);
@@ -59,7 +67,7 @@ export class InMemoryCache<T = unknown> implements Cache<T> {
       if (!oldest.done) this.deleteEntry(oldest.value);
     }
 
-    const newEntry: { value: T; expiresAt?: number; tags?: string[] } = { value };
+    const newEntry: { value: T; expiresAt?: number; tags?: string[] } = { value: storedValue };
 
     if (expiresAt !== undefined) {
       newEntry.expiresAt = expiresAt;

@@ -1,6 +1,7 @@
 import { Query } from "./query";
 import { QueryHandler } from "./query-handler";
-import type { BusMetrics } from "./bus-runtime";
+import type { BusMetrics, BusRuntimeConfig, BusDispatchOptions, BusCloseOptions } from "./bus-runtime";
+import type { QueryCachePolicy } from "./query-cache-policy";
 
 export interface QueryBusMiddleware {
   beforeDispatch?<Q extends Query>(
@@ -29,7 +30,7 @@ export interface QueryBusContext {
   config: QueryBusConfig;
 }
 
-export interface QueryBusConfig {
+export interface QueryBusConfig extends BusRuntimeConfig {
   enableMetrics?: boolean;
   enableLogging?: boolean;
   enableCaching?: boolean;
@@ -39,7 +40,7 @@ export interface QueryBusConfig {
 }
 
 export interface QueryBus {
-  register<Q extends Query, R>(type: string, handler: QueryHandler<Q, R>): void;
+  register<Q extends Query, R>(type: string, handler: QueryHandler<Q, R>, cachePolicy?: QueryCachePolicy<Q, R>): void;
 
   unregister(type: string): boolean;
 
@@ -47,10 +48,11 @@ export interface QueryBus {
 
   getRegisteredTypes(): string[];
 
-  dispatch<Q extends Query, R>(query: Q): Promise<R>;
+  dispatch<Q extends Query, R>(query: Q, options?: BusDispatchOptions): Promise<R>;
 
   dispatchMany<Q extends Query, R>(
-    queries: readonly Q[]
+    queries: readonly Q[],
+    options?: BusDispatchOptions
   ): Promise<R[]>;
 
   use(middleware: QueryBusMiddleware): void;
@@ -63,4 +65,8 @@ export interface QueryBus {
 
   clear(): void;
   getMetrics(): BusMetrics;
+  drain(): Promise<void>;
+  close(options?: BusCloseOptions): Promise<void>;
+  /** Omit tags to clear all entries; invalidation also prevents in-flight stale cache writes. */
+  invalidateCache(tags?: string[]): Promise<void>;
 }

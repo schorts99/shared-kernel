@@ -9,11 +9,15 @@ import {
   QueryHandlerNotRegistered,
 } from "..";
 import { BusRuntime, validateBusConfig } from "../bus-runtime";
+import type { BusDispatchOptions, BusCloseOptions } from "../bus-runtime";
 import type { Logger } from "../../logger";
 import { InMemoryCache } from "../../cache";
 import { getExpirationTime } from "../../utils/expiration";
+import type { ExecutionContext } from "../../types/execution-context";
+import type { QueryCachePolicy } from "../query-cache-policy";
 
 export interface InMemoryQueryBusDependencies {
+  executionContext?: ExecutionContext;
   logger?: Logger;
 }
 
@@ -23,6 +27,16 @@ export class InMemoryQueryBus implements QueryBus {
   private readonly runtime: BusRuntime;
   private readonly cache = new InMemoryCache<{ result: unknown }>({ maxEntries: 10_000 });
   private cacheGeneration = 0;
+  private readonly cachePolicies = new Map<string, QueryCachePolicy>();
+
+  async invalidateCache(tags?: string[]): Promise<void> {
+    this.cacheGeneration++;
+    if (tags === undefined) {
+      await this.cache.clear();
+    } else {
+      await this.cache.deleteByTags(tags);
+    }
+  }
 
   private clearCache(): void {
     this.cacheGeneration++;
@@ -30,34 +44,46 @@ export class InMemoryQueryBus implements QueryBus {
   }
 
   constructor(dependencies: InMemoryQueryBusDependencies = {}) {
-    this.runtime = new BusRuntime(dependencies.logger);
-    this.runtime.setConcurrency(this.config.maxConcurrency);
+    this.runtime = new BusRuntime(dependencies.logger, dependencies.executionContext);
   }
 
   getMetrics() {
     return this.runtime.getMetrics();
   }
+  drain(): Promise<void> { return this.runtime.drain(); }
+  close(options?: BusCloseOptions): Promise<void> { return this.runtime.close(options); }
   private config: QueryBusConfig = {
     enableMetrics: false,
     enableCaching: false,
     cacheTtl: 5 * 60 * 1000,
     timeout: 0,
-    maxConcurrency: 1,
   };
 
   register<Q extends Query, R>(
     type: string,
     handler: QueryHandler<Q, R>,
+    cachePolicy?: QueryCachePolicy<Q, R>,
   ): void {
     if (this.handlers.has(type)) {
       throw new Error(`Handler for query type '${type}' is already registered`);
     }
 
+    if (cachePolicy) {
+      getExpirationTime(cachePolicy.ttl);
+      if (handler.getOptions?.().cache) {
+        throw new Error("Choose either bus-owned or handler-owned caching, not both");
+      }
+      if (!handler.validate || !handler.authorize) {
+        throw new Error("Bus caching requires explicit validation and authorization hooks");
+      }
+      this.cachePolicies.set(type, cachePolicy as QueryCachePolicy);
+    }
     this.handlers.set(type, handler as QueryHandler<Query, unknown>);
     this.clearCache();
   }
 
   unregister(type: string): boolean {
+    this.cachePolicies.delete(type);
     this.clearCache();
     return this.handlers.delete(type);
   }
@@ -70,9 +96,9 @@ export class InMemoryQueryBus implements QueryBus {
     return Array.from(this.handlers.keys());
   }
 
-  async dispatch<Q extends Query, R>(query: Q): Promise<R> {
+  async dispatch<Q extends Query, R>(query: Q, options?: BusDispatchOptions): Promise<R> {
     const config = this.getConfig();
-    return this.runtime.run(query.getType(), config, signal => this.execute<Q, R>(query, config, signal));
+    return this.runtime.run(query.getType(), config, signal => this.execute<Q, R>(query, config, signal), options);
   }
 
   private async execute<Q extends Query, R>(query: Q, config: QueryBusConfig, signal: AbortSignal): Promise<R> {
@@ -109,33 +135,39 @@ export class InMemoryQueryBus implements QueryBus {
         }
       }
 
+      const policy = config.enableCaching ? this.cachePolicies.get(queryType) : undefined;
+      if (policy && handler.getOptions?.().cache) {
+        throw new Error("Choose either bus-owned or handler-owned caching, not both");
+      }
       const handlerContext = {
         metadata: deserializedQuery.getMetadata.bind(deserializedQuery),
         options: handler.getOptions?.() ?? {},
         startTime,
         correlationId,
         signal,
+        validationManagedByBus: policy !== undefined,
       };
       // Validation and authorization must also run on cache hits.
-      if (config.enableCaching) {
+      if (policy) {
         if (!handler.validate || !handler.authorize) {
           throw new Error("Bus caching requires explicit validation and authorization hooks");
         }
         await handler.validate(deserializedQuery);
         await handler.authorize(deserializedQuery);
       }
+      signal.throwIfAborted();
       const currentPrimitives = deserializedQuery.toPrimitives();
-      const handlerKey = handler.getCacheKey?.(deserializedQuery);
-      const cacheKey = handlerKey === null ? null : JSON.stringify([
+      const handlerKey = policy?.getKey(deserializedQuery);
+      const cacheKey = handlerKey === null || handlerKey === undefined ? null : JSON.stringify([
         queryType,
-        handlerKey ?? currentPrimitives,
+        handlerKey,
         currentPrimitives.user_id,
         currentPrimitives.tenant_id,
         currentPrimitives.headers,
         currentPrimitives.context,
         currentPrimitives.version,
       ]);
-      const cached = config.enableCaching && cacheKey !== null ? await this.cache.get(cacheKey) : undefined;
+      const cached = cacheKey !== null ? await this.cache.get(cacheKey) : undefined;
       const result = cached ? cached.result as R : await handler.handle(deserializedQuery, handlerContext);
       signal.throwIfAborted();
 
@@ -149,10 +181,11 @@ export class InMemoryQueryBus implements QueryBus {
         }
       }
 
-      if (config.enableCaching && cacheKey !== null && !cached &&
+      if (policy && cacheKey !== null && !cached &&
         cacheGeneration === this.cacheGeneration &&
-        (handler.shouldCache?.(deserializedQuery, result) ?? true)) {
-        await this.cache.set(cacheKey, { result }, config.cacheTtl);
+        (policy.shouldCache?.(deserializedQuery, result) ?? true)) {
+        const tags = policy.getTags?.(deserializedQuery, result);
+        await this.cache.set(cacheKey, { result }, policy.ttl ?? config.cacheTtl, tags);
       }
       return result;
     } catch (error) {
@@ -172,8 +205,9 @@ export class InMemoryQueryBus implements QueryBus {
 
   async dispatchMany<Q extends Query, R>(
     queries: readonly Q[],
+    options?: BusDispatchOptions,
   ): Promise<R[]> {
-    const settled = await Promise.allSettled(queries.map(query => this.dispatch<Q, R>(query)));
+    const settled = await Promise.allSettled(queries.map(query => this.dispatch<Q, R>(query, options)));
     const errors = settled.filter(result => result.status === "rejected");
     if (errors.length > 0) {
       throw new AggregateError(
@@ -214,13 +248,14 @@ export class InMemoryQueryBus implements QueryBus {
     };
     validateBusConfig(next);
     getExpirationTime(next.cacheTtl);
+    this.runtime.setConcurrency(next.maxConcurrency, next.maxQueueSize);
     this.config = next;
-    this.runtime.setConcurrency(next.maxConcurrency);
     this.clearCache();
   }
 
   clear(): void {
     this.handlers.clear();
+    this.cachePolicies.clear();
     this.middleware.length = 0;
     this.clearCache();
   }
