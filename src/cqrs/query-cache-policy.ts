@@ -1,4 +1,4 @@
-import type { Query } from "./query";
+import type { Query } from "./query.js";
 
 export interface QueryCachePolicy<Q extends Query = Query, R = unknown> {
   /**

@@ -1,5 +1,5 @@
-import type { UnitOfWork } from "../unit-of-work/unit-of-work";
-import type { DomainEventPrimitives } from "../domain-events";
+import type { UnitOfWork } from "../unit-of-work/unit-of-work.js";
+import type { DomainEventPrimitives } from "../domain-events/index.js";
 
 export interface CommittedIdempotencyRecord {
   result: unknown;

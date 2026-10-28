@@ -1,1 +1,1 @@
-export { EntityNotRegistered } from "./entity-not-registered";
+export { EntityNotRegistered } from "./entity-not-registered.js";

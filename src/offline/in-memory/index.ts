@@ -1,4 +1,4 @@
 export {
   InMemoryOfflineStore,
   type InMemoryOfflineStoreOptions,
-} from "./in-memory-offline-store";
+} from "./in-memory-offline-store.js";

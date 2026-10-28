@@ -1,5 +1,5 @@
-import { DomainEventMetadata, DomainEventPrimitives } from "./domain-event-metadata";
-import { cloneValue } from "../utils/object";
+import { DomainEventMetadata, DomainEventPrimitives } from "./domain-event-metadata.js";
+import { cloneValue } from "../utils/object.js";
 
 function cloneSafe<T>(value: T): T {
   try {

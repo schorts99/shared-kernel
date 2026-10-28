@@ -1,5 +1,5 @@
-import { URLWithParamsBuilder } from "../utils";
-import { Criteria } from "../criteria";
+import { URLWithParamsBuilder } from "../utils/index.js";
+import { Criteria } from "../criteria/index.js";
 
 export class URLCriteriaBuilder {
   constructor(

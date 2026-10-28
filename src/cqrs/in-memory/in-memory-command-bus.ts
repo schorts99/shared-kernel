@@ -8,7 +8,7 @@ import {
   CommandBusConfig,
   CommandRegistry,
   CommandPostCommitError,
-} from "..";
+} from "../index.js";
 import {
   BusRuntime,
   CrossDispatchCycleError,
@@ -16,22 +16,22 @@ import {
   findDependencyPath,
   registerInFlightTask,
   validateBusConfig,
-} from "../bus-runtime";
-import type { BusDispatchOptions, BusCloseOptions, ExecutionNode } from "../bus-runtime";
-import type { Logger } from "../../logger";
-import type { EventBus } from "../../event-bus";
-import type { UnitOfWork } from "../../unit-of-work";
-import { CommitOutcomeUnknownError } from "../../unit-of-work/commit-outcome-unknown-error";
-import { DomainEventRegistry } from "../../domain-events";
-import { cloneValue } from "../../utils/object";
-import type { ExecutionContext, ExecutionContextStorage } from "../../types/execution-context";
+} from "../bus-runtime.js";
+import type { BusDispatchOptions, BusCloseOptions, ExecutionNode } from "../bus-runtime.js";
+import type { Logger } from "../../logger/index.js";
+import type { EventBus } from "../../event-bus/index.js";
+import type { UnitOfWork } from "../../unit-of-work/index.js";
+import { CommitOutcomeUnknownError } from "../../unit-of-work/commit-outcome-unknown-error.js";
+import { DomainEventRegistry } from "../../domain-events/index.js";
+import { cloneValue } from "../../utils/object.js";
+import type { ExecutionContext, ExecutionContextStorage } from "../../types/execution-context.js";
 import type {
   IdempotencyExecution,
   IdempotencyStore,
   TransactionalIdempotencyAdapter,
   CommittedIdempotencyRecord,
   UnknownCommitReconciliation,
-} from "../../idempotency";
+} from "../../idempotency/index.js";
 
 interface IdempotencyFrame {
   active: boolean;

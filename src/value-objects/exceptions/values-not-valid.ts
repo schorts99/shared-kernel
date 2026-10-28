@@ -1,4 +1,4 @@
-import type { ValueNotValid } from "./value-not-valid";
+import type { ValueNotValid } from "./value-not-valid.js";
 
 export class ValuesNotValid extends Error {
   readonly errors: Array<ValueNotValid>;

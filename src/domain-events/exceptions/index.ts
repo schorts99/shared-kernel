@@ -1,1 +1,1 @@
-export { DomainEventNotRegistered } from "./domain-event-not-registered";
+export { DomainEventNotRegistered } from "./domain-event-not-registered.js";

@@ -1,10 +1,10 @@
-import { CommandBusMiddleware, CommandBusContext } from "./command-bus";
-import { QueryBusMiddleware, QueryBusContext } from "./query-bus";
-import { Command } from "./command";
-import { Query } from "./query";
-import { DomainEvent } from "../domain-events";
-import { EventBusContext, EventBusMiddleware } from "../event-bus";
-import { ErrorTracker } from "../error-tracking";
+import { CommandBusMiddleware, CommandBusContext } from "./command-bus.js";
+import { QueryBusMiddleware, QueryBusContext } from "./query-bus.js";
+import { Command } from "./command.js";
+import { Query } from "./query.js";
+import { DomainEvent } from "../domain-events/index.js";
+import { EventBusContext, EventBusMiddleware } from "../event-bus/index.js";
+import { ErrorTracker } from "../error-tracking/index.js";
 
 export class ErrorTrackingMiddleware
   implements CommandBusMiddleware, QueryBusMiddleware, EventBusMiddleware {

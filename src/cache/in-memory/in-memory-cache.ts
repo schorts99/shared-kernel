@@ -1,6 +1,6 @@
-import { Cache } from "../../cache";
-import { getExpirationTime } from "../../utils/expiration";
-import { cloneValue as defaultCloneValue } from "../../utils/object";
+import { Cache } from "../../cache/index.js";
+import { getExpirationTime } from "../../utils/expiration.js";
+import { cloneValue as defaultCloneValue } from "../../utils/object.js";
 
 export interface InMemoryCacheOptions<T = unknown> {
   /** Maximum retained entries; defaults to 10,000. Evicts the oldest entry when full. */

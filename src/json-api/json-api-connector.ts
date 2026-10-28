@@ -1,9 +1,9 @@
-import { HTTPProvider, HTTPRequestOptions, HTTPException } from "../http";
-import type { JSONAPIList } from "./json-api-list";
-import type { JSONAPISingle } from "./json-api-single";
-import { URLCriteriaBuilder } from "./url-criteria-builder";
-import { Criteria } from "../criteria";
-import { JSONAPIErrors } from "./exceptions";
+import { HTTPProvider, HTTPRequestOptions, HTTPException } from "../http/index.js";
+import type { JSONAPIList } from "./json-api-list.js";
+import type { JSONAPISingle } from "./json-api-single.js";
+import { URLCriteriaBuilder } from "./url-criteria-builder.js";
+import { Criteria } from "../criteria/index.js";
+import { JSONAPIErrors } from "./exceptions/index.js";
 
 export interface JSONAPIRequestOptions<B = any> extends Omit<HTTPRequestOptions<B>, 'query'> {
   criteria?: Criteria;

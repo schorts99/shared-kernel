@@ -1,4 +1,4 @@
-import type { IdempotencyExecution } from "../idempotency/idempotency-executor";
+import type { IdempotencyExecution } from "../idempotency/idempotency-executor.js";
 
 export class CommitOutcomeUnknownError extends Error {
   readonly stagedExecution?: IdempotencyExecution<unknown> | undefined;

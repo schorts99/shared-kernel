@@ -1,9 +1,9 @@
-import { Model } from "../models";
-import { Entity as BaseEntity } from "../entities";
-import { Criteria } from "../criteria";
-import { UnitOfWork } from "../unit-of-work";
-import { ValueObject } from "../value-objects";
-import { DeleteMode } from "./delete-mode";
+import { Model } from "../models/index.js";
+import { Entity as BaseEntity } from "../entities/index.js";
+import { Criteria } from "../criteria/index.js";
+import { UnitOfWork } from "../unit-of-work/index.js";
+import { ValueObject } from "../value-objects/index.js";
+import { DeleteMode } from "./delete-mode.js";
 
 export abstract class DAO<
   M extends Model,

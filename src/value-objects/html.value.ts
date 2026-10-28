@@ -1,1 +1,1 @@
-export { HTMLValue } from "./html-value";
+export { HTMLValue } from "./html-value.js";

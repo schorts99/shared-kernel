@@ -1,5 +1,5 @@
-import { EventBus } from "../event-bus";
-import { Saga } from "./saga";
+import { EventBus } from "../event-bus/index.js";
+import { Saga } from "./saga.js";
 
 export class SagaManager {
   private readonly registeredSagas = new Set<Saga<any>>();

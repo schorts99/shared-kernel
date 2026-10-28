@@ -1,4 +1,4 @@
-import { TranslationResolver } from "../translation-resolver";
+import { TranslationResolver } from "../translation-resolver.js";
 
 export class InMemoryTranslationResolver implements TranslationResolver {
   constructor(private readonly translations: Record<string, string> = {}) { }

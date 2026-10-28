@@ -1,5 +1,5 @@
-import { HTTPProvider } from "../http";
-import { ConversionError } from "./exceptions";
+import { HTTPProvider } from "../http/index.js";
+import { ConversionError } from "./exceptions/index.js";
 
 export interface ConversionOptions {
   maxSize?: number;

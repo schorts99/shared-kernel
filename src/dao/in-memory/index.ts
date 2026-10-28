@@ -1,1 +1,1 @@
-export { InMemoryDAO, type InMemoryDAOOptions } from "./in-memory-dao";
+export { InMemoryDAO, type InMemoryDAOOptions } from "./in-memory-dao.js";

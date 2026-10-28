@@ -1,12 +1,12 @@
-import { ValueObject } from "./value-object";
-import { cloneValue, deepEqual } from "../utils/object";
+import { ValueObject } from "./value-object.js";
+import { cloneValue, deepEqual } from "../utils/object.js";
 import {
   deepFreezeValue,
   ObjectSchema,
   validateObjectSchema,
-} from "./schema-validation";
+} from "./schema-validation.js";
 
-export type { ObjectSchema } from "./schema-validation";
+export type { ObjectSchema } from "./schema-validation.js";
 
 export abstract class ObjectValue<Type = any, Optional extends boolean = false> implements ValueObject {
   readonly valueType = "Object";

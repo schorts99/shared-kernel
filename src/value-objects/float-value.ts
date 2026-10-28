@@ -1,4 +1,4 @@
-import { ValueObject } from "./value-object";
+import { ValueObject } from "./value-object.js";
 
 export abstract class FloatValue implements ValueObject {
   readonly valueType = "Float";

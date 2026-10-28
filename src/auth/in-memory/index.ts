@@ -2,4 +2,4 @@ export {
   InMemoryAuthProvider,
   type InMemoryAuthProviderOptions,
   type InMemoryAuthUserRecord,
-} from "./in-memory-auth-provider";
+} from "./in-memory-auth-provider.js";

@@ -1,4 +1,4 @@
-import { DomainEvent } from "../domain-events";
+import { DomainEvent } from "../domain-events/index.js";
 
 export interface EventSubscriberOptions {
   logging?: boolean;

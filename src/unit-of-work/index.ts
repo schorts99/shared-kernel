@@ -1,5 +1,5 @@
-export * from "./unit-of-work";
-export * from "./unit-of-work-runner";
-export * from "./transactional-outbox";
-export { CommitOutcomeUnknownError } from "./commit-outcome-unknown-error";
-export * from "./in-memory";
+export * from "./unit-of-work.js";
+export * from "./unit-of-work-runner.js";
+export * from "./transactional-outbox.js";
+export { CommitOutcomeUnknownError } from "./commit-outcome-unknown-error.js";
+export * from "./in-memory/index.js";

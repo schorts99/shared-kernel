@@ -1,4 +1,4 @@
-import type { ValidationRule } from "../validators";
+import type { ValidationRule } from "../validators/index.js";
 
 type Primitive = string | number | boolean | null | undefined;
 

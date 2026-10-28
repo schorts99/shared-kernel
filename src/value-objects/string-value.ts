@@ -1,4 +1,4 @@
-import { ValueObject } from "./";
+import { ValueObject } from "./index.js";
 
 export abstract class StringValue<Optional extends boolean = false> implements ValueObject {
   readonly valueType = "String";

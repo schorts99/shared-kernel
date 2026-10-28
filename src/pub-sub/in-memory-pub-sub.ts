@@ -1,7 +1,7 @@
-import { Publisher } from "./publisher";
-import { Subscriber, Subscription, MessageHandler } from "./subscription";
-import type { Logger } from "../logger";
-import { cloneValue } from "../utils";
+import { Publisher } from "./publisher.js";
+import { Subscriber, Subscription, MessageHandler } from "./subscription.js";
+import type { Logger } from "../logger/index.js";
+import { cloneValue } from "../utils/index.js";
 
 export interface InMemoryPubSubOptions {
   logger?: Logger | undefined;

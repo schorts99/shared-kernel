@@ -1,6 +1,6 @@
-import { ConsoleLogger } from "../logger";
-import type { Logger } from "../logger";
-import type { ExecutionContext, ExecutionContextStorage } from "../types/execution-context";
+import { ConsoleLogger } from "../logger/index.js";
+import type { Logger } from "../logger/index.js";
+import type { ExecutionContext, ExecutionContextStorage } from "../types/execution-context.js";
 
 export class CrossDispatchCycleError extends Error {
   readonly cycle: readonly string[];

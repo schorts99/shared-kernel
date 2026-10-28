@@ -7,15 +7,15 @@ import {
   QueryBusConfig,
   QueryRegistry,
   QueryHandlerNotRegistered,
-} from "..";
-import { BusRuntime, validateBusConfig } from "../bus-runtime";
-import type { BusDispatchOptions, BusCloseOptions } from "../bus-runtime";
-import type { Logger } from "../../logger";
-import { InMemoryCache } from "../../cache";
-import { getExpirationTime } from "../../utils/expiration";
-import { cloneValue } from "../../utils/object";
-import type { ExecutionContext } from "../../types/execution-context";
-import type { QueryCachePolicy } from "../query-cache-policy";
+} from "../index.js";
+import { BusRuntime, validateBusConfig } from "../bus-runtime.js";
+import type { BusDispatchOptions, BusCloseOptions } from "../bus-runtime.js";
+import type { Logger } from "../../logger/index.js";
+import { InMemoryCache } from "../../cache/index.js";
+import { getExpirationTime } from "../../utils/expiration.js";
+import { cloneValue } from "../../utils/object.js";
+import type { ExecutionContext } from "../../types/execution-context.js";
+import type { QueryCachePolicy } from "../query-cache-policy.js";
 
 export interface InMemoryQueryBusDependencies {
   executionContext?: ExecutionContext;

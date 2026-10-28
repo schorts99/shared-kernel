@@ -1,5 +1,5 @@
-import { MaybePromise } from "../types";
-import { cloneValue, deepEqual } from "../utils/object";
+import { MaybePromise } from "../types/index.js";
+import { cloneValue, deepEqual } from "../utils/object.js";
 
 export abstract class StateManager<Schema extends Record<string, any>, IsAsync extends boolean = false> {
   protected state: Schema;

@@ -1,4 +1,4 @@
-import { ValueObject } from "./";
+import { ValueObject } from "./index.js";
 
 export abstract class PathValue implements ValueObject<string> {
   readonly valueType = "Path";

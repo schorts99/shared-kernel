@@ -1,1 +1,1 @@
-export { CompositeTranslationResolver, InMemoryTranslationResolver } from "./in-memory-translation-resolver";
+export { CompositeTranslationResolver, InMemoryTranslationResolver } from "./in-memory-translation-resolver.js";

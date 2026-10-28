@@ -1,4 +1,4 @@
-import type { URLParamValue } from "../utils";
+import type { URLParamValue } from "../utils/index.js";
 
 export interface HTTPRequestOptions<T = any> {
   body?: T;

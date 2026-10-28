@@ -1,1 +1,1 @@
-export { MarkdownValue } from "./markdown-value";
+export { MarkdownValue } from "./markdown-value.js";

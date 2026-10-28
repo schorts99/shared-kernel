@@ -1,5 +1,5 @@
-import { Mail } from "./mail";
-import { ConsoleLogger, type Logger } from "../logger";
+import { Mail } from "./mail.js";
+import { ConsoleLogger, type Logger } from "../logger/index.js";
 
 export interface Mailer {
   send(mail: Mail): Promise<void>;

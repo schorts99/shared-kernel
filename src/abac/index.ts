@@ -1,1 +1,1 @@
-export type { Predicate, AsyncPredicate, ContextualPredicate, AsyncContextualPredicate, PredicateResult } from "./predicate";
+export type { Predicate, AsyncPredicate, ContextualPredicate, AsyncContextualPredicate, PredicateResult } from "./predicate.js";

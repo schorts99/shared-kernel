@@ -1,1 +1,1 @@
-export { InMemoryLogger, type LogEntry } from "./in-memory-logger";
+export { InMemoryLogger, type LogEntry } from "./in-memory-logger.js";

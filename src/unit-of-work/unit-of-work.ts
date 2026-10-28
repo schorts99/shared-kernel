@@ -1,4 +1,4 @@
-import type { DomainEvent } from "../domain-events";
+import type { DomainEvent } from "../domain-events/index.js";
 
 export interface DomainEventSource {
   pullDomainEvents(): ReadonlyArray<DomainEvent>;

@@ -1,4 +1,4 @@
-import { ValueObject } from "./value-object";
+import { ValueObject } from "./value-object.js";
 
 export abstract class EnumValue<Allowed extends readonly (string | null)[]> implements ValueObject {
   readonly valueType = 'Enum';

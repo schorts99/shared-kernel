@@ -1,5 +1,5 @@
-import { QueryMetadata, QueryPrimitives } from "./query-metadata";
-import { cloneValue } from "../utils/object";
+import { QueryMetadata, QueryPrimitives } from "./query-metadata.js";
+import { cloneValue } from "../utils/object.js";
 
 function cloneSafe<T>(value: T): T {
   try {

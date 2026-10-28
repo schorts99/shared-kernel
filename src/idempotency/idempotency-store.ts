@@ -1,4 +1,4 @@
-import type { IdempotencyExecutor, IdempotencyExecution } from "./idempotency-executor";
+import type { IdempotencyExecutor, IdempotencyExecution } from "./idempotency-executor.js";
 
 export interface IdempotencyStore extends IdempotencyExecutor {
   isProcessed(key: string): Promise<boolean>;

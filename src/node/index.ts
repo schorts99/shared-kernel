@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { ExecutionContext, ExecutionContextStorage } from "../types/execution-context";
+import type { ExecutionContext, ExecutionContextStorage } from "../types/execution-context.js";
 
 export class NodeExecutionContext implements ExecutionContext {
   createStorage<T>(): ExecutionContextStorage<T> {

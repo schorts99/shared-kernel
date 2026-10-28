@@ -1,2 +1,2 @@
-export type { ValidationRule } from "./validation-rule";
-export { rule } from "./rule";
+export type { ValidationRule } from "./validation-rule.js";
+export { rule } from "./rule.js";

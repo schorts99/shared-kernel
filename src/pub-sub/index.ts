@@ -1,3 +1,3 @@
-export * from "./publisher";
-export * from "./subscription";
-export * from "./in-memory-pub-sub";
+export * from "./publisher.js";
+export * from "./subscription.js";
+export * from "./in-memory-pub-sub.js";

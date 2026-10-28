@@ -1,4 +1,4 @@
-import { TrackedError } from "./tracked-error";
+import { TrackedError } from "./tracked-error.js";
 
 export interface ErrorStore {
   add(error: Error | string, context?: Record<string, unknown>, reason?: string): Promise<void>;

@@ -1,1 +1,1 @@
-export { EntityJSONAPIMapper } from "./entity-json-api-mapper";
+export { EntityJSONAPIMapper } from "./entity-json-api-mapper.js";

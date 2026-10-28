@@ -1,4 +1,4 @@
-import { TranslationResolver } from "../../i18n";
+import { TranslationResolver } from "../../i18n/index.js";
 
 export class QueryHandlerNotRegistered extends Error {
   constructor(query: string, translationResolver?: TranslationResolver) {

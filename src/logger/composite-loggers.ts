@@ -1,4 +1,4 @@
-import { Logger, LogContext } from "./logger";
+import { Logger, LogContext } from "./logger.js";
 
 export class NullLogger extends Logger {
   log(): void { }

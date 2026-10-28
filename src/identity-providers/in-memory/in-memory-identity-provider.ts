@@ -1,10 +1,10 @@
-import { cloneValue } from "../../utils";
+import { cloneValue } from "../../utils/index.js";
 import {
   CreateUserRequest,
   IdentityProvider,
   IdentityUserBase,
   UpdateUserRequest,
-} from "../identity-provider";
+} from "../identity-provider.js";
 
 export interface InMemoryIdentityProviderOptions<T extends IdentityUserBase = IdentityUserBase> {
   users?: T[];

@@ -1,5 +1,5 @@
-import { CommandMetadata, CommandPrimitives } from "./command-metadata";
-import { cloneValue } from "../utils/object";
+import { CommandMetadata, CommandPrimitives } from "./command-metadata.js";
+import { cloneValue } from "../utils/object.js";
 
 function cloneSafe<T>(value: T): T {
   try {

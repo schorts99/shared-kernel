@@ -1,6 +1,6 @@
-import { DomainEvent } from "../domain-events";
-import { EventSubscriber } from "./event-subscriber";
-import type { BusMetrics, BusRuntimeConfig, BusDispatchOptions, BusCloseOptions } from "../cqrs/bus-runtime";
+import { DomainEvent } from "../domain-events/index.js";
+import { EventSubscriber } from "./event-subscriber.js";
+import type { BusMetrics, BusRuntimeConfig, BusDispatchOptions, BusCloseOptions } from "../cqrs/bus-runtime.js";
 
 export interface EventBusMiddleware {
   beforePublish?<E extends DomainEvent>(

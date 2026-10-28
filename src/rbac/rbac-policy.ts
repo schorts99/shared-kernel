@@ -1,11 +1,11 @@
-import { Permission, BaseAction } from "./permission";
-import { BaseResource } from "./base-resource";
+import { Permission, BaseAction } from "./permission.js";
+import { BaseResource } from "./base-resource.js";
 import {
   Predicate,
   AsyncPredicate,
   ContextualPredicate,
   AsyncContextualPredicate,
-} from "../abac";
+} from "../abac/index.js";
 
 export abstract class RBACPolicy<Action extends string = BaseAction> {
   abstract getPermissions(role: string): Permission<Action>[];

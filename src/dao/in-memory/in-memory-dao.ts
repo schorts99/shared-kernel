@@ -1,11 +1,11 @@
-import { Model } from "../../models";
-import { Entity as BaseEntity } from "../../entities";
-import { Criteria, Operator } from "../../criteria";
-import { UnitOfWork } from "../../unit-of-work";
-import { ValueObject } from "../../value-objects";
-import { cloneValue } from "../../utils/object";
-import { DeleteMode } from "../delete-mode";
-import { DAO } from "../dao";
+import { Model } from "../../models/index.js";
+import { Entity as BaseEntity } from "../../entities/index.js";
+import { Criteria, Operator } from "../../criteria/index.js";
+import { UnitOfWork } from "../../unit-of-work/index.js";
+import { ValueObject } from "../../value-objects/index.js";
+import { cloneValue } from "../../utils/object.js";
+import { DeleteMode } from "../delete-mode.js";
+import { DAO } from "../dao.js";
 
 export interface InMemoryDAOOptions<Entity> {
   cloneEntity?: (entity: Entity) => Entity;

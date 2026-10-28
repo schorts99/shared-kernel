@@ -1,10 +1,10 @@
-import type { DomainEvent } from "../domain-events";
-import type { EventBus, EventStore } from "../event-bus";
+import type { DomainEvent } from "../domain-events/index.js";
+import type { EventBus, EventStore } from "../event-bus/index.js";
 import type {
   DomainEventSource,
   UnitOfWork,
   UnitOfWorkPostCommitHook,
-} from "./unit-of-work";
+} from "./unit-of-work.js";
 
 export interface TransactionalOutboxOptions {
   /** Durable/pending event store where domain event primitives are staged during `commit()`. */

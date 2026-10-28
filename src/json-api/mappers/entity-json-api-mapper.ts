@@ -2,12 +2,12 @@ import {
   Entity as BaseEntity,
   EntityRegistration,
   EntityRegistry,
-} from "../../entities";
-import { ValueObject } from "../../value-objects";
-import { Model as BaseModel } from "../../models";
-import { cloneValue } from "../../utils/object";
-import { JSONAPIList } from "../json-api-list";
-import { JSONAPISingle } from "../json-api-single";
+} from "../../entities/index.js";
+import { ValueObject } from "../../value-objects/index.js";
+import { Model as BaseModel } from "../../models/index.js";
+import { cloneValue } from "../../utils/object.js";
+import { JSONAPIList } from "../json-api-list.js";
+import { JSONAPISingle } from "../json-api-single.js";
 
 export class EntityJSONAPIMapper<
   Model extends BaseModel,

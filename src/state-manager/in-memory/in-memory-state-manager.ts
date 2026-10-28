@@ -1,5 +1,5 @@
-import { StateManager } from "../state-manager";
-import { cloneValue } from "../../utils/object";
+import { StateManager } from "../state-manager.js";
+import { cloneValue } from "../../utils/object.js";
 
 export class InMemoryStateManager<Schema extends Record<string, any>> extends StateManager<Schema> {
   constructor(initialState: Schema = {} as Schema) {

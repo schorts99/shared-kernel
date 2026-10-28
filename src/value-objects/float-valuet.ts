@@ -1,1 +1,1 @@
-export { FloatValue } from "./float-value";
+export { FloatValue } from "./float-value.js";

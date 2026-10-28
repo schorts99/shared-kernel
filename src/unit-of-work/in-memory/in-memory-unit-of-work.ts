@@ -1,15 +1,15 @@
-import type { DomainEvent } from "../../domain-events";
-import type { Logger } from "../../logger";
+import type { DomainEvent } from "../../domain-events/index.js";
+import type { Logger } from "../../logger/index.js";
 import {
   TransactionalOutboxProcessor,
   type TransactionalOutboxOptions,
-} from "../transactional-outbox";
+} from "../transactional-outbox.js";
 import type {
   DomainEventSource,
   UnitOfWork,
   UnitOfWorkPostCommitHook,
-} from "../unit-of-work";
-import { AsyncUnitOfWorkRunner } from "../unit-of-work-runner";
+} from "../unit-of-work.js";
+import { AsyncUnitOfWorkRunner } from "../unit-of-work-runner.js";
 
 export type UnitOfWorkHook = () => void | Promise<void>;
 

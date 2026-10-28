@@ -1,4 +1,4 @@
-export * from "./permission";
-export * from "./base-resource";
-export { RBACPolicy, StaticRBACPolicy } from "./rbac-policy";
-export * from "./exceptions";
+export * from "./permission.js";
+export * from "./base-resource.js";
+export { RBACPolicy, StaticRBACPolicy } from "./rbac-policy.js";
+export * from "./exceptions/index.js";

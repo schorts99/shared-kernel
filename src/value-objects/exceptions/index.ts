@@ -1,2 +1,2 @@
-export { ValuesNotValid } from "./values-not-valid";
-export type { ValueNotValid } from "./value-not-valid";
+export { ValuesNotValid } from "./values-not-valid.js";
+export type { ValueNotValid } from "./value-not-valid.js";

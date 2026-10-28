@@ -5,4 +5,4 @@ export {
   type HTTPRouteMatcher,
   type InMemoryHTTPProviderOptions,
   type RecordedHTTPRequest,
-} from "./in-memory-http-provider";
+} from "./in-memory-http-provider.js";

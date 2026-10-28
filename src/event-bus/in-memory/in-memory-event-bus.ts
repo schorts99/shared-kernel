@@ -1,9 +1,9 @@
-import { DomainEvent, DomainEventRegistry } from "../../domain-events";
-import { InMemoryEventStore } from "./in-memory-event-store";
-import { EventStore } from "../event-store";
-import { EventSubscriber } from "../event-subscriber";
-import { EventBus, EventBusConfig, EventBusContext, EventBusMiddleware } from "..";
-import { DeadLetterStore } from "../dead-letter-store";
+import { DomainEvent, DomainEventRegistry } from "../../domain-events/index.js";
+import { InMemoryEventStore } from "./in-memory-event-store.js";
+import { EventStore } from "../event-store.js";
+import { EventSubscriber } from "../event-subscriber.js";
+import { EventBus, EventBusConfig, EventBusContext, EventBusMiddleware } from "../index.js";
+import { DeadLetterStore } from "../dead-letter-store.js";
 import {
   BusRuntime,
   CrossDispatchCycleError,
@@ -11,11 +11,11 @@ import {
   findDependencyPath,
   registerInFlightTask,
   validateBusConfig,
-} from "../../cqrs/bus-runtime";
-import type { BusDispatchOptions, BusCloseOptions } from "../../cqrs/bus-runtime";
-import type { Logger } from "../../logger";
-import type { ExecutionContext, ExecutionContextStorage } from "../../types/execution-context";
-import { cloneValue } from "../../utils/object";
+} from "../../cqrs/bus-runtime.js";
+import type { BusDispatchOptions, BusCloseOptions } from "../../cqrs/bus-runtime.js";
+import type { Logger } from "../../logger/index.js";
+import type { ExecutionContext, ExecutionContextStorage } from "../../types/execution-context.js";
+import { cloneValue } from "../../utils/object.js";
 
 interface DeliveryFrame {
   active: boolean;

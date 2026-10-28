@@ -1,3 +1,3 @@
-export * from "./mail";
-export * from "./mailer";
-export * from "./in-memory";
+export * from "./mail.js";
+export * from "./mailer.js";
+export * from "./in-memory/index.js";

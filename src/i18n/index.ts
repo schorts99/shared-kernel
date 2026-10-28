@@ -1,3 +1,3 @@
-export * from "./translation-resolver";
-export * from "./shared-kernel-translation-keys";
-export * from "./in-memory";
+export * from "./translation-resolver.js";
+export * from "./shared-kernel-translation-keys.js";
+export * from "./in-memory/index.js";

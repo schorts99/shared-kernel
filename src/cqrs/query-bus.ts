@@ -1,7 +1,7 @@
-import { Query } from "./query";
-import { QueryHandler } from "./query-handler";
-import type { BusMetrics, BusRuntimeConfig, BusDispatchOptions, BusCloseOptions } from "./bus-runtime";
-import type { QueryCachePolicy } from "./query-cache-policy";
+import { Query } from "./query.js";
+import { QueryHandler } from "./query-handler.js";
+import type { BusMetrics, BusRuntimeConfig, BusDispatchOptions, BusCloseOptions } from "./bus-runtime.js";
+import type { QueryCachePolicy } from "./query-cache-policy.js";
 
 export interface QueryBusMiddleware {
   beforeDispatch?<Q extends Query>(

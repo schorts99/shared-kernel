@@ -1,9 +1,9 @@
-import { Order } from "./order";
-import { Operator } from "./operator";
-import { Direction } from "./direction";
-import { OffsetNotValid, LimitNotValid } from "./exceptions";
-import { Filters } from "./filters";
-import { cloneValue } from "../utils/object";
+import { Order } from "./order.js";
+import { Operator } from "./operator.js";
+import { Direction } from "./direction.js";
+import { OffsetNotValid, LimitNotValid } from "./exceptions/index.js";
+import { Filters } from "./filters.js";
+import { cloneValue } from "../utils/object.js";
 
 function cloneFilterValue<T>(value: T): T {
   try {

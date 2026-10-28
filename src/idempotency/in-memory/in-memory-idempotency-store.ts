@@ -1,8 +1,8 @@
-import { IdempotencyStore } from "../idempotency-store";
-import { getExpirationTime } from "../../utils/expiration";
-import { cloneValue as defaultCloneValue } from "../../utils/object";
-import type { IdempotencyExecution, UnknownCommitReconciliation } from "../idempotency-executor";
-import { CommitOutcomeUnknownError } from "../../unit-of-work/commit-outcome-unknown-error";
+import { IdempotencyStore } from "../idempotency-store.js";
+import { getExpirationTime } from "../../utils/expiration.js";
+import { cloneValue as defaultCloneValue } from "../../utils/object.js";
+import type { IdempotencyExecution, UnknownCommitReconciliation } from "../idempotency-executor.js";
+import { CommitOutcomeUnknownError } from "../../unit-of-work/commit-outcome-unknown-error.js";
 import {
   addWaitEdge,
   assertNoCycleWhenWaitingOn,
@@ -11,9 +11,9 @@ import {
   getSharedExecutionStorage,
   registerInFlightTask,
   removeWaitEdge,
-} from "../../cqrs/bus-runtime";
-import type { ExecutionContext, ExecutionContextStorage } from "../../types/execution-context";
-import type { ExecutionNode } from "../../cqrs/bus-runtime";
+} from "../../cqrs/bus-runtime.js";
+import type { ExecutionContext, ExecutionContextStorage } from "../../types/execution-context.js";
+import type { ExecutionNode } from "../../cqrs/bus-runtime.js";
 
 export interface InMemoryIdempotencyStoreOptions {
   /** Bounds completed and in-progress keys (default 10,000); new keys reject at capacity. */

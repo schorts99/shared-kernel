@@ -1,1 +1,1 @@
-export { InMemoryMailer, type SentMail } from "./in-memory-mailer";
+export { InMemoryMailer, type SentMail } from "./in-memory-mailer.js";

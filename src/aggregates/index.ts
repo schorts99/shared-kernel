@@ -1,1 +1,1 @@
-export { AggregateRoot } from "./aggregate-root";
+export { AggregateRoot } from "./aggregate-root.js";

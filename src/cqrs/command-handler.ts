@@ -1,17 +1,17 @@
-import { Command } from "./command";
+import { Command } from "./command.js";
 import {
   CommandValidationError,
   CommandAuthorizationError,
   CommandExecutionError,
   CommandMaxRetriesExceeded
-} from "./exceptions";
-import { Logger } from "../logger";
-import { IdempotencyStore } from "../idempotency";
-import { Cache } from "../cache";
-import type { UnitOfWork } from "../unit-of-work";
-import { CommitOutcomeUnknownError } from "../unit-of-work/commit-outcome-unknown-error";
-import { CrossDispatchCycleError } from "./bus-runtime";
-import type { DomainEvent } from "../domain-events";
+} from "./exceptions/index.js";
+import { Logger } from "../logger/index.js";
+import { IdempotencyStore } from "../idempotency/index.js";
+import { Cache } from "../cache/index.js";
+import type { UnitOfWork } from "../unit-of-work/index.js";
+import { CommitOutcomeUnknownError } from "../unit-of-work/commit-outcome-unknown-error.js";
+import { CrossDispatchCycleError } from "./bus-runtime.js";
+import type { DomainEvent } from "../domain-events/index.js";
 
 export interface CommandHandlerOptions {
   logging?: boolean;

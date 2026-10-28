@@ -1,3 +1,3 @@
-export { DAO } from "./dao";
-export type { DeleteMode } from "./delete-mode";
-export * from "./in-memory";
+export { DAO } from "./dao.js";
+export type { DeleteMode } from "./delete-mode.js";
+export * from "./in-memory/index.js";

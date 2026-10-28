@@ -1,5 +1,5 @@
-import { ValueObject } from "./value-object";
-import { deepEqual } from "../utils/object";
+import { ValueObject } from "./value-object.js";
+import { deepEqual } from "../utils/object.js";
 
 export abstract class BaseValueObject<T> implements ValueObject<T> {
   abstract readonly valueType: string;

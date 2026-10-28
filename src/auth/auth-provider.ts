@@ -1,8 +1,8 @@
-import { Entity } from "../entities";
-import { AggregateRoot } from "../aggregates";
-import { Model } from "../models";
-import { ValueObject } from "../value-objects";
-import { Permission, BaseAction } from "../rbac";
+import { Entity } from "../entities/index.js";
+import { AggregateRoot } from "../aggregates/index.js";
+import { Model } from "../models/index.js";
+import { ValueObject } from "../value-objects/index.js";
+import { Permission, BaseAction } from "../rbac/index.js";
 
 export type Authenticatable = Entity<ValueObject, Model> | AggregateRoot<ValueObject>;
 

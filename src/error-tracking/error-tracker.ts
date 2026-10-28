@@ -1,6 +1,6 @@
-import { ErrorStore } from "./error-store";
-import { ErrorUploader } from "./error-uploader";
-import { Logger } from "../logger";
+import { ErrorStore } from "./error-store.js";
+import { ErrorUploader } from "./error-uploader.js";
+import { Logger } from "../logger/index.js";
 
 export type IgnoredErrorPattern =
   | string

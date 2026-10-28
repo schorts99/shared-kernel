@@ -1,14 +1,14 @@
-import { ValueObject } from "./value-object";
-import type { ValidationRule } from "../validators";
-import { cloneValue, deepEqual } from "../utils/object";
+import { ValueObject } from "./value-object.js";
+import type { ValidationRule } from "../validators/index.js";
+import { cloneValue, deepEqual } from "../utils/object.js";
 import {
   deepFreezeValue,
   ObjectSchema,
   validateObjectSchema,
   validateSchemaRule,
-} from "./schema-validation";
+} from "./schema-validation.js";
 
-export type { ObjectSchema } from "./schema-validation";
+export type { ObjectSchema } from "./schema-validation.js";
 
 export abstract class ArrayValue<Type = any> implements ValueObject {
   readonly valueType = "Array";

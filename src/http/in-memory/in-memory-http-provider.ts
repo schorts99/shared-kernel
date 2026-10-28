@@ -1,6 +1,6 @@
-import { cloneValue, URLWithParamsBuilder } from "../../utils";
-import { HTTPException } from "../exceptions";
-import type { HTTPProvider, HTTPRequestOptions } from "../http-provider";
+import { cloneValue, URLWithParamsBuilder } from "../../utils/index.js";
+import { HTTPException } from "../exceptions/index.js";
+import type { HTTPProvider, HTTPRequestOptions } from "../http-provider.js";
 
 export type HTTPMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 

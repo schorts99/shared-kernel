@@ -1,10 +1,10 @@
-import { Query } from "./query";
-import { QueryValidationError, QueryAuthorizationError, QueryExecutionError } from "./exceptions";
-import { CrossDispatchCycleError } from "./bus-runtime";
-import { CommitOutcomeUnknownError } from "../unit-of-work/commit-outcome-unknown-error";
-import { Logger } from "../logger";
-import { Cache } from "../cache";
-import { cloneValue } from "../utils/object";
+import { Query } from "./query.js";
+import { QueryValidationError, QueryAuthorizationError, QueryExecutionError } from "./exceptions/index.js";
+import { CrossDispatchCycleError } from "./bus-runtime.js";
+import { CommitOutcomeUnknownError } from "../unit-of-work/commit-outcome-unknown-error.js";
+import { Logger } from "../logger/index.js";
+import { Cache } from "../cache/index.js";
+import { cloneValue } from "../utils/object.js";
 
 export interface QueryHandlerOptions {
   cache?: boolean;

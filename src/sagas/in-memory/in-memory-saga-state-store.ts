@@ -1,5 +1,5 @@
-import { SagaInstanceState, SagaStateStore } from "../saga-state-store";
-import { cloneValue } from "../../utils/object";
+import { SagaInstanceState, SagaStateStore } from "../saga-state-store.js";
+import { cloneValue } from "../../utils/object.js";
 
 export interface InMemorySagaStateStoreOptions<Schema extends Record<string, any> = {}> {
   /** Maximum number of processed event IDs retained per saga instance (default 1,000). */

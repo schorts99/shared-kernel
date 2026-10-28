@@ -20,6 +20,7 @@ const { transform } = require("typescript");
     coverageReporters: ["text", "lcov", "html"],
     moduleNameMapper: {
       "^@schorts/shared-kernel/(.*)$": "<rootDir>/src/$1",
+      "^(\\.{1,2}/.*)\\.js$": "$1",
     },
   };
   

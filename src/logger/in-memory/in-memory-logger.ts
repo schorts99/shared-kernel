@@ -1,6 +1,6 @@
-import { cloneValue } from "../../utils";
-import { LogLevel } from "../console";
-import { Logger, LogContext } from "../logger";
+import { cloneValue } from "../../utils/index.js";
+import { LogLevel } from "../console/index.js";
+import { Logger, LogContext } from "../logger.js";
 
 const LOG_LEVEL_VALUES: Record<LogLevel, number> = {
   debug: 0,

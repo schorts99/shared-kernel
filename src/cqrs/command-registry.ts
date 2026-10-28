@@ -1,6 +1,6 @@
-import { Command } from "./command";
-import { CommandMetadata, CommandPrimitives } from "./command-metadata";
-import { CommandNotRegistered } from "./exceptions";
+import { Command } from "./command.js";
+import { CommandMetadata, CommandPrimitives } from "./command-metadata.js";
+import { CommandNotRegistered } from "./exceptions/index.js";
 
 export type CommandFactory<C extends Command = Command> = (
   primitives: CommandPrimitives,

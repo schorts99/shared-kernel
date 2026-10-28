@@ -1,5 +1,5 @@
-import { ValueObject } from "../value-objects";
-import { DomainEvent } from "../domain-events";
+import { ValueObject } from "../value-objects/index.js";
+import { DomainEvent } from "../domain-events/index.js";
 
 export abstract class AggregateRoot<IDValue extends ValueObject> {
   private domainEvents: Array<{ event: DomainEvent; sequenceNumber: number }> = [];

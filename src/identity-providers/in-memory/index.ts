@@ -1,4 +1,4 @@
 export {
   InMemoryIdentityProvider,
   type InMemoryIdentityProviderOptions,
-} from "./in-memory-identity-provider";
+} from "./in-memory-identity-provider.js";

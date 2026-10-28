@@ -1,4 +1,4 @@
-import { TranslationResolver } from "../../i18n";
+import { TranslationResolver } from "../../i18n/index.js";
 
 export class LimitNotValid extends Error {
   constructor(limit: number, translationResolver?: TranslationResolver) {

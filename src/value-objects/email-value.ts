@@ -1,4 +1,4 @@
-import { ValueObject } from "./";
+import { ValueObject } from "./index.js";
 
 const REGEX = /^[A-Za-z0-9._%+-]+@(?!(?:[A-Za-z0-9_.-]+\.)?com\.com)[A-Za-z0-9.-]+\.[A-Za-z]{2,63}$/;
 

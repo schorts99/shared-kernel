@@ -1,5 +1,5 @@
-import { DomainEventPrimitives } from "../domain-events";
-import { EventSubscriber } from "./event-subscriber";
+import { DomainEventPrimitives } from "../domain-events/index.js";
+import { EventSubscriber } from "./event-subscriber.js";
 
 export interface DeadLetterStore {
   add(primitives: DomainEventPrimitives, reason: string, subscriber?: EventSubscriber<any>): Promise<void>;

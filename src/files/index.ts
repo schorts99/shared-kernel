@@ -1,2 +1,2 @@
-export * from "./file-provider";
-export * from "./in-memory";
+export * from "./file-provider.js";
+export * from "./in-memory/index.js";

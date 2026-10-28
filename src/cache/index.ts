@@ -1,2 +1,2 @@
-export type { Cache } from "./cache";
-export * from "./in-memory";
+export type { Cache } from "./cache.js";
+export * from "./in-memory/index.js";

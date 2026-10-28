@@ -1,4 +1,4 @@
-import { DomainEventPrimitives } from "../domain-events";
+import { DomainEventPrimitives } from "../domain-events/index.js";
 
 export interface EventStore {
   save(primitives: DomainEventPrimitives): Promise<void>;

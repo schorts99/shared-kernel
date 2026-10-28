@@ -1,6 +1,6 @@
-import { Criteria } from "../criteria";
-import { Direction } from "../criteria/direction";
-import { Operator } from "../criteria/operator";
+import { Criteria } from "../criteria/index.js";
+import { Direction } from "../criteria/direction.js";
+import { Operator } from "../criteria/operator.js";
 
 export class URLCriteriaParser {
   constructor(

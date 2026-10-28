@@ -1,6 +1,6 @@
-import { ValueObject } from "../value-objects";
-import { Model } from "../models";
-import { DomainEvent } from "../domain-events";
+import { ValueObject } from "../value-objects/index.js";
+import { Model } from "../models/index.js";
+import { DomainEvent } from "../domain-events/index.js";
 
 export abstract class Entity<IDValue extends ValueObject, M extends Model> {
   private domainEvents: Array<DomainEvent> = [];

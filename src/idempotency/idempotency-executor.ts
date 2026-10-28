@@ -1,4 +1,4 @@
-import type { CommitOutcomeUnknownError } from "../unit-of-work/commit-outcome-unknown-error";
+import type { CommitOutcomeUnknownError } from "../unit-of-work/commit-outcome-unknown-error.js";
 
 export interface IdempotencyExecution<T> {
   result: T;

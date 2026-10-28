@@ -1,6 +1,6 @@
-import { ErrorStore } from "../error-store";
-import { TrackedError } from "../tracked-error";
-import { cloneValue } from "../../utils/object";
+import { ErrorStore } from "../error-store.js";
+import { TrackedError } from "../tracked-error.js";
+import { cloneValue } from "../../utils/object.js";
 
 export interface InMemoryErrorStoreOptions {
   /** Maximum number of tracked errors retained before evicting the oldest entry (default 1,000). */

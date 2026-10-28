@@ -1,4 +1,4 @@
-import { ValueObject } from "./";
+import { ValueObject } from "./index.js";
 
 export abstract class BooleanValue implements ValueObject {
   readonly valueType = "Boolean";

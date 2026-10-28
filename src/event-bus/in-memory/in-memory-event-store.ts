@@ -1,7 +1,7 @@
-import { DomainEventPrimitives } from "../../domain-events";
-import { EventStore } from "../event-store";
-import { getExpirationTime } from "../../utils/expiration";
-import { cloneValue } from "../../utils/object";
+import { DomainEventPrimitives } from "../../domain-events/index.js";
+import { EventStore } from "../event-store.js";
+import { getExpirationTime } from "../../utils/expiration.js";
+import { cloneValue } from "../../utils/object.js";
 
 export interface InMemoryEventStoreOptions {
   /** Duplicate-suppression window in milliseconds; defaults to 24 hours. */

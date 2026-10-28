@@ -1,4 +1,4 @@
-import { TranslationResolver } from "../../i18n";
+import { TranslationResolver } from "../../i18n/index.js";
 
 export class DomainEventNotRegistered extends Error {
   constructor(domainEventName: string, translationResolver?: TranslationResolver) {

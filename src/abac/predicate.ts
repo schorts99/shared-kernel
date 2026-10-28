@@ -1,4 +1,4 @@
-import type { BaseResource } from "../rbac";
+import type { BaseResource } from "../rbac/index.js";
 
 export type Predicate<User extends { id: unknown }, Resource extends BaseResource> = (user: User, resource: Resource) => boolean;
 

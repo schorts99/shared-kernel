@@ -1,6 +1,6 @@
-import { DomainEvent } from "../domain-events";
-import { EventSubscriber, EventSubscriberContext } from "../event-bus";
-import { Command, CommandBus } from "../cqrs";
+import { DomainEvent } from "../domain-events/index.js";
+import { EventSubscriber, EventSubscriberContext } from "../event-bus/index.js";
+import { Command, CommandBus } from "../cqrs/index.js";
 import {
   addWaitEdge,
   assertNoCycleWhenWaitingOn,
@@ -8,8 +8,8 @@ import {
   getInFlightTaskOwner,
   registerInFlightTask,
   removeWaitEdge,
-} from "../cqrs/bus-runtime";
-import { SagaStateStore, SagaStatus } from "./saga-state-store";
+} from "../cqrs/bus-runtime.js";
+import { SagaStateStore, SagaStatus } from "./saga-state-store.js";
 
 export type SagaCompensationAction = () => Promise<void>;
 

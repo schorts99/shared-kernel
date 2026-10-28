@@ -1,4 +1,4 @@
-import { LimitNotValid, OffsetNotValid } from "../criteria";
+import { LimitNotValid, OffsetNotValid } from "../criteria/index.js";
 
 export type PaginationLinks = {
   self: string;

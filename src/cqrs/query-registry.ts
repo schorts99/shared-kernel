@@ -1,6 +1,6 @@
-import { Query } from "./query";
-import { QueryMetadata, QueryPrimitives } from "./query-metadata";
-import { QueryNotRegistered } from "./exceptions";
+import { Query } from "./query.js";
+import { QueryMetadata, QueryPrimitives } from "./query-metadata.js";
+import { QueryNotRegistered } from "./exceptions/index.js";
 
 export type QueryFactory<Q extends Query = Query> = (
   primitives: QueryPrimitives,

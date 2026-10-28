@@ -1,5 +1,5 @@
-import { BaseAction, Permission } from "../../rbac";
-import { cloneValue } from "../../utils";
+import { BaseAction, Permission } from "../../rbac/index.js";
+import { cloneValue } from "../../utils/index.js";
 import {
   AuthChangeCallback,
   AuthChangeUnsubscribe,
@@ -8,8 +8,8 @@ import {
   AuthenticationResult,
   AuthProvider,
   UserSession,
-} from "../auth-provider";
-import { AuthenticationError } from "../exceptions";
+} from "../auth-provider.js";
+import { AuthenticationError } from "../exceptions/index.js";
 
 export interface InMemoryAuthUserRecord<
   User extends Authenticatable = Authenticatable,

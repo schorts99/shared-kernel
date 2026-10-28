@@ -1,6 +1,6 @@
-import { cloneValue } from "../../utils";
-import { Mail, MailAddress } from "../mail";
-import { Mailer } from "../mailer";
+import { cloneValue } from "../../utils/index.js";
+import { Mail, MailAddress } from "../mail.js";
+import { Mailer } from "../mailer.js";
 
 export interface SentMail extends Mail {
   sentAt: Date;

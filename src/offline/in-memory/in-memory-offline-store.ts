@@ -1,6 +1,6 @@
-import { OfflinePayload } from "../offline-payload";
-import { OfflineStore } from "../offline-store";
-import { cloneValue } from "../../utils/object";
+import { OfflinePayload } from "../offline-payload.js";
+import { OfflineStore } from "../offline-store.js";
+import { cloneValue } from "../../utils/object.js";
 
 export interface InMemoryOfflineStoreOptions {
   /** Maximum number of queued offline entries before rejecting new enqueues (default 10,000). */

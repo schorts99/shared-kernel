@@ -1,6 +1,6 @@
-import { DomainEvent } from "./domain-event";
-import { DomainEventMetadata, DomainEventPrimitives } from "./domain-event-metadata";
-import { DomainEventNotRegistered } from "./exceptions";
+import { DomainEvent } from "./domain-event.js";
+import { DomainEventMetadata, DomainEventPrimitives } from "./domain-event-metadata.js";
+import { DomainEventNotRegistered } from "./exceptions/index.js";
 
 export type DomainEventFactory<E extends DomainEvent = DomainEvent> = (
   primitives: DomainEventPrimitives,

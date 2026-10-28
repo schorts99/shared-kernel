@@ -1,4 +1,4 @@
-import { ValueObject } from "./";
+import { ValueObject } from "./index.js";
 
 export abstract class IntegerValue implements ValueObject {
   readonly valueType = "Integer";

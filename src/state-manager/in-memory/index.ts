@@ -1,1 +1,1 @@
-export { InMemoryStateManager } from "./in-memory-state-manager";
+export { InMemoryStateManager } from "./in-memory-state-manager.js";

@@ -1,4 +1,4 @@
-import type { ValueObject } from "./";
+import type { ValueObject } from "./index.js";
 
 export abstract class URLValue implements ValueObject {
   readonly valueType = "URL";

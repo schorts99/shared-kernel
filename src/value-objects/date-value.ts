@@ -1,4 +1,4 @@
-import { ValueObject } from "./value-object";
+import { ValueObject } from "./value-object.js";
 
 type DateInput<Required extends boolean> =
   Required extends true ? Date : Date | null;

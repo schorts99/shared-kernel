@@ -1,4 +1,4 @@
-import { EntityNotRegistered } from "./exceptions";
+import { EntityNotRegistered } from "./exceptions/index.js";
 
 export type EntityFactory<M = any, E = any> = (model: M) => E;
 

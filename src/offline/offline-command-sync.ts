@@ -3,8 +3,8 @@ import {
   CommandBus,
   CommandPrimitives,
   CommandRegistry,
-} from "../cqrs";
-import { OfflineStore } from "./offline-store";
+} from "../cqrs/index.js";
+import { OfflineStore } from "./offline-store.js";
 
 export interface OfflineCommandSyncOptions<T = CommandPrimitives> {
   hydrateCommand?: (payload: T) => Command;

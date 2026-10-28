@@ -1,7 +1,7 @@
-import { Command } from "./command";
-import { CommandHandler } from "./command-handler";
-import type { DomainEvent } from "../domain-events";
-import type { BusMetrics, BusRuntimeConfig, BusDispatchOptions, BusCloseOptions } from "./bus-runtime";
+import { Command } from "./command.js";
+import { CommandHandler } from "./command-handler.js";
+import type { DomainEvent } from "../domain-events/index.js";
+import type { BusMetrics, BusRuntimeConfig, BusDispatchOptions, BusCloseOptions } from "./bus-runtime.js";
 
 export interface CommandBusMiddleware {
   beforeDispatch?<C extends Command>(

@@ -1,7 +1,7 @@
-export type { Operator } from "./operator";
-export type { Order } from "./order";
-export type { Direction } from "./direction";
-export { Criteria } from "./criteria";
-export type { CriteriaPrimitives } from "./criteria";
-export * from "./exceptions";
-export * from "./filters";
+export type { Operator } from "./operator.js";
+export type { Order } from "./order.js";
+export type { Direction } from "./direction.js";
+export { Criteria } from "./criteria.js";
+export type { CriteriaPrimitives } from "./criteria.js";
+export * from "./exceptions/index.js";
+export * from "./filters.js";

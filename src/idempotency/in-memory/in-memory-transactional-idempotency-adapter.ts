@@ -1,11 +1,11 @@
-import type { UnitOfWork } from "../../unit-of-work/unit-of-work";
-import { CommitOutcomeUnknownError } from "../../unit-of-work/commit-outcome-unknown-error";
+import type { UnitOfWork } from "../../unit-of-work/unit-of-work.js";
+import { CommitOutcomeUnknownError } from "../../unit-of-work/commit-outcome-unknown-error.js";
 import type {
   CommittedIdempotencyRecord,
   CommitResolution,
   TransactionalIdempotencyAdapter,
-} from "../transactional-idempotency-adapter";
-import { cloneValue as defaultCloneValue } from "../../utils/object";
+} from "../transactional-idempotency-adapter.js";
+import { cloneValue as defaultCloneValue } from "../../utils/object.js";
 import {
   addWaitEdge,
   assertNoCycleWhenWaitingOn,
@@ -13,7 +13,7 @@ import {
   getInFlightTaskOwner,
   registerInFlightTask,
   removeWaitEdge,
-} from "../../cqrs/bus-runtime";
+} from "../../cqrs/bus-runtime.js";
 
 export interface InMemoryTransactionalIdempotencyOptions {
   cloneValue?: (value: unknown) => unknown;

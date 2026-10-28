@@ -1,1 +1,1 @@
-export { ConversionError } from "./conversion-error";
+export { ConversionError } from "./conversion-error.js";

@@ -1,10 +1,10 @@
-import { UnitOfWork } from "./unit-of-work";
-import { Logger } from "../logger";
-import { CommitOutcomeUnknownError } from "./commit-outcome-unknown-error";
+import { UnitOfWork } from "./unit-of-work.js";
+import { Logger } from "../logger/index.js";
+import { CommitOutcomeUnknownError } from "./commit-outcome-unknown-error.js";
 import {
   TransactionalOutboxProcessor,
   type TransactionalOutboxOptions,
-} from "./transactional-outbox";
+} from "./transactional-outbox.js";
 
 export interface UnitOfWorkRunner {
   run<Result>(

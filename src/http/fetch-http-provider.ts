@@ -1,7 +1,7 @@
-import type { HTTPProvider, HTTPRequestOptions } from "./http-provider";
-import { HTTPException } from "./exceptions";
-import type { HTTPInterceptor } from "./http-interceptor";
-import { URLWithParamsBuilder, type URLParamValue } from "../utils";
+import type { HTTPProvider, HTTPRequestOptions } from "./http-provider.js";
+import { HTTPException } from "./exceptions/index.js";
+import type { HTTPInterceptor } from "./http-interceptor.js";
+import { URLWithParamsBuilder, type URLParamValue } from "../utils/index.js";
 
 export interface FetchHTTPProviderConfig {
   baseUrl?: string | URL;

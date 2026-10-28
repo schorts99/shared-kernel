@@ -1,4 +1,4 @@
-import { OfflinePayload } from "./offline-payload";
+import { OfflinePayload } from "./offline-payload.js";
 
 export interface OfflineStore<T = OfflinePayload> {
   enqueue(key: string, payload: T): Promise<void>;

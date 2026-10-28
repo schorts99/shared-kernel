@@ -1,4 +1,4 @@
-import { TranslationResolver } from "../../i18n";
+import { TranslationResolver } from "../../i18n/index.js";
 
 export class EntityNotRegistered extends Error {
   constructor(entityName: string, translationResolver?: TranslationResolver) {

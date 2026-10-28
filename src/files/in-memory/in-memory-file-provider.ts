@@ -4,7 +4,7 @@ import {
   PublicURLOptions,
   SignedURLOptions,
   UploadOptions,
-} from "../file-provider";
+} from "../file-provider.js";
 
 export interface InMemoryFileProviderOptions {
   baseUrl?: string;
