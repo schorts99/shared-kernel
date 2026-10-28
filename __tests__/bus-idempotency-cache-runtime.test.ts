@@ -27,6 +27,7 @@ import {
   FetchHTTPProvider,
   FloatValue,
   HTMLValue,
+  HTTPException,
   InMemoryAuthProvider,
   InMemoryCache,
   InMemoryCommandBus,
@@ -35,6 +36,7 @@ import {
   InMemoryEventBus,
   InMemoryEventStore,
   InMemoryFileProvider,
+  InMemoryHTTPProvider,
   InMemoryIdempotencyStore,
   InMemoryIdentityProvider,
   InMemoryLogger,
@@ -2017,5 +2019,60 @@ describe("10. Schema Validation, Array Utilities, ErrorTrackingMiddleware on Eve
     expect(receivedByExact).toEqual([{ count: 999 }]);
     expect(receivedByChannelWildcard).toEqual([{ count: 1 }]);
     expect(receivedByGlobalWildcard).toEqual([{ count: 1 }]);
+  });
+
+  it("supports array/replacement query params, async getAuthorization, empty JSON bodies in FetchHTTPProvider, HTTPException message, and InMemoryHTTPProvider", async () => {
+    const originalFetch = globalThis.fetch;
+    let capturedUrl = "";
+    let capturedAuth: string | null = null;
+
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      capturedUrl = String(input);
+      capturedAuth = new Headers(init?.headers).get("Authorization");
+      return new Response("", {
+        status: 201,
+        headers: { "Content-Type": "application/json" },
+      });
+    }) as typeof fetch;
+
+    try {
+      const http = new FetchHTTPProvider({
+        baseUrl: "https://api.example.com",
+        getAuthorization: async () => "Bearer async-token-123",
+      });
+
+      const res = await http.post("/items?page=1", {
+        query: { page: 2, tag: ["x", "y"] },
+        body: { name: "Item" },
+      });
+
+      expect(res).toBeUndefined();
+      expect(capturedUrl).toBe("https://api.example.com/items?page=2&tag=x&tag=y");
+      expect(capturedAuth).toBe("Bearer async-token-123");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+
+    const httpErr = new HTTPException(422, { error: "Unprocessable" });
+    expect(httpErr.name).toBe("HTTPException");
+    expect(httpErr.message).toBe("HTTP Error 422");
+
+    // InMemoryHTTPProvider
+    const memHttp = new InMemoryHTTPProvider({ baseUrl: "https://api.example.com" });
+    memHttp.on("GET", "/orders", req => ({
+      items: ["o-1"],
+      filter: req.url.searchParams.getAll("status"),
+    }));
+
+    const ordersRes = await memHttp.get<{ items: string[]; filter: string[] }>("/orders", {
+      query: { status: ["open", "pending"] },
+    });
+    expect(ordersRes).toEqual({ items: ["o-1"], filter: ["open", "pending"] });
+    expect(memHttp.getRequests()).toHaveLength(1);
+    expect(memHttp.getRequests()[0]?.url.href).toBe(
+      "https://api.example.com/orders?status=open&status=pending",
+    );
+
+    await expect(memHttp.get("/missing")).rejects.toThrow("HTTP Error 404");
   });
 });

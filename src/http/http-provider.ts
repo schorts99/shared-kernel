@@ -1,6 +1,8 @@
+import type { URLParamValue } from "../utils";
+
 export interface HTTPRequestOptions<T = any> {
   body?: T;
-  query?: Record<string, string | number | boolean | undefined>;
+  query?: Record<string, URLParamValue>;
   headers?: Record<string, string>;
   deduplicate?: boolean;
   signal?: AbortSignal;

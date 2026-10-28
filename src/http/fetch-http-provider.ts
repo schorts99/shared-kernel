@@ -1,12 +1,13 @@
 import type { HTTPProvider, HTTPRequestOptions } from "./http-provider";
 import { HTTPException } from "./exceptions";
 import type { HTTPInterceptor } from "./http-interceptor";
+import { URLWithParamsBuilder, type URLParamValue } from "../utils";
 
 export interface FetchHTTPProviderConfig {
   baseUrl?: string | URL;
   credentials?: RequestCredentials;
   headers?: HeadersInit;
-  getAuthorization?: () => string | undefined;
+  getAuthorization?: () => string | undefined | Promise<string | undefined>;
 }
 
 export class FetchHTTPProvider implements HTTPProvider {
@@ -168,7 +169,7 @@ export class FetchHTTPProvider implements HTTPProvider {
     };
   }
 
-  private buildUrl(url: string | URL, query?: Record<string, any>): URL {
+  private buildUrl(url: string | URL, query?: Record<string, URLParamValue>): URL {
     let finalUrl: URL;
 
     if (typeof url === "string") {
@@ -184,11 +185,7 @@ export class FetchHTTPProvider implements HTTPProvider {
     }
 
     if (query) {
-      Object.entries(query).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          finalUrl.searchParams.append(key, String(value));
-        }
-      });
+      finalUrl = new URLWithParamsBuilder(finalUrl).with(query).build();
     }
 
     return finalUrl;
@@ -221,7 +218,7 @@ export class FetchHTTPProvider implements HTTPProvider {
     }
 
     if (this.config.getAuthorization) {
-      const auth = this.config.getAuthorization();
+      const auth = await this.config.getAuthorization();
 
       if (auth) headers.set("Authorization", auth);
     }
@@ -248,7 +245,10 @@ export class FetchHTTPProvider implements HTTPProvider {
 
 
   private async handleResponse<R>(response: Response): Promise<R> {
-    if (response.status === 204) {
+    if (response.status === 204 || response.status === 205) {
+      if (!response.ok) {
+        throw new HTTPException(response.status, undefined);
+      }
       return undefined as R;
     }
 
@@ -256,7 +256,12 @@ export class FetchHTTPProvider implements HTTPProvider {
     let data: unknown;
 
     if (contentType === "application/json" || contentType.endsWith("+json")) {
-      data = await response.json();
+      if (typeof response.text === "function") {
+        const text = await response.text();
+        data = text.trim() === "" ? undefined : JSON.parse(text);
+      } else {
+        data = await response.json();
+      }
     } else if (contentType.startsWith("text/")) {
       data = await response.text();
     } else {
