@@ -1,2 +1,8 @@
-export { InMemoryUnitOfWork } from "./in-memory-unit-of-work";
-export type { UnitOfWorkHook } from "./in-memory-unit-of-work";
+export {
+  InMemoryUnitOfWork,
+  InMemoryUnitOfWorkRunner,
+} from "./in-memory-unit-of-work";
+export type {
+  InMemoryUnitOfWorkOptions,
+  UnitOfWorkHook,
+} from "./in-memory-unit-of-work";

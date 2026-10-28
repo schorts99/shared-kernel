@@ -1,6 +1,10 @@
 import { UnitOfWork } from "./unit-of-work";
 import { Logger } from "../logger";
 import { CommitOutcomeUnknownError } from "./commit-outcome-unknown-error";
+import {
+  TransactionalOutboxProcessor,
+  type TransactionalOutboxOptions,
+} from "./transactional-outbox";
 
 export interface UnitOfWorkRunner {
   run<Result>(
@@ -10,9 +14,13 @@ export interface UnitOfWorkRunner {
 
 export abstract class AsyncUnitOfWorkRunner implements UnitOfWorkRunner {
   protected readonly logger?: Logger | undefined;
+  protected readonly outboxProcessor?: TransactionalOutboxProcessor | undefined;
 
-  constructor(logger?: Logger) {
+  constructor(logger?: Logger, outboxOptions?: TransactionalOutboxOptions) {
     this.logger = logger;
+    if (outboxOptions) {
+      this.outboxProcessor = new TransactionalOutboxProcessor(outboxOptions);
+    }
   }
 
   protected abstract createUnitOfWork(): UnitOfWork;
@@ -26,6 +34,9 @@ export abstract class AsyncUnitOfWorkRunner implements UnitOfWorkRunner {
     operation: (uow: UnitOfWork) => Promise<Result>,
   ): Promise<Result> {
     const uow = this.createUnitOfWork();
+    if (this.outboxProcessor && typeof uow.collectEventsFrom !== "function") {
+      this.outboxProcessor.attach(uow);
+    }
     await uow.begin();
     let commitAttempted = false;
 
@@ -43,7 +54,10 @@ export abstract class AsyncUnitOfWorkRunner implements UnitOfWorkRunner {
           } catch (resolutionError) {
             throw new CommitOutcomeUnknownError(new AggregateError([error, resolutionError]));
           }
-          if (resolution === "committed") return result;
+          if (resolution === "committed") {
+            await this.outboxProcessor?.executePostCommit(uow);
+            return result;
+          }
           if (resolution === "not-committed") {
             commitAttempted = false;
             throw error;

@@ -44,6 +44,10 @@ export abstract class AggregateRoot<IDValue extends ValueObject> {
     this.incrementVersion();
   }
 
+  clearDomainEvents(): void {
+    this.domainEvents = [];
+  }
+
   equals(other: AggregateRoot<IDValue>): boolean {
     return this.id.equals(other.id);
   }

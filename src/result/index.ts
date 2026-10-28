@@ -1,1 +1,5 @@
-export { Result } from "./result";
+export {
+  Result,
+  type ResultPrimitives,
+  type ResultFromPrimitivesOptions,
+} from "./result";

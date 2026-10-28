@@ -190,6 +190,7 @@ export class InMemoryDAO<
       throw new Error(`Entity with id ${id} already exists`);
     }
 
+    uow?.collectEventsFrom?.(entity);
     const cloned = this.clone(entity);
     state.entities.set(id, cloned);
     const primitives = cloned.toPrimitives() as Record<string, any>;
@@ -211,6 +212,7 @@ export class InMemoryDAO<
       throw new Error(`Entity with id ${id} not found`);
     }
 
+    uow?.collectEventsFrom?.(entity);
     const cloned = this.clone(entity);
     state.entities.set(id, cloned);
 
@@ -220,6 +222,8 @@ export class InMemoryDAO<
   async save(entity: Entity, uow?: UnitOfWork): Promise<Entity> {
     const state = this.getState(uow);
     const id = entity.id.value as M["id"];
+
+    uow?.collectEventsFrom?.(entity);
     const cloned = this.clone(entity);
 
     state.entities.set(id, cloned);
