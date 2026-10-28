@@ -6,15 +6,15 @@ import { cloneValue } from "../utils/index.js";
 export interface InMemoryPubSubOptions {
   logger?: Logger | undefined;
   throwOnHandlerError?: boolean | undefined;
-  onError?: ((error: Error, context: { channel: string; event: string; payload: any }) => void) | undefined;
+  onError?: ((error: Error, context: { channel: string; event: string; payload: unknown }) => void) | undefined;
 }
 
-export class InMemoryPubSub implements Publisher<any>, Subscriber {
+export class InMemoryPubSub implements Publisher<unknown>, Subscriber {
   private readonly handlers: Map<string, Map<string, Set<MessageHandler>>> = new Map();
   private readonly logger?: Logger | undefined;
   private readonly throwOnHandlerError: boolean;
   private readonly onError?:
-    | ((error: Error, context: { channel: string; event: string; payload: any }) => void)
+    | ((error: Error, context: { channel: string; event: string; payload: unknown }) => void)
     | undefined;
 
   constructor(options: InMemoryPubSubOptions = {}) {
@@ -23,7 +23,7 @@ export class InMemoryPubSub implements Publisher<any>, Subscriber {
     this.onError = options.onError;
   }
 
-  async publish(channel: string, event: string, payload: any): Promise<void> {
+  async publish(channel: string, event: string, payload: unknown): Promise<void> {
     const matchedHandlers = new Set<MessageHandler>();
 
     const collectFromChannel = (targetChannel: string) => {
@@ -68,7 +68,7 @@ export class InMemoryPubSub implements Publisher<any>, Subscriber {
     }
   }
 
-  async subscribe<T = any>(
+  async subscribe<T = unknown>(
     channel: string,
     event: string,
     handler: MessageHandler<T>

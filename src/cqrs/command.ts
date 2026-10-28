@@ -9,14 +9,14 @@ function cloneSafe<T>(value: T): T {
   }
 }
 
-export interface Command<T = any> {
+export interface Command<T = unknown> {
   getType(): string;
   getMetadata(): CommandMetadata;
   getPayload?(): T;
   toPrimitives(): CommandPrimitives;
 }
 
-export abstract class AbstractCommand<T = any> implements Command<T> {
+export abstract class AbstractCommand<T = unknown> implements Command<T> {
   protected readonly payload: T;
   protected readonly metadata: CommandMetadata;
 
@@ -56,7 +56,7 @@ export abstract class AbstractCommand<T = any> implements Command<T> {
     return this.metadata.headers ?? null;
   }
 
-  get context(): Record<string, any> | null {
+  get context(): Record<string, unknown> | null {
     return this.metadata.context ?? null;
   }
 
@@ -108,7 +108,7 @@ export abstract class AbstractCommand<T = any> implements Command<T> {
       version: this.metadata.version,
       user_id: this.metadata.userId,
       tenant_id: this.metadata.tenantId,
-      payload: cloneSafe(this.payload) as Record<string, any>,
+      payload: cloneSafe(this.payload) as Record<string, unknown>,
       headers: this.metadata.headers ? { ...this.metadata.headers } : null,
       context: this.metadata.context ? cloneSafe(this.metadata.context) : null,
     };
@@ -163,7 +163,7 @@ export abstract class AbstractCommand<T = any> implements Command<T> {
     };
   }
 
-  addContext(key: string, value: any): void {
+  addContext(key: string, value: unknown): void {
     this.metadata.context = {
       ...(this.metadata.context ?? {}),
       [key]: value,

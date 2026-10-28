@@ -23,23 +23,23 @@ export class FetchHTTPProvider implements HTTPProvider {
     this.interceptors.push(interceptor);
   }
 
-  get<R, B = any>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
+  get<R, B = unknown>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
     return this.request("GET", url, options);
   }
 
-  post<R, B = any>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
+  post<R, B = unknown>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
     return this.request("POST", url, options);
   }
 
-  put<R, B = any>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
+  put<R, B = unknown>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
     return this.request("PUT", url, options);
   }
 
-  patch<R, B = any>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
+  patch<R, B = unknown>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
     return this.request("PATCH", url, options);
   }
 
-  delete<R, B = any>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
+  delete<R, B = unknown>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
     return this.request("DELETE", url, options);
   }
 

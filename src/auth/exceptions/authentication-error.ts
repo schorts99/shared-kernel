@@ -3,12 +3,12 @@
  */
 export class AuthenticationError extends Error {
   readonly code: string;
-  readonly details: Record<string, any> | undefined;
+  readonly details: Record<string, unknown> | undefined;
 
   constructor(
     message: string,
     code: string = "AUTHENTICATION_FAILED",
-    details?: Record<string, any>
+    details?: Record<string, unknown>
   ) {
     super(message);
     this.name = "AuthenticationError";

@@ -6,7 +6,7 @@ export class JSONAPIErrors extends Error {
     title: string;
     detail: string;
     source?: { pointer: string } | { parameter: string } | { header: string };
-    meta?: Record<string, any>;
+    meta?: Record<string, unknown>;
   }>;
 
   constructor(errors: JSONAPIErrors["errors"], message?: string) {

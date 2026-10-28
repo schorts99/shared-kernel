@@ -5,7 +5,7 @@ import { URLCriteriaBuilder } from "./url-criteria-builder.js";
 import { Criteria } from "../criteria/index.js";
 import { JSONAPIErrors } from "./exceptions/index.js";
 
-export interface JSONAPIRequestOptions<B = any> extends Omit<HTTPRequestOptions<B>, 'query'> {
+export interface JSONAPIRequestOptions<B = unknown> extends Omit<HTTPRequestOptions<B>, 'query'> {
   criteria?: Criteria;
   include?: string[];
 }
@@ -64,12 +64,12 @@ export class JSONAPIConnector {
       id?: string;
       type: string;
       attributes: Omit<Partial<A>, "id">;
-      relationships?: Record<string, any>;
+      relationships?: Record<string, unknown>;
     } | Array<{
       id?: string;
       type: string;
       attributes: Omit<Partial<A>, "id">;
-      relationships?: Record<string, any>;
+      relationships?: Record<string, unknown>;
     }>,
     options?: JSONAPIRequestOptions
   ): Promise<JSONAPISingle<A>> {
@@ -88,7 +88,7 @@ export class JSONAPIConnector {
       id: string;
       type: string;
       attributes: Omit<Partial<A>, "id">;
-      relationships?: Record<string, any>;
+      relationships?: Record<string, unknown>;
     },
     options?: JSONAPIRequestOptions
   ): Promise<JSONAPISingle<A>> {
@@ -113,8 +113,11 @@ export class JSONAPIConnector {
   }
 
   private handleError(error: unknown): never {
-    if (error instanceof HTTPException && error.body?.errors) {
-      throw new JSONAPIErrors(error.body.errors);
+    if (error instanceof HTTPException) {
+      const errors = (error.body as { errors?: unknown } | null | undefined)?.errors;
+      if (Array.isArray(errors)) {
+        throw new JSONAPIErrors(errors);
+      }
     }
 
     throw error;

@@ -279,7 +279,7 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
     });
   }
 
-  private logError(command: C, error: any, startTime: Date): void {
+  private logError(command: C, error: unknown, startTime: Date): void {
     const duration = Date.now() - startTime.getTime();
 
     this.logger?.error(`[Command ${command.getType()}] failed after ${duration}ms`, {

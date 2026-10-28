@@ -3,12 +3,12 @@ export type JSONAPIList<EntityAttributes> = {
     id: string;
     type: string;
     attributes: Omit<EntityAttributes, "id">;
-    relationships?: Record<string, any>;
+    relationships?: Record<string, unknown>;
   }>;
   included?: Array<{
     id: string;
     type: string;
-    attributes: Record<string, any>;
+    attributes: Record<string, unknown>;
   }>;
   links?: Partial<{
     first: string;
@@ -16,5 +16,5 @@ export type JSONAPIList<EntityAttributes> = {
     prev: string;
     next: string;
   } & Record<string, string>>;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
 };

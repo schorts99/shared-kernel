@@ -24,7 +24,7 @@ export interface EventBusContext {
   signal?: AbortSignal;
   correlationId?: string;
   startTime: Date;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   config: EventBusConfig;
 }
 

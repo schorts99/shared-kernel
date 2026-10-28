@@ -20,7 +20,7 @@ export function omit<T extends object, K extends keyof T>(obj: T, keys: K[]): Om
   return result as Omit<T, K>;
 }
 
-export function isObject(value: any): value is object {
+export function isObject(value: unknown): value is object {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 

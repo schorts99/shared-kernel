@@ -1,11 +1,11 @@
 export class ConversionError extends Error {
   readonly code: string;
-  readonly details: Record<string, any> | undefined;
+  readonly details: Record<string, unknown> | undefined;
 
   constructor(
     message: string,
     code: string = "CONVERSION_FAILED",
-    details?: Record<string, any>
+    details?: Record<string, unknown>
   ) {
     super(message);
     this.name = "ConversionError";

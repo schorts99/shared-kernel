@@ -105,7 +105,7 @@ export abstract class AggregateRoot<IDValue extends ValueObject> {
     throw new Error("Aggregate reconstruction not implemented.");
   }
 
-  protected createId?(rawId: any): IDValue;
+  protected createId?(rawId: unknown): IDValue;
 
   protected restoreFromPrimitives?(_data: Record<string, any>): void {}
 
@@ -119,7 +119,7 @@ export abstract class AggregateRoot<IDValue extends ValueObject> {
 
   static fromSnapshot<T extends AggregateRoot<any>>(
     this: new (id: any, version?: number) => T,
-    snapshot: { id: any; version: number; data: Record<string, any> }
+    snapshot: { id: unknown; version: number; data: Record<string, unknown> }
   ): T {
     const instance = new this(snapshot.id, snapshot.version);
 

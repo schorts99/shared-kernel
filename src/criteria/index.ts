@@ -5,3 +5,4 @@ export { Criteria } from "./criteria.js";
 export type { CriteriaPrimitives } from "./criteria.js";
 export * from "./exceptions/index.js";
 export * from "./filters.js";
+export * from "./filter-values.js";

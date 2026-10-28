@@ -2,7 +2,7 @@ import { Order } from "./order.js";
 import { Operator } from "./operator.js";
 import { Direction } from "./direction.js";
 import { OffsetNotValid, LimitNotValid } from "./exceptions/index.js";
-import { Filters } from "./filters.js";
+import { Filter, Filters, FilterValue } from "./filters.js";
 import { cloneValue } from "../utils/object.js";
 
 function cloneFilterValue<T>(value: T): T {
@@ -11,6 +11,11 @@ function cloneFilterValue<T>(value: T): T {
   } catch {
     return value;
   }
+}
+
+function cloneFilter(filter: Filter): Filter {
+  // Spreading loses the operator/value pairing, so restate it.
+  return { field: filter.field, operator: filter.operator, value: cloneFilterValue(filter.value) } as Filter;
 }
 
 export interface CriteriaPrimitives {
@@ -40,11 +45,7 @@ export class Criteria {
       throw new OffsetNotValid(offset);
     }
 
-    this.filters = filters.map(filter => ({
-      field: filter.field,
-      operator: filter.operator,
-      value: cloneFilterValue(filter.value),
-    }));
+    this.filters = filters.map(cloneFilter);
     this.orders = orders.map(order => ({ ...order }));
     this.limit = limit;
     this.offset = offset;
@@ -54,9 +55,9 @@ export class Criteria {
     return new Criteria();
   }
 
-  where(field: string, operator: Operator, value: any): Criteria {
+  where<O extends Operator>(field: string, operator: O, value: FilterValue<O>): Criteria {
     return new Criteria(
-      [...this.filters, { field, operator, value }],
+      [...this.filters, { field, operator, value } as Filter],
       this.orders,
       this.limit,
       this.offset,
@@ -98,11 +99,7 @@ export class Criteria {
 
   toPrimitives(): CriteriaPrimitives {
     return {
-      filters: this.filters.map(filter => ({
-        field: filter.field,
-        operator: filter.operator,
-        value: cloneFilterValue(filter.value),
-      })),
+      filters: this.filters.map(cloneFilter),
       orders: this.orders.map(order => ({ ...order })),
       ...(this.limit !== undefined ? { limit: this.limit } : {}),
       ...(this.offset !== undefined ? { offset: this.offset } : {}),
@@ -112,11 +109,7 @@ export class Criteria {
   static fromPrimitives(primitives: Partial<CriteriaPrimitives> = {}): Criteria {
     return new Criteria(
       primitives.filters
-        ? primitives.filters.map(filter => ({
-            field: filter.field,
-            operator: filter.operator,
-            value: cloneFilterValue(filter.value),
-          }))
+        ? primitives.filters.map(cloneFilter)
         : [],
       primitives.orders ? primitives.orders.map(order => ({ ...order })) : [],
       primitives.limit,

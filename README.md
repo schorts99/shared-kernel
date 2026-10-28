@@ -172,9 +172,20 @@ No replacement UI package is provided.
 - Hand-written handlers only need `handle`; remove any `execute` you added just to satisfy the interface.
 - Replace direct `handler.execute(command)` calls with `handler.handle(command)` or `bus.dispatch(command)`. Calling `execute` directly skipped validation, authorization, idempotency, and timeouts.
 
+### `unknown` instead of `any`
+
+Values the kernel hands back are now `unknown` instead of `any`, so mistakes that used to compile now surface as type errors. The CHANGELOG lists every affected type. Typical fixes:
+
+- `HTTPException.body`, exception `details`, JSON:API `attributes`, identity claims, and `context` values: narrow with a type guard or cast to the shape you expect.
+- `Command`, `Query`, and `DomainEvent` without a type argument now have an `unknown` payload. Pass the payload type (`AbstractCommand<CreateUserPayload>`) as usual.
+
+### Typed criteria values
+
+`Criteria.where` checks `value` against the operator: `IN`, `NOT_IN`, and `ARRAY_CONTAINS_ANY` need an array, `LIKE` a string, range operators a number, string, boolean, bigint, or Date, `BETWEEN` two bounds, and `GEO_RADIUS` a center and radius. Custom DAOs can `switch (filter.operator)` to get a typed `filter.value`, and use `readGeoRadius` / `readBetweenBounds` to accept the same shapes as `InMemoryDAO`.
+
 ## 🧪 Testing
 
-Tests use Jest and live in `__tests__/`. CI runs them on every push and pull request, with minimum coverage levels set in `jest.config.js`.
+Tests use Jest and live in `__tests__/`, in folders that mirror `src/` (for example `__tests__/cqrs/`), plus `__tests__/integration/` for tests that span modules. CI runs them on every push and pull request, with minimum coverage levels set in `jest.config.js`.
 
 ```bash
 npm test

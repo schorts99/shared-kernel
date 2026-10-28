@@ -73,7 +73,7 @@ export class DomainEventRegistry {
 
     const Constructor = registered as unknown as new (
       correlationId: string,
-      payload: any,
+      payload: unknown,
       metadata?: Partial<DomainEventMetadata>,
     ) => E;
 

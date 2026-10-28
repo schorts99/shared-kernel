@@ -3,8 +3,8 @@ export type ResultPrimitives<T = unknown, E = unknown> =
   | { isSuccess: false; value?: undefined; error: E };
 
 export interface ResultFromPrimitivesOptions<T, E> {
-  hydrateValue?: (raw: any) => T;
-  hydrateError?: (raw: any) => E;
+  hydrateValue?: (raw: unknown) => T;
+  hydrateError?: (raw: unknown) => E;
 }
 
 export class Result<T, E = Error> {
@@ -168,7 +168,7 @@ export class Result<T, E = Error> {
     return this.isSuccess() ? await onSuccess(this.value) : await onFailure(this.error);
   }
 
-  toPrimitives(): ResultPrimitives<any, any> {
+  toPrimitives(): ResultPrimitives<unknown, unknown> {
     if (this.isSuccess()) {
       const rawValue = this._value as any;
       const serializedValue =
@@ -204,7 +204,7 @@ export class Result<T, E = Error> {
   }
 
   static fromPrimitives<T, E = Error>(
-    primitives: ResultPrimitives<any, any>,
+    primitives: ResultPrimitives<unknown, unknown>,
     options?: ResultFromPrimitivesOptions<T, E>,
   ): Result<T, E> {
     if (primitives.isSuccess) {
@@ -223,14 +223,15 @@ export class Result<T, E = Error> {
       rawError &&
       typeof rawError === "object" &&
       !(rawError instanceof Error) &&
+      "message" in rawError &&
       typeof rawError.message === "string"
     ) {
-      const reconstructed = new Error(rawError.message);
-      if (typeof rawError.name === "string") {
+      const reconstructed: Error & { code?: unknown } = new Error(rawError.message);
+      if ("name" in rawError && typeof rawError.name === "string") {
         reconstructed.name = rawError.name;
       }
       if ("code" in rawError) {
-        (reconstructed as any).code = rawError.code;
+        reconstructed.code = rawError.code;
       }
       return Result.failure<T, E>(reconstructed as unknown as E);
     }

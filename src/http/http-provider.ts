@@ -1,6 +1,6 @@
 import type { URLParamValue } from "../utils/index.js";
 
-export interface HTTPRequestOptions<T = any> {
+export interface HTTPRequestOptions<T = unknown> {
   body?: T;
   query?: Record<string, URLParamValue>;
   headers?: Record<string, string>;
@@ -10,9 +10,9 @@ export interface HTTPRequestOptions<T = any> {
 }
 
 export interface HTTPProvider {
-  get<R, B = any>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R>;
-  post<R, B = any>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R>;
-  put<R, B = any>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R>;
-  patch<R, B = any>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R>;
-  delete<R, B = any>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R>;
+  get<R, B = unknown>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R>;
+  post<R, B = unknown>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R>;
+  put<R, B = unknown>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R>;
+  patch<R, B = unknown>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R>;
+  delete<R, B = unknown>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R>;
 }

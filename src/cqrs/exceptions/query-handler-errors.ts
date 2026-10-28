@@ -1,11 +1,11 @@
 export class QueryValidationError extends Error {
   readonly code: string;
-  readonly details: Record<string, any> | undefined;
+  readonly details: Record<string, unknown> | undefined;
 
   constructor(
     message: string,
     code: string = "QUERY_VALIDATION_FAILED",
-    details?: Record<string, any>
+    details?: Record<string, unknown>
   ) {
     super(message);
 
@@ -17,12 +17,12 @@ export class QueryValidationError extends Error {
 
 export class QueryAuthorizationError extends Error {
   readonly code: string;
-  readonly details: Record<string, any> | undefined;
+  readonly details: Record<string, unknown> | undefined;
 
   constructor(
     message: string,
     code: string = "QUERY_AUTHORIZATION_FAILED",
-    details?: Record<string, any>
+    details?: Record<string, unknown>
   ) {
     super(message);
 
@@ -34,12 +34,12 @@ export class QueryAuthorizationError extends Error {
 
 export class QueryExecutionError extends Error {
   readonly code: string;
-  readonly details: Record<string, any> | undefined;
+  readonly details: Record<string, unknown> | undefined;
 
   constructor(
     message: string,
     code: string = "QUERY_EXECUTION_FAILED",
-    details?: Record<string, any>
+    details?: Record<string, unknown>
   ) {
     super(message);
 

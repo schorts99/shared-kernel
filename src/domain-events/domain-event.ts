@@ -9,7 +9,7 @@ function cloneSafe<T>(value: T): T {
   }
 }
 
-export abstract class DomainEvent<T = any> {
+export abstract class DomainEvent<T = unknown> {
   protected readonly payload: T;
   protected readonly metadata: DomainEventMetadata;
 
@@ -53,7 +53,7 @@ export abstract class DomainEvent<T = any> {
     return this.metadata.headers ?? null;
   }
 
-  get context(): Record<string, any> | null {
+  get context(): Record<string, unknown> | null {
     return this.metadata.context ?? null;
   }
 
@@ -105,7 +105,7 @@ export abstract class DomainEvent<T = any> {
       version: this.metadata.version,
       user_id: this.metadata.userId,
       tenant_id: this.metadata.tenantId,
-      payload: cloneSafe(this.payload) as Record<string, any>,
+      payload: cloneSafe(this.payload) as Record<string, unknown>,
       meta: {
         retries: this.metadata.retries,
         headers: this.metadata.headers ? { ...this.metadata.headers } : null,
@@ -164,7 +164,7 @@ export abstract class DomainEvent<T = any> {
     };
   }
 
-  addContext(key: string, value: any): void {
+  addContext(key: string, value: unknown): void {
     this.metadata.context = {
       ...(this.metadata.context ?? {}),
       [key]: value,

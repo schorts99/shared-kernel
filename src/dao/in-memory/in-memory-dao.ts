@@ -1,6 +1,6 @@
 import { Model } from "../../models/index.js";
 import { Entity as BaseEntity } from "../../entities/index.js";
-import { Criteria, Operator } from "../../criteria/index.js";
+import { Criteria, Operator, readBetweenBounds, readGeoPoint, readGeoRadius } from "../../criteria/index.js";
 import { UnitOfWork } from "../../unit-of-work/index.js";
 import { ValueObject } from "../../value-objects/index.js";
 import { cloneValue } from "../../utils/object.js";
@@ -373,7 +373,7 @@ export class InMemoryDAO<
     return null;
   }
 
-  private evaluateFilter(value: any, operator: Operator, filterValue: any): boolean {
+  private evaluateFilter(value: unknown, operator: Operator, filterValue: unknown): boolean {
     switch (operator) {
       case "EQUAL":
         return this.valuesEqual(value, filterValue);
@@ -419,24 +419,13 @@ export class InMemoryDAO<
         return new RegExp(`^${regexSource}$`, "i").test(value);
       }
       case "BETWEEN": {
-        if (value === null || value === undefined) {
+        const bounds = readBetweenBounds(filterValue);
+        if (value === null || value === undefined || !bounds) {
           return false;
         }
-        if (Array.isArray(filterValue) && filterValue.length === 2) {
-          const cmpMin = this.compareValues(value, filterValue[0]);
-          const cmpMax = this.compareValues(value, filterValue[1]);
-          return cmpMin !== null && cmpMax !== null && cmpMin >= 0 && cmpMax <= 0;
-        }
-        if (filterValue && typeof filterValue === "object") {
-          const min = filterValue.min ?? filterValue.from;
-          const max = filterValue.max ?? filterValue.to;
-          if (min !== undefined && max !== undefined) {
-            const cmpMin = this.compareValues(value, min);
-            const cmpMax = this.compareValues(value, max);
-            return cmpMin !== null && cmpMax !== null && cmpMin >= 0 && cmpMax <= 0;
-          }
-        }
-        return false;
+        const cmpMin = this.compareValues(value, bounds[0]);
+        const cmpMax = this.compareValues(value, bounds[1]);
+        return cmpMin !== null && cmpMax !== null && cmpMin >= 0 && cmpMax <= 0;
       }
       case "ARRAY_CONTAINS":
         return Array.isArray(value) && value.some(item => this.valuesEqual(item, filterValue));
@@ -455,45 +444,14 @@ export class InMemoryDAO<
     }
   }
 
-  private evaluateGeoRadius(value: any, filterValue: any): boolean {
-    const point = this.extractCoordinates(value);
-    if (!point || !filterValue || typeof filterValue !== "object") {
+  private evaluateGeoRadius(value: unknown, filterValue: unknown): boolean {
+    const point = readGeoPoint(value);
+    const geo = readGeoRadius(filterValue);
+    if (!point || !geo) {
       return false;
     }
 
-    const center = this.extractCoordinates(filterValue.center ?? filterValue);
-    const radiusMeters =
-      typeof filterValue.radiusInM === "number"
-        ? filterValue.radiusInM
-        : typeof filterValue.radius === "number"
-          ? filterValue.radius
-          : typeof filterValue.radiusInKm === "number"
-            ? filterValue.radiusInKm * 1_000
-            : undefined;
-
-    if (!center || radiusMeters === undefined || !Number.isFinite(radiusMeters) || radiusMeters < 0) {
-      return false;
-    }
-
-    const distanceMeters = this.calculateHaversineMeters(point, center);
-    return distanceMeters <= radiusMeters;
-  }
-
-  private extractCoordinates(raw: any): { lat: number; lng: number } | null {
-    if (!raw) {
-      return null;
-    }
-    if (Array.isArray(raw) && raw.length >= 2) {
-      const lat = Number(raw[0]);
-      const lng = Number(raw[1]);
-      return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
-    }
-    if (typeof raw === "object") {
-      const lat = Number(raw.lat ?? raw.latitude);
-      const lng = Number(raw.lng ?? raw.lon ?? raw.longitude);
-      return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
-    }
-    return null;
+    return this.calculateHaversineMeters(point, geo) <= geo.radiusInM;
   }
 
   private calculateHaversineMeters(

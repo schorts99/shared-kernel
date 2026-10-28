@@ -1,6 +1,6 @@
 export type OfflinePayload = {
   type: string;
-  args: Array<any>;
+  args: Array<unknown>;
   meta?: {
     userId?: string;
     tenantId?: string;

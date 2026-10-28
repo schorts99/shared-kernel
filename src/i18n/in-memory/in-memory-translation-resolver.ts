@@ -3,7 +3,7 @@ import { TranslationResolver } from "../translation-resolver.js";
 export class InMemoryTranslationResolver implements TranslationResolver {
   constructor(private readonly translations: Record<string, string> = {}) { }
 
-  resolve(key: string, params?: Record<string, any>): string {
+  resolve(key: string, params?: Record<string, unknown>): string {
     let message = this.translations[key] || key;
 
     if (params) {
@@ -19,7 +19,7 @@ export class InMemoryTranslationResolver implements TranslationResolver {
 export class CompositeTranslationResolver implements TranslationResolver {
   constructor(private readonly resolvers: TranslationResolver[]) { }
 
-  resolve(key: string, params?: Record<string, any>): string {
+  resolve(key: string, params?: Record<string, unknown>): string {
     for (const resolver of this.resolvers) {
       const result = resolver.resolve(key, params);
       if (result !== key) {

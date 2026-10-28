@@ -11,7 +11,7 @@ export interface EventSubscriberOptions {
 export interface EventSubscriberContext {
   signal?: AbortSignal;
   subscriptionTime: Date;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   options: EventSubscriberOptions;
 }
 

@@ -12,16 +12,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The ESM build (`dist/esm`) now emits real ES modules instead of CommonJS, and each subpath's `import` condition resolves to ESM type declarations.
 - `randomString` now draws from `crypto.getRandomValues` without modulo bias instead of `Math.random`, rejects invalid lengths, and throws when the Web Crypto API is unavailable (for example on Node 18 without `--experimental-global-webcrypto`).
 - Inline ABAC predicates passed to `RBACPolicy.canWithAttributes`, `canAnyWithAttributes`, and their async variants now get typed `user`, `resource`, and `context` parameters instead of implicit `any`. Predicates typed as `Predicate` or `AsyncPredicate` are still accepted.
+- `URLCriteriaBuilder` now serializes every `GEO_RADIUS` and `BETWEEN` shape the in-memory DAO accepts. It used to drop `radiusInKm`, `lon`, and `{ min, max }` / `{ from, to }` bounds, and wrote `undefined` into the URL for an incomplete geo filter; it now skips filters it cannot read, like it does for other operators.
+- `JSONAPIConnector` converts an HTTP error into `JSONAPIErrors` only when its body has an `errors` array.
 
 ### Added
 
 - `isPlainObject` in `utils`.
+- `readGeoPoint`, `readGeoRadius`, and `readBetweenBounds` in `criteria`, so custom DAOs read `GEO_RADIUS` and `BETWEEN` values the same way as `InMemoryDAO` and `URLCriteriaBuilder`.
+- `FilterValue<Operator>`, `FilterValueByOperator`, `ComparableFilterValue`, `GeoPoint`, `GeoRadiusFilterValue`, and `BetweenFilterValue` types in `criteria`.
 
 ### Changed
 
 - Declared `"sideEffects": false` so bundlers can tree-shake unused modules.
 - Declared `"engines": { "node": ">=18" }`.
 - **Breaking (next major release):** `AbstractCommandHandler.execute` and `AbstractQueryHandler.execute` are now `protected`, so they can only run through `handle`, which applies validation, authorization, idempotency, timeouts, and logging. Subclasses that declare `execute` keep compiling; code that calls `handler.execute(...)` directly must call `handle` instead.
+- **Breaking (next major release):** `Criteria.where` types `value` by operator (for example `IN` needs an array, `LIKE` a string, `GREATER_THAN` a number, string, boolean, bigint, or Date). `Filter` is now a union keyed on `operator`, so narrowing on `filter.operator` types `filter.value`. Values the in-memory DAO already ignored are now type errors.
+- **Breaking (next major release):** Values the library hands back are typed `unknown` instead of `any`: `HTTPException.body`; `context` on commands, queries, and events and their metadata; bus and subscriber context `metadata`; `details`/`context` on exceptions; identity provider claims; JSON:API `attributes`, `relationships`, and `meta`; `Result.fromPrimitives` hydrate callback inputs and `toPrimitives()` output; primitives `payload`; and the default type parameter of `Command`, `Query`, `DomainEvent`, `Publisher`, `MessageHandler`, `Dictionary`, and the HTTP body/response generics. Narrow or cast these values before use.
+- Inputs that accepted `any` now accept `unknown` (still any value): `addContext`, translation params, `assert`, `isObject`, `OfflinePayload.args`, pub-sub payloads, and `createId` on entities and aggregates.
 
 ### Removed
 

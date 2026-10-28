@@ -1,7 +1,7 @@
 export class HTTPException extends Error {
   constructor(
     readonly statusCode: number,
-    readonly body: any,
+    readonly body: unknown,
     message?: string,
   ) {
     super(message ?? `HTTP Error ${statusCode}`);

@@ -9,14 +9,14 @@ function cloneSafe<T>(value: T): T {
   }
 }
 
-export interface Query<T = any> {
+export interface Query<T = unknown> {
   getType(): string;
   getMetadata(): QueryMetadata;
   getPayload?(): T;
   toPrimitives(): QueryPrimitives;
 }
 
-export abstract class AbstractQuery<T = any> implements Query<T> {
+export abstract class AbstractQuery<T = unknown> implements Query<T> {
   protected readonly payload: T;
   protected readonly metadata: QueryMetadata;
 
@@ -56,7 +56,7 @@ export abstract class AbstractQuery<T = any> implements Query<T> {
     return this.metadata.headers ?? null;
   }
 
-  get context(): Record<string, any> | null {
+  get context(): Record<string, unknown> | null {
     return this.metadata.context ?? null;
   }
 
@@ -108,7 +108,7 @@ export abstract class AbstractQuery<T = any> implements Query<T> {
       version: this.metadata.version,
       user_id: this.metadata.userId,
       tenant_id: this.metadata.tenantId,
-      payload: cloneSafe(this.payload) as Record<string, any>,
+      payload: cloneSafe(this.payload) as Record<string, unknown>,
       headers: this.metadata.headers ? { ...this.metadata.headers } : null,
       context: this.metadata.context ? cloneSafe(this.metadata.context) : null,
     };
@@ -163,7 +163,7 @@ export abstract class AbstractQuery<T = any> implements Query<T> {
     };
   }
 
-  addContext(key: string, value: any): void {
+  addContext(key: string, value: unknown): void {
     this.metadata.context = {
       ...(this.metadata.context ?? {}),
       [key]: value,

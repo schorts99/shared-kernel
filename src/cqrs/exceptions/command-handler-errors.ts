@@ -2,7 +2,7 @@ export class CommandValidationError extends Error {
   constructor(
     message: string,
     public readonly code: string = "COMMAND_VALIDATION_ERROR",
-    public readonly context?: Record<string, any>
+    public readonly context?: Record<string, unknown>
   ) {
     super(message);
 
@@ -16,7 +16,7 @@ export class CommandAuthorizationError extends Error {
   constructor(
     message: string,
     public readonly code: string = "COMMAND_AUTHORIZATION_ERROR",
-    public readonly context?: Record<string, any>
+    public readonly context?: Record<string, unknown>
   ) {
     super(message);
 
@@ -30,7 +30,7 @@ export class CommandExecutionError extends Error {
   constructor(
     message: string,
     public readonly code: string = "COMMAND_EXECUTION_ERROR",
-    public readonly context?: Record<string, any>
+    public readonly context?: Record<string, unknown>
   ) {
     super(message);
 

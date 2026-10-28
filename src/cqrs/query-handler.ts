@@ -237,7 +237,7 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
     });
   }
 
-  private logError(query: Q, error: any, startTime: Date): void {
+  private logError(query: Q, error: unknown, startTime: Date): void {
     const duration = Date.now() - startTime.getTime();
 
     this.logger?.error(`[Query ${query.getType()}] failed after ${duration}ms`, {

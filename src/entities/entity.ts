@@ -69,7 +69,7 @@ export abstract class Entity<IDValue extends ValueObject, M extends Model> {
     throw new Error("Entity reconstruction not implemented.");
   }
 
-  protected createId?(rawId: any): IDValue;
+  protected createId?(rawId: unknown): IDValue;
 
   protected restoreFromPrimitives?(_data: M): void {}
 }

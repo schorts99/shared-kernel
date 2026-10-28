@@ -1,3 +1,3 @@
-export interface Publisher<T = any> {
+export interface Publisher<T = unknown> {
   publish(channel: string, event: string, payload: T): Promise<void>;
 }

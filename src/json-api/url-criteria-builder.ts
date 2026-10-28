@@ -1,5 +1,5 @@
 import { URLWithParamsBuilder } from "../utils/index.js";
-import { Criteria } from "../criteria/index.js";
+import { Criteria, readBetweenBounds, readGeoRadius } from "../criteria/index.js";
 
 export class URLCriteriaBuilder {
   constructor(
@@ -85,32 +85,26 @@ export class URLCriteriaBuilder {
             builder.with({ [`filter[${encodedField}][like]`]: formatScalar(value) });
 
             break;
-          case "BETWEEN":
-            if (Array.isArray(value) && value.length === 2) {
+          case "BETWEEN": {
+            const bounds = readBetweenBounds(value);
+            if (bounds) {
               builder.with({
-                [`filter[${encodedField}][between]`]: `${formatScalar(value[0])},${formatScalar(value[1])}`,
+                [`filter[${encodedField}][between]`]: `${formatScalar(bounds[0])},${formatScalar(bounds[1])}`,
               });
             }
 
             break;
-          case "GEO_RADIUS":
-            if (value && typeof value === "object") {
-              const lat =
-                value.lat ??
-                value.latitude ??
-                (Array.isArray(value.center) ? value.center[0] : undefined);
-              const lng =
-                value.lng ??
-                value.longitude ??
-                (Array.isArray(value.center) ? value.center[1] : undefined);
-              const radius = value.radius ?? value.radiusInM ?? value.radiusMeters;
-
+          }
+          case "GEO_RADIUS": {
+            const geo = readGeoRadius(value);
+            if (geo) {
               builder.with({
-                [`filter[${encodedField}][geo_radius]`]: `${lat},${lng},${radius}`,
+                [`filter[${encodedField}][geo_radius]`]: `${geo.lat},${geo.lng},${geo.radiusInM}`,
               });
             }
 
             break;
+          }
           default:
             throw new Error(`Unsupported operator: ${operator satisfies never}`);
         }

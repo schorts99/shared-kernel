@@ -8,7 +8,7 @@ export interface QueryMetadata {
   userId: string | null;
   tenantId: string | null;
   headers: Record<string, string> | null;
-  context: Record<string, any> | null;
+  context: Record<string, unknown> | null;
 }
 
 export interface QueryPrimitives {
@@ -21,7 +21,7 @@ export interface QueryPrimitives {
   version: number;
   user_id: string | null;
   tenant_id: string | null;
-  payload: Record<string, any>;
+  payload: Record<string, unknown>;
   headers: Record<string, string> | null;
-  context: Record<string, any> | null;
+  context: Record<string, unknown> | null;
 }

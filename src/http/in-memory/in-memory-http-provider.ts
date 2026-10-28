@@ -4,7 +4,7 @@ import type { HTTPProvider, HTTPRequestOptions } from "../http-provider.js";
 
 export type HTTPMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
-export interface RecordedHTTPRequest<B = any> {
+export interface RecordedHTTPRequest<B = unknown> {
   method: HTTPMethod;
   url: URL;
   options?: HTTPRequestOptions<B> | undefined;
@@ -13,7 +13,7 @@ export interface RecordedHTTPRequest<B = any> {
 
 export type HTTPRouteMatcher = string | URL | RegExp | ((url: URL) => boolean);
 
-export type HTTPRouteHandler<R = any, B = any> =
+export type HTTPRouteHandler<R = unknown, B = unknown> =
   | R
   | ((request: RecordedHTTPRequest<B>) => R | Promise<R>);
 
@@ -36,7 +36,7 @@ export class InMemoryHTTPProvider implements HTTPProvider {
     this.baseUrl = options.baseUrl ?? "http://localhost";
   }
 
-  on<R = any, B = any>(
+  on<R = unknown, B = unknown>(
     method: HTTPMethod | "*",
     matcher: HTTPRouteMatcher,
     handler: HTTPRouteHandler<R, B>,
@@ -49,23 +49,23 @@ export class InMemoryHTTPProvider implements HTTPProvider {
     return this;
   }
 
-  get<R, B = any>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
+  get<R, B = unknown>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
     return this.execute("GET", url, options);
   }
 
-  post<R, B = any>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
+  post<R, B = unknown>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
     return this.execute("POST", url, options);
   }
 
-  put<R, B = any>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
+  put<R, B = unknown>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
     return this.execute("PUT", url, options);
   }
 
-  patch<R, B = any>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
+  patch<R, B = unknown>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
     return this.execute("PATCH", url, options);
   }
 
-  delete<R, B = any>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
+  delete<R, B = unknown>(url: string | URL, options?: HTTPRequestOptions<B>): Promise<R> {
     return this.execute("DELETE", url, options);
   }
 
@@ -90,7 +90,7 @@ export class InMemoryHTTPProvider implements HTTPProvider {
     this.clearRoutes();
   }
 
-  private async execute<R, B = any>(
+  private async execute<R, B = unknown>(
     method: HTTPMethod,
     url: string | URL,
     options?: HTTPRequestOptions<B>,

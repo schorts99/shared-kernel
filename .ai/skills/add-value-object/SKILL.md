@@ -57,10 +57,10 @@ Relative imports in `src/` must use explicit `.js` paths (`"./currency-value.js"
 
 ## Step 3: Add Unit Tests
 
-Create a test file under `__tests__/` whose name ends in `.test.ts` (e.g. `__tests__/currency-value.test.ts`). Import from the package source root:
+Tests mirror `src/`: create `__tests__/value-objects/currency-value.test.ts` (the name must end in `.test.ts`). Import from the package source root, and use `__tests__/support/fixtures.ts` for shared test classes:
 
 ```typescript
-import { CurrencyValue } from "../src";
+import { CurrencyValue } from "../../src";
 
 describe("CurrencyValue", () => {
   it("should validate correct ISO currency codes", () => {

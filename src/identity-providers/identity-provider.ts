@@ -8,7 +8,7 @@ export interface IdentityUserBase {
     creationTime: string;
     lastSignInTime?: string;
   };
-  customClaims?: Record<string, any>;
+  customClaims?: Record<string, unknown>;
 }
 
 export interface CreateUserRequest {
@@ -28,6 +28,6 @@ export interface IdentityProvider<T extends IdentityUserBase = IdentityUserBase>
   deleteUser(userId: string): Promise<void>;
   getUser(userId: string): Promise<T>;
   getUsers(userIds: string[]): Promise<T[]>;
-  verifyToken(token: string): Promise<{ userId: string; claims: Record<string, any> }>;
-  setCustomClaims(userId: string, claims: Record<string, any>): Promise<void>;
+  verifyToken(token: string): Promise<{ userId: string; claims: Record<string, unknown> }>;
+  setCustomClaims(userId: string, claims: Record<string, unknown>): Promise<void>;
 }

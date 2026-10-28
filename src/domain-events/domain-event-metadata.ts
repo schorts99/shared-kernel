@@ -9,7 +9,7 @@ export interface DomainEventMetadata {
   tenantId: string | null;
   retries: number;
   headers: Record<string, string> | null;
-  context: Record<string, any> | null;
+  context: Record<string, unknown> | null;
 }
 
 export interface DomainEventPrimitives {
@@ -22,10 +22,10 @@ export interface DomainEventPrimitives {
   version: number;
   user_id: string | null;
   tenant_id: string | null;
-  payload: Record<string, any>;
+  payload: Record<string, unknown>;
   meta: {
     retries: number;
     headers: Record<string, string> | null;
-    context: Record<string, any> | null;
+    context: Record<string, unknown> | null;
   };
 }

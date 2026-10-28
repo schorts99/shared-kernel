@@ -16,7 +16,7 @@ export class InMemoryIdentityProvider<T extends IdentityUserBase = IdentityUserB
 {
   private readonly users = new Map<string, T>();
   private readonly passwords = new Map<string, string>();
-  private readonly tokens = new Map<string, { userId: string; claims?: Record<string, any> | undefined }>();
+  private readonly tokens = new Map<string, { userId: string; claims?: Record<string, unknown> | undefined }>();
   private readonly userFactory: ((base: IdentityUserBase, request: CreateUserRequest) => T) | undefined;
 
   constructor(options: InMemoryIdentityProviderOptions<T> = {}) {
@@ -125,7 +125,7 @@ export class InMemoryIdentityProvider<T extends IdentityUserBase = IdentityUserB
     return result;
   }
 
-  issueToken(userId: string, customToken?: string, extraClaims?: Record<string, any>): string {
+  issueToken(userId: string, customToken?: string, extraClaims?: Record<string, unknown>): string {
     const user = this.users.get(userId);
     if (!user) {
       throw new Error(`User with id "${userId}" not found`);
@@ -143,7 +143,7 @@ export class InMemoryIdentityProvider<T extends IdentityUserBase = IdentityUserB
     return token;
   }
 
-  async verifyToken(token: string): Promise<{ userId: string; claims: Record<string, any> }> {
+  async verifyToken(token: string): Promise<{ userId: string; claims: Record<string, unknown> }> {
     const tokenEntry = this.tokens.get(token);
     if (!tokenEntry) {
       throw new Error("Invalid or expired identity token");
@@ -167,7 +167,7 @@ export class InMemoryIdentityProvider<T extends IdentityUserBase = IdentityUserB
     };
   }
 
-  async setCustomClaims(userId: string, claims: Record<string, any>): Promise<void> {
+  async setCustomClaims(userId: string, claims: Record<string, unknown>): Promise<void> {
     const user = this.users.get(userId);
     if (!user) {
       throw new Error(`User with id "${userId}" not found`);
