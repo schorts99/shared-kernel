@@ -1,7 +1,10 @@
-export interface IdempotencyStore {
+import type { IdempotencyExecutor } from "./idempotency-executor";
+
+export interface IdempotencyStore extends IdempotencyExecutor {
   isProcessed(key: string): Promise<boolean>;
   markProcessed(key: string, result: unknown, ttl?: number): Promise<void>;
   clear(key: string): Promise<boolean>;
   clearStore(): Promise<void>;
   getResult(key: string): Promise<unknown | undefined>;
+  prune(): Promise<number>;
 }

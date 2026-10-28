@@ -6,5 +6,5 @@ export interface Cache<T = unknown> {
   deleteByTags?(tags: string[]): Promise<void>;
   clear(): Promise<void>;
   has(key: string): Promise<boolean>;
+  prune(): Promise<number>;
 }
-

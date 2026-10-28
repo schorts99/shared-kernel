@@ -19,6 +19,7 @@ export interface EventSubscriber<
 > {
   handle(event: E, context?: EventSubscriberContext): Promise<void>;
   subscribedTo(): string[];
+  /** Stable delivery identity, unique among subscribers to the same event. */
   getName(): string;
   getOptions?(): EventSubscriberOptions;
 }

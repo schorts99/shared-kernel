@@ -1,5 +1,6 @@
 import { DomainEvent } from "../domain-events";
 import { EventSubscriber } from "./event-subscriber";
+import type { BusMetrics } from "../cqrs/bus-runtime";
 
 export interface EventBusMiddleware {
   beforePublish?<E extends DomainEvent>(
@@ -49,4 +50,7 @@ export interface EventBus {
   getConfig(): EventBusConfig;
 
   setConfig(config: Partial<EventBusConfig>): void;
+  /** With autoReplay enabled, replay after subscriptions are registered; publish also awaits readiness. */
+  ready(): Promise<void>;
+  getMetrics(): BusMetrics;
 }

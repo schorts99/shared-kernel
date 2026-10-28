@@ -14,6 +14,7 @@ export interface QueryHandlerOptions {
 }
 
 export interface QueryHandlerContext {
+  signal?: AbortSignal;
   metadata: Query["getMetadata"];
   options: QueryHandlerOptions;
   startTime: Date;

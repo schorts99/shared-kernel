@@ -8,6 +8,16 @@ import {
   CommandBusConfig,
   CommandRegistry,
 } from "..";
+import { BusRuntime, validateBusConfig } from "../bus-runtime";
+import type { Logger } from "../../logger";
+import type { EventBus } from "../../event-bus";
+import type { UnitOfWork } from "../../unit-of-work";
+
+export interface InMemoryCommandBusDependencies {
+  logger?: Logger;
+  eventBus?: EventBus;
+  createUnitOfWork?: () => UnitOfWork;
+}
 
 export class InMemoryCommandBus implements CommandBus {
   private readonly handlers = new Map<
@@ -16,6 +26,17 @@ export class InMemoryCommandBus implements CommandBus {
   >();
 
   private readonly middleware: CommandBusMiddleware[] = [];
+  private readonly runtime: BusRuntime;
+  private readonly dependencies: InMemoryCommandBusDependencies;
+
+  constructor(dependencies: InMemoryCommandBusDependencies = {}) {
+    this.dependencies = { ...dependencies };
+    this.runtime = new BusRuntime(dependencies.logger);
+  }
+
+  getMetrics() {
+    return this.runtime.getMetrics();
+  }
 
   private config: CommandBusConfig = {
     enableMetrics: false,
@@ -55,6 +76,15 @@ export class InMemoryCommandBus implements CommandBus {
   async dispatch<C extends Command, R = void>(
     command: C,
   ): Promise<R> {
+    const config = this.getConfig();
+    return this.runtime.run(command.getType(), config, signal => this.execute<C, R>(command, config, signal));
+  }
+
+  private async execute<C extends Command, R>(
+    command: C,
+    config: CommandBusConfig,
+    signal: AbortSignal,
+  ): Promise<R> {
     const commandType = command.getType();
     const handler = this.handlers.get(commandType) as
       | CommandHandler<C, R>
@@ -71,14 +101,25 @@ export class InMemoryCommandBus implements CommandBus {
     const correlationId =
       deserializedCommand.getMetadata().correlationId;
     const context: CommandBusContext = {
+      signal,
       correlationId,
       startTime,
       metadata: deserializedCommand.getMetadata() as Record<string, any>,
-      config: this.config,
+      config,
       events: [],
     };
 
+    let unitOfWork: UnitOfWork | undefined;
+    let committed = false;
     try {
+      signal.throwIfAborted();
+      if (config.transactional) {
+        if (handler.getOptions?.().idempotent) {
+          throw new Error("Handler-level idempotency cannot be combined with bus-managed transactions");
+        }
+        unitOfWork = this.dependencies.createUnitOfWork!();
+        await unitOfWork.begin();
+      }
       for (const mw of this.middleware) {
         if (mw.beforeDispatch) {
           await mw.beforeDispatch(
@@ -94,8 +135,13 @@ export class InMemoryCommandBus implements CommandBus {
           correlationId,
           startTime,
           events: context.events,
-        } as any,
+          metadata: deserializedCommand.getMetadata.bind(deserializedCommand),
+          options: handler.getOptions?.() ?? {},
+          signal,
+          ...(unitOfWork ? { unitOfWork } : {}),
+        },
       );
+      signal.throwIfAborted();
 
       for (const mw of this.middleware) {
         if (mw.afterDispatch) {
@@ -105,6 +151,12 @@ export class InMemoryCommandBus implements CommandBus {
             context,
           );
         }
+      }
+
+      signal.throwIfAborted();
+      if (unitOfWork) {
+        await unitOfWork.commit();
+        committed = true;
       }
 
       if (context.events.length > 0) {
@@ -119,47 +171,50 @@ export class InMemoryCommandBus implements CommandBus {
         }
       }
 
+      if (config.autoPublishEvents && context.events.length > 0) {
+        await this.dependencies.eventBus!.publishMany(context.events);
+      }
+
       return result;
     } catch (error) {
+      let failure = error;
+      if (unitOfWork && !committed) {
+        try {
+          await unitOfWork.rollback();
+        } catch (rollbackError) {
+          failure = new AggregateError([error, rollbackError], "Command execution and rollback failed");
+        }
+      }
       for (const mw of this.middleware) {
         if (mw.onError) {
           await mw.onError(
             deserializedCommand,
-            error as Error,
+            failure instanceof Error ? failure : new Error(String(failure)),
             context,
           );
         }
       }
 
-      throw error;
+      throw failure;
     }
   }
 
   async dispatchMany<C extends Command, R = void>(
     commands: readonly C[],
   ): Promise<R[]> {
-    const results: R[] = [];
-    const errors: Array<{ index: number; error: Error }> = [];
-
-    for (const [index, command] of commands.entries()) {
-      try {
-        results.push(await this.dispatch<C, R>(command));
-      } catch (error) {
-        errors.push({
-          index,
-          error: error as Error,
-        });
-      }
-    }
-
+    const settled = await Promise.allSettled(commands.map(command => this.dispatch<C, R>(command)));
+    const errors = settled.filter(result => result.status === "rejected");
     if (errors.length > 0) {
       throw new AggregateError(
-        errors.map((e) => e.error),
+        errors.map(result => result.reason),
         `${errors.length} command(s) failed during bulk dispatch`,
       );
     }
 
-    return results;
+    return settled.map(result => {
+      if (result.status === "rejected") throw result.reason;
+      return result.value;
+    });
   }
 
   use(middleware: CommandBusMiddleware): void {
@@ -183,10 +238,19 @@ export class InMemoryCommandBus implements CommandBus {
   }
 
   setConfig(config: Partial<CommandBusConfig>): void {
-    this.config = {
+    const next = {
       ...this.config,
       ...config,
     };
+    validateBusConfig(next);
+    if (next.transactional && !this.dependencies.createUnitOfWork) {
+      throw new Error("transactional requires a createUnitOfWork dependency");
+    }
+    if (next.autoPublishEvents && !this.dependencies.eventBus) {
+      throw new Error("autoPublishEvents requires an eventBus dependency");
+    }
+    this.config = next;
+    this.runtime.setConcurrency(next.maxConcurrency);
   }
 
   clear(): void {

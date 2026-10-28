@@ -8,6 +8,8 @@ import {
 import { Logger } from "../logger";
 import { IdempotencyStore } from "../idempotency";
 import { Cache } from "../cache";
+import type { UnitOfWork } from "../unit-of-work";
+import type { DomainEvent } from "../domain-events";
 
 export interface CommandHandlerOptions {
   logging?: boolean;
@@ -26,7 +28,9 @@ export interface CommandHandlerContext {
   options: CommandHandlerOptions;
   startTime: Date;
   correlationId: string;
-  events: any[];
+  events: DomainEvent[];
+  signal?: AbortSignal;
+  unitOfWork?: UnitOfWork;
 }
 
 export interface CommandHandler<C extends Command = Command, R = void> {
@@ -93,36 +97,26 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
         await this.validate(command);
         await this.authorize(command);
 
-        if (this.options.idempotent && this.idempotencyStore) {
-          const idempotencyKey = this.getIdempotencyKey?.(command);
-
-          if (idempotencyKey && await this.idempotencyStore.isProcessed(idempotencyKey)) {
-            const cachedResult = await this.idempotencyStore.getResult(idempotencyKey);
-
-            return this.deserializeResult(cachedResult) as R;
+        const execute = async (): Promise<R> => {
+          const result = await this.execute(command, handlerContext);
+          if (this.cache && this.getInvalidationTags) {
+            const tags = this.getInvalidationTags(command, result);
+            if (tags.length > 0 && this.cache.deleteByTags) {
+              await this.cache.deleteByTags(tags);
+            }
           }
+          return result;
+        };
+        const idempotencyKey = this.options.idempotent ? this.getIdempotencyKey(command) : null;
+        if (idempotencyKey && !this.idempotencyStore) {
+          throw new Error("Idempotent commands require an IdempotencyStore");
         }
-
-        const result = await this.execute(command, handlerContext);
-
-        if (this.options.idempotent && this.idempotencyStore) {
-          const idempotencyKey = this.getIdempotencyKey?.(command);
-
-          if (idempotencyKey) {
-            await this.idempotencyStore.markProcessed(
-              idempotencyKey,
-              this.serializeResult(result),
-            );
-          }
-        }
-
-        if (this.cache && this.getInvalidationTags) {
-          const tags = this.getInvalidationTags(command, result);
-
-          if (tags && tags.length > 0 && this.cache.deleteByTags) {
-            await this.cache.deleteByTags(tags);
-          }
-        }
+        const result = idempotencyKey && this.idempotencyStore
+          ? this.deserializeResult(await this.idempotencyStore.execute(
+            idempotencyKey,
+            async () => this.serializeResult(await execute()),
+          ))
+          : await execute();
 
         if (this.options.logging) {
           this.logCommand(command, result, startTime);

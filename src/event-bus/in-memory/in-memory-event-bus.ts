@@ -1,9 +1,11 @@
 import { DomainEvent, DomainEventRegistry } from "../../domain-events";
 import { InMemoryEventStore } from "./in-memory-event-store";
 import { EventStore } from "../event-store";
-import { EventSubscriber, EventSubscriberContext } from "../event-subscriber";
+import { EventSubscriber } from "../event-subscriber";
 import { EventBus, EventBusConfig, EventBusContext, EventBusMiddleware } from "..";
 import { DeadLetterStore } from "../dead-letter-store";
+import { BusRuntime } from "../../cqrs/bus-runtime";
+import type { Logger } from "../../logger";
 
 export class InMemoryEventBus implements EventBus {
   private readonly subscribers = new Map<string, EventSubscriber<any>[]>();
@@ -11,14 +13,19 @@ export class InMemoryEventBus implements EventBus {
   private readonly store: EventStore;
   private readonly deadLetterStore: DeadLetterStore | undefined;
   private config: EventBusConfig;
+  private readonly runtime: BusRuntime;
+  private readonly inProgress = new Map<string, Promise<void>>();
+  private replayTask: Promise<void> | undefined;
 
   constructor(
     store: EventStore = new InMemoryEventStore(),
     config: EventBusConfig = {},
     deadLetterStore?: DeadLetterStore,
+    logger?: Logger,
   ) {
     this.store = store;
     this.deadLetterStore = deadLetterStore;
+    this.runtime = new BusRuntime(logger);
     this.config = {
       enableLogging: false,
       enableMetrics: false,
@@ -26,9 +33,33 @@ export class InMemoryEventBus implements EventBus {
       maxRetries: 3,
       ...config,
     };
+    this.validateConfig(this.config);
+  }
+
+  getMetrics() {
+    return this.runtime.getMetrics();
+  }
+
+  ready(): Promise<void> {
+    if (!this.config.autoReplay) return Promise.resolve();
+    this.replayTask ??= this.replay().catch(error => {
+      this.replayTask = undefined;
+      throw error;
+    });
+    return this.replayTask;
+  }
+
+  private validateConfig(config: EventBusConfig): void {
+    if (config.maxRetries !== undefined && (!Number.isSafeInteger(config.maxRetries) || config.maxRetries < 0)) {
+      throw new RangeError("maxRetries must be a non-negative safe integer");
+    }
   }
 
   subscribe<Event extends DomainEvent>(eventName: string, subscriber: EventSubscriber<Event>) {
+    const name = subscriber.getName();
+    if (!name || this.subscribers.get(eventName)?.some(existing => existing.getName() === name)) {
+      throw new Error(`Subscriber names must be non-empty and unique for event '${eventName}'`);
+    }
     if (!this.subscribers.has(eventName)) {
       this.subscribers.set(eventName, []);
     }
@@ -51,17 +82,32 @@ export class InMemoryEventBus implements EventBus {
   }
 
   async publish<Event extends DomainEvent>(event: Event) {
-    const context = this.createContext(event);
+    await this.ready();
+    return this.deliver(event, true);
+  }
 
-    try {
-      await this.applyMiddlewares("beforePublish", event, context);
-      await this.store.save(event.toPrimitives());
-      await this.dispatch(event);
-      await this.applyMiddlewares("afterPublish", event, context);
-    } catch (error) {
-      await this.applyMiddlewares("onError", event, context, error as Error);
-      throw error;
-    }
+  private async deliver(event: DomainEvent, save: boolean): Promise<void> {
+    const ongoing = this.inProgress.get(event.id);
+    if (ongoing) return ongoing;
+    const config = this.getConfig();
+    const execution = this.runtime.run(event.getEventName(), config, async () => {
+      const context = this.createContext(event, config);
+
+      try {
+        await this.applyMiddlewares("beforePublish", event, context);
+        if (save) await this.store.save(event.toPrimitives());
+        await this.dispatch(event, config);
+        await this.applyMiddlewares("afterPublish", event, context);
+      } catch (error) {
+        await this.applyMiddlewares("onError", event, context,
+          error instanceof Error ? error : new Error(String(error)));
+        throw error;
+      }
+    }).finally(() => {
+      this.inProgress.delete(event.id);
+    });
+    this.inProgress.set(event.id, execution);
+    return execution;
   }
 
   async publishMany<Event extends DomainEvent>(events: readonly Event[]) {
@@ -74,12 +120,12 @@ export class InMemoryEventBus implements EventBus {
     this.middlewares.push(middleware);
   }
 
-  private createContext(event: DomainEvent): EventBusContext {
+  private createContext(event: DomainEvent, config: EventBusConfig): EventBusContext {
     return {
       correlationId: event.getMetadata().correlationId,
       startTime: new Date(),
       metadata: {},
-      config: this.config,
+      config,
     };
   }
 
@@ -90,98 +136,72 @@ export class InMemoryEventBus implements EventBus {
     error?: Error
   ) {
     for (const middleware of this.middlewares) {
-      const fn = middleware[hook];
-
-      if (typeof fn === "function") {
-        if (hook === "onError" && error) {
-          await (fn as any)(event, error, context);
-        } else {
-          await (fn as any)(event, context);
-        }
+      if (hook === "onError") {
+        if (error) await middleware.onError?.(event, error, context);
+      } else {
+        await middleware[hook]?.(event, context);
       }
     }
   }
 
-	private async dispatch(event: DomainEvent) {
-		const eventName = event.getEventName();
-		const subs = this.subscribers.get(eventName) ?? [];
-		const eventId = event.getMetadata().id;
-		let retainForReplay = false;
-		const deadLettered = new Set<EventSubscriber<any>>();
+  private async dispatch(event: DomainEvent, config: EventBusConfig): Promise<void> {
+    if (await this.store.isProcessed(event.id)) return;
 
-		if (await this.store.isProcessed(eventId)) {
-			return;
-		}
+    const subscribers = [...(this.subscribers.get(event.getEventName()) ?? [])]
+      .sort((a, b) => (b.getOptions?.().priority ?? 0) - (a.getOptions?.().priority ?? 0));
+    if (subscribers.length === 0) return;
+    let retainForReplay = false;
 
-		const executeSubscriber = async (subscriber: EventSubscriber<any>, currentEvent: DomainEvent) => {
-			const subscriberContext: EventSubscriberContext = {
-				subscriptionTime: new Date(),
-				metadata: {},
-				options: subscriber.getOptions?.() ?? {},
-			};
+    const results = await Promise.allSettled(subscribers.map(async subscriber => {
+      const subscriberId = subscriber.getName();
+      if (await this.store.isAcknowledged(event.id, subscriberId)) return;
+      const options = subscriber.getOptions?.() ?? {};
+      const maxRetries = options.retryOnError === false ? 0 : options.maxRetries ?? config.maxRetries ?? 0;
+      this.validateConfig({ maxRetries });
+      let currentEvent = event;
 
-			await subscriber.handle(currentEvent, subscriberContext);
-		};
+      for (let attempt = 0; ; attempt++) {
+        try {
+          await subscriber.handle(currentEvent, { subscriptionTime: new Date(), metadata: {}, options });
+        } catch (error) {
+          if (attempt < maxRetries) {
+            const primitives = event.toPrimitives();
+            currentEvent = DomainEventRegistry.fromPrimitives({
+              ...primitives,
+              meta: { ...primitives.meta, retries: attempt + 1 },
+            });
+            continue;
+          }
+          if (this.deadLetterStore) {
+            try {
+              await this.deadLetterStore.add(currentEvent.toPrimitives(),
+                error instanceof Error ? error.message : String(error), subscriber);
+              await this.store.acknowledge(event.id, subscriberId);
+            } catch (storageError) {
+              retainForReplay = true;
+              throw new AggregateError([error, storageError], "Subscriber failure could not be dead-lettered");
+            }
+          } else {
+            retainForReplay = true;
+          }
+          throw error;
+        }
+        await this.store.acknowledge(event.id, subscriberId);
+        return;
+      }
+    }));
 
-		const retrySubscriber = async (
-			failedEvent: DomainEvent,
-			subscriber: EventSubscriber<any>,
-			error?: Error,
-		) => {
-			const maxRetries = this.config.maxRetries ?? 0;
-			const currentRetries = failedEvent.getMetadata().retries;
-
-			if (currentRetries < maxRetries) {
-				const updatedPrimitives = {
-					...failedEvent.toPrimitives(),
-					meta: { ...failedEvent.toPrimitives().meta, retries: currentRetries + 1 },
-				};
-
-				await this.store.requeue(updatedPrimitives);
-
-				const retryEvent = DomainEventRegistry.fromPrimitives(updatedPrimitives);
-
-				try {
-					await executeSubscriber(subscriber, retryEvent);
-				} catch (err) {
-					await retrySubscriber(retryEvent, subscriber, err as Error);
-				}
-			} else if (this.deadLetterStore) {
-				const reason = error ? error.message : `Exceeded max retries (${maxRetries})`;
-
-				await this.deadLetterStore.add(failedEvent.toPrimitives(), reason, subscriber);
-				deadLettered.add(subscriber);
-				throw error ?? new Error(`Subscriber failed permanently: ${reason}`);
-			} else {
-				throw error || new Error("Subscriber failed");
-			}
-		};
-
-		const subscriberPromises = subs.map(async sub => {
-			try {
-				await executeSubscriber(sub, event);
-			} catch (error) {
-				try {
-					await retrySubscriber(event, sub, error instanceof Error ? error : new Error(String(error)));
-				} catch (retryError) {
-					if (!deadLettered.has(sub)) retainForReplay = true;
-					throw retryError;
-				}
-			}
-		});
-
-		const results = await Promise.allSettled(subscriberPromises);
-		const failures = results.filter(result => result.status === "rejected");
-
-		if (failures.length === 0 || !retainForReplay) {
-			await this.store.delete(eventId);
-		}
-
-		if (failures.length === 1) throw failures[0]!.reason;
-		if (failures.length > 1) {
-			throw new AggregateError(failures.map(result => result.reason), "Multiple event subscribers failed");
-		}
-	}
+    const failures = results.filter(result => result.status === "rejected");
+    // Storage or hydration failures must never cause unacknowledged delivery to be discarded.
+    const acknowledged = await Promise.all(subscribers.map(sub => this.store.isAcknowledged(event.id, sub.getName())));
+    if (failures.length === 0 || (!retainForReplay && acknowledged.every(Boolean))) {
+      await this.store.delete(event.id);
+    }
+    if (failures.length === 1) throw failures[0]!.reason;
+    if (failures.length > 1) {
+      throw new AggregateError(failures.map(result => result.reason), "Multiple event subscribers failed");
+    }
+  }
 
   async replay() {
     const events = await this.store.all();
@@ -189,15 +209,18 @@ export class InMemoryEventBus implements EventBus {
     for (const primitives of events) {
       const event = DomainEventRegistry.fromPrimitives(primitives);
 
-      await this.dispatch(event);
+      await this.deliver(event, false);
     }
   }
 
   getConfig(): EventBusConfig {
-    return this.config;
+    return { ...this.config };
   }
 
   setConfig(config: Partial<EventBusConfig>): void {
-    this.config = { ...this.config, ...config };
+    const next = { ...this.config, ...config };
+    this.validateConfig(next);
+    if (next.autoReplay && !this.config.autoReplay) this.replayTask = undefined;
+    this.config = next;
   }
 }

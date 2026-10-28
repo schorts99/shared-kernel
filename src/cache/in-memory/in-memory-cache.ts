@@ -1,9 +1,36 @@
 import { Cache } from "../../cache";
 import { getExpirationTime } from "../../utils/expiration";
 
+export interface InMemoryCacheOptions {
+  /** Maximum retained entries; defaults to 10,000. Evicts the oldest entry when full. */
+  maxEntries?: number;
+}
+
 export class InMemoryCache<T = unknown> implements Cache<T> {
   private readonly cache = new Map<string, { value: T; expiresAt?: number; tags?: string[] }>();
   private readonly tagMap = new Map<string, Set<string>>();
+
+  constructor(private readonly options: InMemoryCacheOptions = {}) {
+    if (options.maxEntries !== undefined && (!Number.isSafeInteger(options.maxEntries) || options.maxEntries < 1)) {
+      throw new RangeError("maxEntries must be a positive safe integer");
+    }
+    this.options = { maxEntries: options.maxEntries ?? 10_000 };
+  }
+
+  async prune(): Promise<number> {
+    return this.pruneExpired();
+  }
+
+  private pruneExpired(): number {
+    let removed = 0;
+    for (const [key, entry] of this.cache) {
+      if (entry.expiresAt !== undefined && Date.now() >= entry.expiresAt) {
+        this.deleteEntry(key);
+        removed++;
+      }
+    }
+    return removed;
+  }
 
   async get(key: string): Promise<T | undefined> {
     const entry = this.cache.get(key);
@@ -21,10 +48,16 @@ export class InMemoryCache<T = unknown> implements Cache<T> {
 
   async set(key: string, value: T, ttl?: number, tags?: string[]): Promise<void> {
     const expiresAt = getExpirationTime(ttl);
+    this.pruneExpired();
 
     this.deleteEntry(key);
 
     if (ttl === 0) return;
+
+    if (this.options.maxEntries !== undefined && this.cache.size >= this.options.maxEntries) {
+      const oldest = this.cache.keys().next();
+      if (!oldest.done) this.deleteEntry(oldest.value);
+    }
 
     const newEntry: { value: T; expiresAt?: number; tags?: string[] } = { value };
 

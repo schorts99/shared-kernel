@@ -1,5 +1,7 @@
 import { Command } from "./command";
 import { CommandHandler } from "./command-handler";
+import type { DomainEvent } from "../domain-events";
+import type { BusMetrics } from "./bus-runtime";
 
 export interface CommandBusMiddleware {
   beforeDispatch?<C extends Command>(
@@ -21,17 +23,18 @@ export interface CommandBusMiddleware {
 
   onEvents?<C extends Command>(
     command: C,
-    events: any[],
+    events: DomainEvent[],
     context: CommandBusContext
   ): Promise<void>;
 }
 
 export interface CommandBusContext {
+  signal?: AbortSignal;
   correlationId: string;
   startTime: Date;
   metadata: Record<string, any>;
   config: CommandBusConfig;
-  events: any[];
+  events: DomainEvent[];
 }
 
 export interface CommandBusConfig {
@@ -70,4 +73,5 @@ export interface CommandBus {
   setConfig(config: Partial<CommandBusConfig>): void;
 
   clear(): void;
+  getMetrics(): BusMetrics;
 }

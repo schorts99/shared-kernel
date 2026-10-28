@@ -1,5 +1,6 @@
 import { Query } from "./query";
 import { QueryHandler } from "./query-handler";
+import type { BusMetrics } from "./bus-runtime";
 
 export interface QueryBusMiddleware {
   beforeDispatch?<Q extends Query>(
@@ -21,6 +22,7 @@ export interface QueryBusMiddleware {
 }
 
 export interface QueryBusContext {
+  signal?: AbortSignal;
   correlationId: string;
   startTime: Date;
   metadata: Record<string, any>;
@@ -29,6 +31,7 @@ export interface QueryBusContext {
 
 export interface QueryBusConfig {
   enableMetrics?: boolean;
+  enableLogging?: boolean;
   enableCaching?: boolean;
   cacheTtl?: number;
   timeout?: number;
@@ -59,4 +62,5 @@ export interface QueryBus {
   setConfig(config: Partial<QueryBusConfig>): void;
 
   clear(): void;
+  getMetrics(): BusMetrics;
 }
