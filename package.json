@@ -366,13 +366,14 @@
     "build": "npm run clean && npm run build:cjs && npm run build:esm && node scripts/write-dist-package-json.js",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc -p tsconfig.test.json",
     "lint:imports": "node scripts/check-import-extensions.js",
+    "lint:ai-docs": "node scripts/check-ai-docs.mjs",
     "lint:package": "publint --strict && attw --pack . --profile node16",
     "test:package": "node scripts/smoke-test-package.mjs",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:ci": "jest --ci --coverage --watchAll=false",
-    "prepublishOnly": "npm run lint:imports && npm run typecheck && npm run test:ci && npm run build && npm run test:package && npm run lint:package"
+    "prepublishOnly": "npm run lint:imports && npm run typecheck && npm run lint:ai-docs && npm run test:ci && npm run build && npm run test:package && npm run lint:package"
   },
   "author": "Jorge Castillo (https://github.com/schorts99)",
   "license": "LGPL-3.0-or-later",
@@ -421,6 +422,7 @@
   "homepage": "https://github.com/schorts99/shared-kernel#readme",
   "files": [
     "dist",
+    "ai",
     "README.md",
     "LICENSE",
     "COPYING"

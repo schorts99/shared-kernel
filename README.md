@@ -8,6 +8,17 @@ A modular, type-safe foundation for building expressive, maintainable applicatio
 npm install @schorts/shared-kernel --save
 ```
 
+## 🤖 Using it with AI coding agents
+
+The package ships agent docs in `node_modules/@schorts/shared-kernel/ai/`: an `AGENTS.md` overview, per-area rules, and step-by-step skills (add a command, create an aggregate, implement a DAO, and more) with type-checked examples. Point your agent at them, for example in `CLAUDE.md`:
+
+```md
+Before writing code that uses @schorts/shared-kernel, read
+node_modules/@schorts/shared-kernel/ai/AGENTS.md and follow its rules and skills.
+```
+
+[`ai/README.md`](ai/README.md) has setup for Claude Code (including linking the skills), Cursor, Copilot, and other tools.
+
 ## 🏗️ Architecture & Modules
 
 The Shared Kernel is organized into several domains of functionality, providing robust primitives for your applications.

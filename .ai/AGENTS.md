@@ -103,6 +103,15 @@ Execute common engineering tasks by following the dedicated skill instructions u
 
 ---
 
+## 📚 Consumer AI Docs (`ai/`)
+
+`.ai/` (this folder) guides agents working **on** the kernel. `ai/` at the repository root is shipped in the npm package and guides agents working **with** it in consuming projects: `ai/AGENTS.md`, `ai/rules/`, and `ai/skills/`.
+
+- When you change a public API, update the affected `ai/` rules and skills in the same change.
+- Every ` ```ts ` block in `ai/` is type-checked against `src/`, and its `*.test.ts` blocks are run, by `npm run lint:ai-docs` (also in CI and `prepublishOnly`). Start a block with `// file: path.ts` to make it importable by later blocks, use `<!-- check-uses: ../other/SKILL.md -->` to build on another skill's files, and fence a deliberately non-compiling fragment as ` ```ts no-check `.
+
+---
+
 ## 🚨 Guidelines for AI Agents
 
 1. **Check Subpath Exports**: Whenever you add a new module or file in `src/<module>/`, ensure it is exported in `src/<module>/index.ts`, `src/index.ts`, and listed under `"exports"` in `package.json`.

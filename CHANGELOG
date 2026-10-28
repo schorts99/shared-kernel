@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- AI agent docs for consumers, shipped in the package under `ai/`: an `AGENTS.md` overview, rules per area (domain modeling, CQRS, events and sagas, persistence, errors, HTTP and JSON:API, access control, testing), and skills for common tasks (value objects, aggregates, commands, queries, subscribers, sagas, DAOs, units of work, JSON:API clients, access policies, application wiring, and the 11.x migration). Every code example is type-checked and its tests run by `npm run lint:ai-docs`.
 - `isPlainObject` in `utils`.
 - `readGeoPoint`, `readGeoRadius`, and `readBetweenBounds` in `criteria`, so custom DAOs read `GEO_RADIUS` and `BETWEEN` values the same way as `InMemoryDAO` and `URLCriteriaBuilder`.
 - `FilterValue<Operator>`, `FilterValueByOperator`, `ComparableFilterValue`, `GeoPoint`, `GeoRadiusFilterValue`, and `BetweenFilterValue` types in `criteria`.
