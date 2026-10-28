@@ -1,6 +1,7 @@
 import { DomainEventPrimitives } from "../../domain-events";
 import { EventStore } from "../event-store";
 import { getExpirationTime } from "../../utils/expiration";
+import { cloneValue } from "../../utils/object";
 
 export interface InMemoryEventStoreOptions {
   /** Duplicate-suppression window in milliseconds; defaults to 24 hours. */
@@ -61,12 +62,12 @@ export class InMemoryEventStore implements EventStore {
       if (!this.events.has(primitives.id) && this.events.size >= this.options.maxPendingEvents) {
         throw new Error("Pending event store capacity exceeded");
       }
-      this.events.set(primitives.id, primitives);
+      this.events.set(primitives.id, cloneValue(primitives));
     }
   }
 
   async all() {
-    return [...this.events.values()];
+    return Array.from(this.events.values(), primitives => cloneValue(primitives));
   }
 
   async delete(id: string) {

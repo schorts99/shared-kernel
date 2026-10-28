@@ -13,29 +13,62 @@ import { SagaStateStore, SagaStatus } from "./saga-state-store";
 
 export type SagaCompensationAction = () => Promise<void>;
 
+export type SagaStepCompensationContext<Schema extends Record<string, any>> = {
+  sagaId: string;
+  state: Schema;
+  event: DomainEvent;
+  dispatch: <R = void>(command: Command) => Promise<R>;
+};
+
+export type SagaStepCompensation<Schema extends Record<string, any>> = (
+  context: SagaStepCompensationContext<Schema>,
+) => Promise<void> | void;
+
+export interface SagaOptions {
+  /** Maximum number of processed event IDs retained per saga instance (default 1,000). */
+  maxProcessedEvents?: number;
+}
+
 export type SagaExecutionContext<Schema extends Record<string, any>> = {
+  sagaId: string;
   state: Schema;
   completeStep: (stepId: string, compensation?: SagaCompensationAction) => void;
+  completeSaga: () => void;
   dispatch: <R = void>(command: Command) => Promise<R>;
   updateState: (nextState: Schema) => void;
 };
 
+interface SagaExecutionFrame<Schema extends Record<string, any>> {
+  sagaId: string;
+  event: DomainEvent;
+  state: Schema;
+  completedSteps: string[];
+  completed: boolean;
+}
+
 export abstract class Saga<Schema extends Record<string, any> = {}>
   implements EventSubscriber<DomainEvent> {
-  private handlers = new Map<string, (event: DomainEvent, context: SagaExecutionContext<Schema>) => Promise<void>>();
-  private completedSteps: string[] = [];
-  private compensationActions = new Map<string, SagaCompensationAction>();
-  private currentState: Schema;
-  private executionQueue: Promise<void> = Promise.resolve();
-  private activeSagaId: string | undefined;
-  private completed = false;
+  private readonly handlers = new Map<
+    string,
+    (event: DomainEvent, context: SagaExecutionContext<Schema>) => Promise<void>
+  >();
+  private readonly stepCompensations = new Map<string, SagaStepCompensation<Schema>>();
+  private readonly instanceCompensations = new Map<string, Map<string, SagaCompensationAction>>();
+  private readonly executionQueues = new Map<string, Promise<void>>();
+  private readonly activeFrames = new Map<string, SagaExecutionFrame<Schema>>();
+  private currentSyncFrame: SagaExecutionFrame<Schema> | undefined;
+  private readonly maxProcessedEvents: number;
 
   constructor(
     protected readonly commandBus: CommandBus,
     protected readonly stateStore: SagaStateStore<Schema>,
+    options: SagaOptions = {},
   ) {
-    this.currentState = this.getInitialState();
-
+    const maxProcessed = options.maxProcessedEvents ?? 1_000;
+    if (!Number.isSafeInteger(maxProcessed) || maxProcessed < 1) {
+      throw new RangeError("maxProcessedEvents must be a positive safe integer");
+    }
+    this.maxProcessedEvents = maxProcessed;
     this.configure();
   }
 
@@ -47,11 +80,22 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
     eventName: string,
     handler: (event: Event, context: SagaExecutionContext<Schema>) => Promise<void>,
   ): void {
-    this.handlers.set(eventName, handler as (event: DomainEvent, context: SagaExecutionContext<Schema>) => Promise<void>);
+    this.handlers.set(
+      eventName,
+      handler as (event: DomainEvent, context: SagaExecutionContext<Schema>) => Promise<void>,
+    );
+  }
+
+  protected registerStepCompensation(
+    stepId: string,
+    compensation: SagaStepCompensation<Schema>,
+  ): void {
+    this.stepCompensations.set(stepId, compensation);
   }
 
   async handle(event: DomainEvent, _context?: EventSubscriberContext): Promise<void> {
-    const previous = this.executionQueue;
+    const sagaId = this.getSagaId(event);
+    const previous = this.executionQueues.get(sagaId) ?? Promise.resolve();
     const currentNode = getCurrentExecutionNode();
     const ownerNode = getInFlightTaskOwner(previous);
     if (currentNode && ownerNode) {
@@ -69,19 +113,27 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
           removeWaitEdge(currentNode, ownerNode);
         }
       }
-      return this.execute(event);
+      return this.execute(sagaId, event);
     };
 
     const execution = waitAndExecute();
-    const settled = execution.then(() => undefined, () => undefined);
+    const settled = execution.then(
+      () => undefined,
+      () => undefined,
+    );
     registerInFlightTask(settled, currentNode);
-    this.executionQueue = settled;
+    this.executionQueues.set(sagaId, settled);
+
+    void settled.then(() => {
+      if (this.executionQueues.get(sagaId) === settled) {
+        this.executionQueues.delete(sagaId);
+      }
+    });
 
     return execution;
   }
 
-  private async execute(event: DomainEvent): Promise<void> {
-    const sagaId = this.getSagaId(event);
+  private async execute(sagaId: string, event: DomainEvent): Promise<void> {
     const persisted = await this.stateStore.load(sagaId);
     const state = persisted?.data ?? this.getInitialState();
     const completedSteps = [...(persisted?.completedSteps ?? [])];
@@ -96,39 +148,53 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
       return;
     }
 
-    this.currentState = state;
-    this.completedSteps = completedSteps;
-    this.compensationActions.clear();
-    this.activeSagaId = sagaId;
-    this.completed = false;
+    const frame: SagaExecutionFrame<Schema> = {
+      sagaId,
+      event,
+      state,
+      completedSteps,
+      completed: false,
+    };
+
+    this.activeFrames.set(sagaId, frame);
+    const previousSyncFrame = this.currentSyncFrame;
+    this.currentSyncFrame = frame;
 
     try {
-      const saga = this;
       await handler(event, {
+        sagaId,
         get state() {
-          return saga.currentState;
+          return frame.state;
         },
-        completeStep: (stepId, compensation) => this.completeStep(stepId, compensation),
+        completeStep: (stepId, compensation) => this.recordStepInFrame(frame, stepId, compensation),
+        completeSaga: () => {
+          frame.completed = true;
+        },
         dispatch: command => this.commandBus.dispatch(command),
         updateState: nextState => {
-          this.currentState = nextState;
+          frame.state = nextState;
         },
       });
 
-      await this.saveState(sagaId, this.completed ? "completed" : "pending", event.id);
+      await this.saveState(frame, frame.completed ? "completed" : "pending", event.id);
+      if (frame.completed) {
+        this.instanceCompensations.delete(sagaId);
+      }
     } catch (error) {
       const errors: unknown[] = [error];
 
       try {
-        await this.rollback();
+        await this.rollback(frame);
       } catch (rollbackError) {
         errors.push(rollbackError);
       }
 
       try {
-        await this.saveState(sagaId, "failed");
+        await this.saveState(frame, "failed");
       } catch (saveError) {
         errors.push(saveError);
+      } finally {
+        this.instanceCompensations.delete(sagaId);
       }
 
       if (errors.length > 1) {
@@ -137,8 +203,8 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
 
       throw error;
     } finally {
-      this.activeSagaId = undefined;
-      this.compensationActions.clear();
+      this.currentSyncFrame = previousSyncFrame;
+      this.activeFrames.delete(sagaId);
     }
   }
 
@@ -151,50 +217,90 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
   }
 
   protected async completeSaga(sagaId: string, eventId?: string): Promise<void> {
-    if (this.activeSagaId !== undefined) {
-      if (sagaId !== this.activeSagaId) {
-        throw new Error("Cannot complete a different saga during execution");
-      }
-
-      this.completed = true;
-
+    const activeFrame = this.activeFrames.get(sagaId);
+    if (activeFrame) {
+      activeFrame.completed = true;
       return;
     }
 
+    if (this.currentSyncFrame && this.currentSyncFrame.sagaId !== sagaId) {
+      throw new Error("Cannot complete a different saga during execution");
+    }
+
     const persisted = await this.stateStore.load(sagaId);
+    const mergedProcessed = [
+      ...new Set([
+        ...(persisted?.processedEventIds ?? []),
+        ...(eventId === undefined ? [] : [eventId]),
+      ]),
+    ].slice(-this.maxProcessedEvents);
 
     await this.stateStore.save(sagaId, {
       status: "completed",
       data: persisted?.data ?? this.getInitialState(),
       completedSteps: [...(persisted?.completedSteps ?? [])],
-      processedEventIds: [...new Set([
-        ...(persisted?.processedEventIds ?? []),
-        ...(eventId === undefined ? [] : [eventId]),
-      ])],
+      processedEventIds: mergedProcessed,
     });
+    this.instanceCompensations.delete(sagaId);
   }
 
   protected completeStep(stepId: string, compensation?: SagaCompensationAction): void {
-    if (!this.completedSteps.includes(stepId)) {
-      this.completedSteps.push(stepId);
+    const frame =
+      this.currentSyncFrame ??
+      (this.activeFrames.size === 1 ? this.activeFrames.values().next().value : undefined);
+    if (!frame) {
+      throw new Error("completeStep must be called within an active saga execution");
+    }
+    this.recordStepInFrame(frame, stepId, compensation);
+  }
+
+  private recordStepInFrame(
+    frame: SagaExecutionFrame<Schema>,
+    stepId: string,
+    compensation?: SagaCompensationAction,
+  ): void {
+    if (!frame.completedSteps.includes(stepId)) {
+      frame.completedSteps.push(stepId);
     }
 
     if (compensation) {
-      this.compensationActions.set(stepId, compensation);
+      let stepMap = this.instanceCompensations.get(frame.sagaId);
+      if (!stepMap) {
+        stepMap = new Map<string, SagaCompensationAction>();
+        this.instanceCompensations.set(frame.sagaId, stepMap);
+      }
+      stepMap.set(stepId, compensation);
     }
   }
 
-  private async rollback(): Promise<void> {
-    const compensationEntries = Array.from(this.compensationActions.entries())
-      .filter(([stepId]) => this.completedSteps.includes(stepId))
-      .reverse();
-
+  private async rollback(frame: SagaExecutionFrame<Schema>): Promise<void> {
+    const stepsToCompensate = [...frame.completedSteps].reverse();
+    const runtimeCompensations = this.instanceCompensations.get(frame.sagaId);
     const errors: unknown[] = [];
 
-    for (const [stepId, compensation] of compensationEntries) {
+    for (const stepId of stepsToCompensate) {
+      const runtimeCompensation = runtimeCompensations?.get(stepId);
+      const declarativeCompensation = this.stepCompensations.get(stepId);
+
+      if (!runtimeCompensation && !declarativeCompensation) {
+        continue;
+      }
+
       try {
-        await compensation();
-        this.completedSteps = this.completedSteps.filter(completedStep => completedStep !== stepId);
+        if (runtimeCompensation) {
+          await runtimeCompensation();
+        } else if (declarativeCompensation) {
+          await declarativeCompensation({
+            sagaId: frame.sagaId,
+            state: frame.state,
+            event: frame.event,
+            dispatch: command => this.commandBus.dispatch(command),
+          });
+        }
+        frame.completedSteps = frame.completedSteps.filter(
+          completedStep => completedStep !== stepId,
+        );
+        runtimeCompensations?.delete(stepId);
       } catch (error) {
         errors.push(error);
       }
@@ -205,16 +311,22 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
     }
   }
 
-  private async saveState(sagaId: string, status: SagaStatus, eventId?: string): Promise<void> {
+  private async saveState(
+    frame: SagaExecutionFrame<Schema>,
+    status: SagaStatus,
+    eventId?: string,
+  ): Promise<void> {
     const processedEventIds = eventId ? [eventId] : [];
-    const persisted = await this.stateStore.load(sagaId);
-    const allProcessedEventIds = [...new Set([...(persisted?.processedEventIds ?? []), ...processedEventIds])];
+    const persisted = await this.stateStore.load(frame.sagaId);
+    const allProcessedEventIds = [
+      ...new Set([...(persisted?.processedEventIds ?? []), ...processedEventIds]),
+    ].slice(-this.maxProcessedEvents);
 
-    await this.stateStore.save(sagaId, {
+    await this.stateStore.save(frame.sagaId, {
       status,
-      completedSteps: [...this.completedSteps],
+      completedSteps: [...frame.completedSteps],
       processedEventIds: allProcessedEventIds,
-      data: this.currentState,
+      data: frame.state,
     });
   }
 }

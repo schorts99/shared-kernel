@@ -11,6 +11,46 @@ export abstract class AbstractQuery<T = any> implements Query<T> {
   protected readonly payload: T;
   protected readonly metadata: QueryMetadata;
 
+  get id(): string {
+    return this.metadata.id;
+  }
+
+  get createdAt(): Date {
+    return this.metadata.createdAt;
+  }
+
+  get correlationId(): string {
+    return this.metadata.correlationId;
+  }
+
+  get causationId(): string | null {
+    return this.metadata.causationId ?? null;
+  }
+
+  get requestId(): string | null {
+    return this.metadata.requestId ?? null;
+  }
+
+  get version(): number {
+    return this.metadata.version;
+  }
+
+  get userId(): string | null {
+    return this.metadata.userId ?? null;
+  }
+
+  get tenantId(): string | null {
+    return this.metadata.tenantId ?? null;
+  }
+
+  get headers(): Record<string, string> | null {
+    return this.metadata.headers ?? null;
+  }
+
+  get context(): Record<string, any> | null {
+    return this.metadata.context ?? null;
+  }
+
   constructor(
     correlationId: string,
     payload: T,
