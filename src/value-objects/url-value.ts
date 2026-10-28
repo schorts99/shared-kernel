@@ -6,11 +6,14 @@ export abstract class URLValue implements ValueObject {
   readonly allowedHosts: Array<string>;
 
   constructor(value: URL, allowedHosts: Array<string> = []) {
-    this.value = value;
-    this.allowedHosts = allowedHosts;
+    this.value = value instanceof URL ? new URL(value.toString()) : value;
+    this.allowedHosts = [...allowedHosts];
   }
 
   get isValid(): boolean {
+    if (!(this.value instanceof URL) || !this.value.href) {
+      return false;
+    }
     return this.allowedHosts.length === 0 || this.allowedHosts.includes(this.value.hostname);
   }
 
@@ -23,8 +26,16 @@ export abstract class URLValue implements ValueObject {
     );
   }
 
+  toString(): string {
+    return this.value instanceof URL ? this.value.toString() : String(this.value);
+  }
+
+  toJSON(): string {
+    return this.toPrimitives();
+  }
+
   toPrimitives(): string {
-    return this.value.toString();
+    return this.value instanceof URL ? this.value.toString() : String(this.value);
   }
 
   static fromPrimitives<V extends URLValue = URLValue>(

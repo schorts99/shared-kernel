@@ -10,7 +10,10 @@ export abstract class CoordinatesValue implements ValueObject {
   };
 
   constructor(value: CoordinatesValue["value"]) {
-    this.value = value;
+    this.value =
+      value !== null && typeof value === "object"
+        ? Object.freeze({ latitude: value.latitude, longitude: value.longitude })
+        : value;
   }
 
   get isValid(): boolean {
@@ -47,6 +50,14 @@ export abstract class CoordinatesValue implements ValueObject {
     const lonDiff = Math.abs(this.value.longitude - valueObject.value.longitude);
   
     return latDiff < EPSILON && lonDiff < EPSILON;
+  }
+
+  toString(): string {
+    return JSON.stringify(this.value);
+  }
+
+  toJSON(): CoordinatesValue["value"] {
+    return this.toPrimitives();
   }
 
   toPrimitives(): CoordinatesValue["value"] {

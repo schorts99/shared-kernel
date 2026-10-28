@@ -11,9 +11,9 @@ export abstract class DateValue<Required extends boolean = true> implements Valu
   private readonly optional: boolean;
 
   constructor(value: DateInput<Required>, beforeDate?: Date, afterDate?: Date, optional = false) {
-    this.value = value;
-    this.beforeDate = beforeDate;
-    this.afterDate = afterDate;
+    this.value = (value instanceof Date ? new Date(value.getTime()) : value) as DateInput<Required>;
+    this.beforeDate = beforeDate instanceof Date ? new Date(beforeDate.getTime()) : beforeDate;
+    this.afterDate = afterDate instanceof Date ? new Date(afterDate.getTime()) : afterDate;
     this.optional = optional;
   }
 
@@ -22,8 +22,12 @@ export abstract class DateValue<Required extends boolean = true> implements Valu
     if (!(this.value instanceof Date) || Number.isNaN(this.value.getTime())) {
       return false;
     }
-    if (this.beforeDate && this.value > this.beforeDate) return false;
-    if (this.afterDate && this.value < this.afterDate) return false;
+    if (this.beforeDate && (Number.isNaN(this.beforeDate.getTime()) || this.value > this.beforeDate)) {
+      return false;
+    }
+    if (this.afterDate && (Number.isNaN(this.afterDate.getTime()) || this.value < this.afterDate)) {
+      return false;
+    }
 
     return true;
   }
@@ -35,8 +39,18 @@ export abstract class DateValue<Required extends boolean = true> implements Valu
     return this.value?.getTime() === valueObject.value?.getTime();
   }
 
+  toString(): string {
+    return this.toPrimitives() ?? "";
+  }
+
+  toJSON(): string | null {
+    return this.toPrimitives();
+  }
+
   toPrimitives(): string | null {
-    return this.value ? this.value.toISOString() : null;
+    return this.value instanceof Date && !Number.isNaN(this.value.getTime())
+      ? this.value.toISOString()
+      : null;
   }
 
   static fromPrimitives<V extends DateValue<any> = DateValue<any>>(

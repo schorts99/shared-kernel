@@ -45,6 +45,14 @@ export abstract class ObjectValue<Type = any, Optional extends boolean = false> 
     return validateObjectSchema(this.value as Type, this.schema);
   }
 
+  toString(): string {
+    return JSON.stringify(this.value);
+  }
+
+  toJSON(): Optional extends true ? Type | null : Type {
+    return this.value;
+  }
+
   toPrimitives(): Optional extends true ? Type | null : Type {
     return this.value;
   }

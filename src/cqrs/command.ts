@@ -1,4 +1,13 @@
 import { CommandMetadata, CommandPrimitives } from "./command-metadata";
+import { cloneValue } from "../utils/object";
+
+function cloneSafe<T>(value: T): T {
+  try {
+    return cloneValue(value);
+  } catch {
+    return value;
+  }
+}
 
 export interface Command<T = any> {
   getType(): string;
@@ -62,16 +71,19 @@ export abstract class AbstractCommand<T = any> implements Command<T> {
       `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
     this.metadata = {
       id: customMetadata?.id ?? generateId(),
-      createdAt: customMetadata?.createdAt ?? new Date(),
+      createdAt:
+        customMetadata?.createdAt instanceof Date
+          ? new Date(customMetadata.createdAt.getTime())
+          : new Date(),
       correlationId:
         customMetadata?.correlationId ?? correlationId,
-      causationId: customMetadata?.causationId || null,
-      requestId: customMetadata?.requestId || null,
+      causationId: customMetadata?.causationId ?? null,
+      requestId: customMetadata?.requestId ?? null,
       version: customMetadata?.version ?? 1,
-      userId: customMetadata?.userId || null,
-      tenantId: customMetadata?.tenantId || null,
-      headers: customMetadata?.headers || null,
-      context: customMetadata?.context || null,
+      userId: customMetadata?.userId ?? null,
+      tenantId: customMetadata?.tenantId ?? null,
+      headers: customMetadata?.headers ? { ...customMetadata.headers } : null,
+      context: customMetadata?.context ? cloneSafe(customMetadata.context) : null,
     };
   }
 
@@ -96,9 +108,9 @@ export abstract class AbstractCommand<T = any> implements Command<T> {
       version: this.metadata.version,
       user_id: this.metadata.userId,
       tenant_id: this.metadata.tenantId,
-      payload: this.payload as Record<string, any>,
-      headers: this.metadata.headers,
-      context: this.metadata.context,
+      payload: cloneSafe(this.payload) as Record<string, any>,
+      headers: this.metadata.headers ? { ...this.metadata.headers } : null,
+      context: this.metadata.context ? cloneSafe(this.metadata.context) : null,
     };
   }
 
@@ -112,7 +124,7 @@ export abstract class AbstractCommand<T = any> implements Command<T> {
   ): C {
     return new this(
       primitives.correlation_id,
-      primitives.payload,
+      cloneSafe(primitives.payload),
       {
         id: primitives.id,
         createdAt: new Date(primitives.created_at),
@@ -122,8 +134,8 @@ export abstract class AbstractCommand<T = any> implements Command<T> {
         version: primitives.version,
         userId: primitives.user_id,
         tenantId: primitives.tenant_id,
-        headers: primitives.headers,
-        context: primitives.context,
+        headers: primitives.headers ? { ...primitives.headers } : null,
+        context: primitives.context ? cloneSafe(primitives.context) : null,
       },
     );
   }

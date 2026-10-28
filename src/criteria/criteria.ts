@@ -3,6 +3,15 @@ import { Operator } from "./operator";
 import { Direction } from "./direction";
 import { OffsetNotValid, LimitNotValid } from "./exceptions";
 import { Filters } from "./filters";
+import { cloneValue } from "../utils/object";
+
+function cloneFilterValue<T>(value: T): T {
+  try {
+    return cloneValue(value);
+  } catch {
+    return value;
+  }
+}
 
 export interface CriteriaPrimitives {
   filters: Filters;
@@ -31,7 +40,11 @@ export class Criteria {
       throw new OffsetNotValid(offset);
     }
 
-    this.filters = filters.map(filter => ({ ...filter }));
+    this.filters = filters.map(filter => ({
+      field: filter.field,
+      operator: filter.operator,
+      value: cloneFilterValue(filter.value),
+    }));
     this.orders = orders.map(order => ({ ...order }));
     this.limit = limit;
     this.offset = offset;
@@ -85,7 +98,11 @@ export class Criteria {
 
   toPrimitives(): CriteriaPrimitives {
     return {
-      filters: this.filters.map(filter => ({ ...filter })),
+      filters: this.filters.map(filter => ({
+        field: filter.field,
+        operator: filter.operator,
+        value: cloneFilterValue(filter.value),
+      })),
       orders: this.orders.map(order => ({ ...order })),
       ...(this.limit !== undefined ? { limit: this.limit } : {}),
       ...(this.offset !== undefined ? { offset: this.offset } : {}),
@@ -94,7 +111,13 @@ export class Criteria {
 
   static fromPrimitives(primitives: Partial<CriteriaPrimitives> = {}): Criteria {
     return new Criteria(
-      primitives.filters ? primitives.filters.map(filter => ({ ...filter })) : [],
+      primitives.filters
+        ? primitives.filters.map(filter => ({
+            field: filter.field,
+            operator: filter.operator,
+            value: cloneFilterValue(filter.value),
+          }))
+        : [],
       primitives.orders ? primitives.orders.map(order => ({ ...order })) : [],
       primitives.limit,
       primitives.offset,

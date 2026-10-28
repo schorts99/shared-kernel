@@ -10,7 +10,7 @@ export abstract class HTMLValue implements ValueObject {
   }
 
   get isValid(): boolean {
-    return /<\/?[a-z][\s\S]*>/i.test(this.value);
+    return typeof this.value === "string" && /<\/?[a-z][\s\S]*>/i.test(this.value);
   }
 
   equals(other: unknown): boolean {

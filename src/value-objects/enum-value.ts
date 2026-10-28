@@ -23,6 +23,14 @@ export abstract class EnumValue<Allowed extends readonly (string | null)[]> impl
     );
   }
 
+  toString(): string {
+    return String(this.value);
+  }
+
+  toJSON(): Allowed[number] {
+    return this.value;
+  }
+
   toPrimitives(): Allowed[number] {
     return this.value;
   }

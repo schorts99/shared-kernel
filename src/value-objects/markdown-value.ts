@@ -10,7 +10,7 @@ export abstract class MarkdownValue implements ValueObject {
   }
 
   get isValid(): boolean {
-    return /(^#|\*\*|_|`)/.test(this.value);
+    return typeof this.value === "string" && /(^#|\*\*|_|`)/.test(this.value);
   }
 
   equals(other: unknown): boolean {

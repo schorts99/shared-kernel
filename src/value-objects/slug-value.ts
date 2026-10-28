@@ -11,7 +11,7 @@ export abstract class SlugValue implements ValueObject {
   }
 
   get isValid(): boolean {
-    return REGEX.test(this.value);
+    return typeof this.value === "string" && REGEX.test(this.value);
   }
 
   equals(valueObject: unknown): boolean {
@@ -19,6 +19,14 @@ export abstract class SlugValue implements ValueObject {
     if (!this.isValid || !valueObject.isValid) return false;
   
     return this.value === valueObject.value;
+  }
+
+  toString(): string {
+    return String(this.value);
+  }
+
+  toJSON(): string {
+    return this.value;
   }
 
   toPrimitives(): string {

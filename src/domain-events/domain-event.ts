@@ -1,4 +1,13 @@
 import { DomainEventMetadata, DomainEventPrimitives } from "./domain-event-metadata";
+import { cloneValue } from "../utils/object";
+
+function cloneSafe<T>(value: T): T {
+  try {
+    return cloneValue(value);
+  } catch {
+    return value;
+  }
+}
 
 export abstract class DomainEvent<T = any> {
   protected readonly payload: T;
@@ -59,16 +68,19 @@ export abstract class DomainEvent<T = any> {
       `${Date.now()}-${Math.random().toString(36).slice(2, 13)}`;
     this.metadata = {
       id: customMetadata?.id ?? generateId(),
-      occurredAt: customMetadata?.occurredAt ?? new Date(),
+      occurredAt:
+        customMetadata?.occurredAt instanceof Date
+          ? new Date(customMetadata.occurredAt.getTime())
+          : new Date(),
       correlationId: customMetadata?.correlationId ?? correlationId,
-      causationId: customMetadata?.causationId || null,
-      requestId: customMetadata?.requestId || null,
+      causationId: customMetadata?.causationId ?? null,
+      requestId: customMetadata?.requestId ?? null,
       version: customMetadata?.version ?? 1,
-      userId: customMetadata?.userId || null,
-      tenantId: customMetadata?.tenantId || null,
+      userId: customMetadata?.userId ?? null,
+      tenantId: customMetadata?.tenantId ?? null,
       retries: customMetadata?.retries ?? 0,
-      headers: customMetadata?.headers || null,
-      context: customMetadata?.context || null,
+      headers: customMetadata?.headers ? { ...customMetadata.headers } : null,
+      context: customMetadata?.context ? cloneSafe(customMetadata.context) : null,
     };
   }
 
@@ -93,11 +105,11 @@ export abstract class DomainEvent<T = any> {
       version: this.metadata.version,
       user_id: this.metadata.userId,
       tenant_id: this.metadata.tenantId,
-      payload: this.payload as Record<string, any>,
+      payload: cloneSafe(this.payload) as Record<string, any>,
       meta: {
         retries: this.metadata.retries,
-        headers: this.metadata.headers,
-        context: this.metadata.context,
+        headers: this.metadata.headers ? { ...this.metadata.headers } : null,
+        context: this.metadata.context ? cloneSafe(this.metadata.context) : null,
       },
     };
   }
@@ -112,7 +124,7 @@ export abstract class DomainEvent<T = any> {
   ): E {
     return new this(
       primitives.correlation_id,
-      primitives.payload,
+      cloneSafe(primitives.payload),
       {
         id: primitives.id,
         occurredAt: new Date(primitives.occurred_at),
@@ -123,8 +135,8 @@ export abstract class DomainEvent<T = any> {
         userId: primitives.user_id,
         tenantId: primitives.tenant_id,
         retries: primitives.meta?.retries ?? 0,
-        headers: primitives.meta?.headers ?? null,
-        context: primitives.meta?.context ?? null,
+        headers: primitives.meta?.headers ? { ...primitives.meta.headers } : null,
+        context: primitives.meta?.context ? cloneSafe(primitives.meta.context) : null,
       },
     );
   }
