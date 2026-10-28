@@ -1,6 +1,6 @@
 import { ValueObject } from "./value-object";
 import type { ValidationRule } from "../validators";
-import { deepEqual } from "../utils/object";
+import { cloneValue, deepEqual } from "../utils/object";
 import {
   deepFreezeValue,
   ObjectSchema,
@@ -42,7 +42,17 @@ export abstract class ArrayValue<Type = any> implements ValueObject {
     value: Type[],
     schema: ObjectSchema<Type> | ValidationRule<Type>[],
   ) {
-    this.value = Array.isArray(value) ? deepFreezeValue(value) : value;
+    if (Array.isArray(value)) {
+      let cloned = value;
+      try {
+        cloned = cloneValue(value);
+      } catch {
+        cloned = value;
+      }
+      this.value = deepFreezeValue(cloned);
+    } else {
+      this.value = value;
+    }
     this.schema = schema;
   }
 

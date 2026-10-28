@@ -2408,4 +2408,97 @@ describe("10. Schema Validation, Array Utilities, ErrorTrackingMiddleware on Eve
       new SlowTimeoutQueryHandler().handle(new TestQuery("corr-t", { id: "1" })),
     ).rejects.toThrow("Query timed out after 15ms");
   });
+
+  it("clones caller inputs before freezing in ObjectValue/ArrayValue, serializes concurrent sync() in OfflineCommandSync and ErrorTracker, and supports RegExp/predicate ignoredErrors", async () => {
+    // 1. ObjectValue & ArrayValue non-mutating input freezing
+    class SampleObjVO extends ObjectValue<{ meta: { count: number } }> {
+      readonly attributeName = "sampleObj";
+      constructor(val: { meta: { count: number } }) {
+        super(val, { meta: { count: [{ required: true }, { type: "number" }] } });
+      }
+    }
+
+    class SampleArrVO extends ArrayValue<{ label: string }> {
+      readonly attributeName = "sampleArr";
+      readonly isPrimitive = false;
+      constructor(val: Array<{ label: string }>) {
+        super(val, { label: [{ required: true }, { type: "string" }] });
+      }
+    }
+
+    const callerObj = { meta: { count: 1 } };
+    const objVo = new SampleObjVO(callerObj);
+    expect(Object.isFrozen(callerObj)).toBe(false);
+    expect(Object.isFrozen(callerObj.meta)).toBe(false);
+    expect(Object.isFrozen(objVo.value)).toBe(true);
+    expect(Object.isFrozen(objVo.value.meta)).toBe(true);
+    callerObj.meta.count = 99;
+    expect(objVo.value.meta.count).toBe(1);
+
+    const callerArr = [{ label: "a" }];
+    const arrVo = new SampleArrVO(callerArr);
+    expect(Object.isFrozen(callerArr)).toBe(false);
+    expect(Object.isFrozen(callerArr[0])).toBe(false);
+    expect(Object.isFrozen(arrVo.value)).toBe(true);
+    expect(Object.isFrozen(arrVo.value[0])).toBe(true);
+    callerArr.push({ label: "b" });
+    callerArr[0]!.label = "mutated";
+    expect(arrVo.value).toEqual([{ label: "a" }]);
+
+    // 2. Concurrent OfflineCommandSync.sync() serialization
+    const offlineStore = new InMemoryOfflineStore();
+    const commandBus = new InMemoryCommandBus();
+    const dispatchedIds: string[] = [];
+
+    class DelayedCmdHandler extends AbstractCommandHandler<TestCommand, void> {
+      async execute(command: TestCommand): Promise<void> {
+        await new Promise((resolve) => setTimeout(resolve, 15));
+        dispatchedIds.push(command.getPayload().id);
+      }
+    }
+    commandBus.register(TestCommand.TYPE, new DelayedCmdHandler());
+
+    const syncer = new OfflineCommandSync(offlineStore, commandBus, {
+      hydrateCommand: (p) => TestCommand.fromPrimitives(p),
+    });
+
+    await syncer.enqueueCommand(new TestCommand("corr-1", { id: "cmd-1" }));
+    await syncer.enqueueCommand(new TestCommand("corr-2", { id: "cmd-2" }));
+
+    const [syncRes1, syncRes2] = await Promise.all([syncer.sync(), syncer.sync()]);
+    expect(syncRes1.processed + syncRes2.processed).toBe(2);
+    expect(dispatchedIds).toEqual(["cmd-1", "cmd-2"]);
+    await commandBus.close();
+
+    // 3. Concurrent ErrorTracker.sync() serialization + RegExp & predicate ignoredErrors
+    const errorStore = new InMemoryErrorStore();
+    const uploadedBatches: string[][] = [];
+    const tracker = new ErrorTracker(
+      errorStore,
+      {
+        upload: async (errors) => {
+          await new Promise((resolve) => setTimeout(resolve, 15));
+          uploadedBatches.push(
+            errors.map((e) => (typeof e.error === "string" ? e.error : e.error.message)),
+          );
+        },
+      },
+      undefined,
+      {
+        ignoredErrors: [
+          /^ResizeObserver loop/i,
+          (err) => typeof err === "object" && "code" in err && (err as { code?: string }).code === "E_SKIP",
+        ],
+      },
+    );
+
+    await tracker.track("ResizeObserver loop completed with undelivered notifications");
+    await tracker.track(Object.assign(new Error("Skipped by predicate"), { code: "E_SKIP" }));
+    await tracker.track(new Error("Real failure 1"));
+    await tracker.track("Real failure 2");
+
+    await Promise.all([tracker.sync(), tracker.sync()]);
+    expect(uploadedBatches).toEqual([["Real failure 1", "Real failure 2"]]);
+    expect(await errorStore.all()).toEqual([]);
+  });
 });

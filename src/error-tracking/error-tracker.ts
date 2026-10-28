@@ -2,12 +2,19 @@ import { ErrorStore } from "./error-store";
 import { ErrorUploader } from "./error-uploader";
 import { Logger } from "../logger";
 
+export type IgnoredErrorPattern =
+  | string
+  | RegExp
+  | (new (...args: any[]) => Error)
+  | ((error: Error | string) => boolean);
+
 export interface ErrorTrackerOptions {
-  ignoredErrors?: Array<string | (new (...args: any[]) => Error)>;
+  ignoredErrors?: IgnoredErrorPattern[];
 }
 
 export class ErrorTracker {
-  private readonly ignoredErrors: Array<string | (new (...args: any[]) => Error)>;
+  private readonly ignoredErrors: IgnoredErrorPattern[];
+  private syncQueue: Promise<void> = Promise.resolve();
 
   constructor(
     private readonly store: ErrorStore,
@@ -30,8 +37,38 @@ export class ErrorTracker {
             return true;
           }
         }
-      } else if (typeof ignored === "function" && error instanceof ignored) {
-        return true;
+      } else if (ignored instanceof RegExp) {
+        const statelessRegex = new RegExp(ignored.source, ignored.flags.replace(/[gy]/g, ""));
+        if (typeof error === "string") {
+          if (statelessRegex.test(error)) return true;
+        } else {
+          if (
+            statelessRegex.test(error.name) ||
+            statelessRegex.test(error.constructor.name) ||
+            statelessRegex.test(error.message)
+          ) {
+            return true;
+          }
+        }
+      } else if (typeof ignored === "function") {
+        const isErrorConstructor =
+          ignored === Error || Boolean(ignored.prototype && ignored.prototype instanceof Error);
+        if (isErrorConstructor) {
+          if (error instanceof Error && error instanceof ignored) {
+            return true;
+          }
+        } else {
+          if (Boolean(ignored.prototype) && typeof error === "object" && error !== null && error instanceof ignored) {
+            return true;
+          }
+          try {
+            if ((ignored as (err: Error | string) => boolean)(error)) {
+              return true;
+            }
+          } catch {
+            // Non-callable class constructor; ignore
+          }
+        }
       }
     }
 
@@ -51,6 +88,15 @@ export class ErrorTracker {
   }
 
   async sync(): Promise<void> {
+    const run = this.syncQueue.then(() => this.performSync());
+    this.syncQueue = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run;
+  }
+
+  private async performSync(): Promise<void> {
     try {
       const pendingErrors = await this.store.all();
 

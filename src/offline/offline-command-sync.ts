@@ -16,6 +16,7 @@ export class OfflineCommandSync<T = CommandPrimitives> {
   private readonly hydrateCommand: (payload: T) => Command;
   private readonly stopOnError: boolean;
   private readonly onError?: ((error: Error, entry: { key: string; payload: T }) => void) | undefined;
+  private syncQueue: Promise<unknown> = Promise.resolve();
 
   constructor(
     private readonly store: OfflineStore<T>,
@@ -34,6 +35,15 @@ export class OfflineCommandSync<T = CommandPrimitives> {
   }
 
   async sync(): Promise<{ processed: number; failed: number }> {
+    const run = this.syncQueue.then(() => this.performSync());
+    this.syncQueue = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run;
+  }
+
+  private async performSync(): Promise<{ processed: number; failed: number }> {
     const items = await this.store.list();
     let processed = 0;
     let failed = 0;

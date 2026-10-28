@@ -1,5 +1,5 @@
 import { ValueObject } from "./value-object";
-import { deepEqual } from "../utils/object";
+import { cloneValue, deepEqual } from "../utils/object";
 import {
   deepFreezeValue,
   ObjectSchema,
@@ -22,7 +22,13 @@ export abstract class ObjectValue<Type = any, Optional extends boolean = false> 
     if (optional && value === null) {
       this.value = null as any;
     } else if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-      this.value = deepFreezeValue(value);
+      let cloned = value;
+      try {
+        cloned = cloneValue(value);
+      } catch {
+        cloned = value;
+      }
+      this.value = deepFreezeValue(cloned);
     } else {
       this.value = value as any;
     }
