@@ -136,9 +136,13 @@ export class InMemoryQueryBus implements QueryBus {
     }
 
     const primitives = query.toPrimitives();
-    const deserializedQuery = QueryRegistry.fromPrimitives(
-      primitives,
-    ) as Q;
+    const ctorFromPrimitives = (query.constructor as { fromPrimitives?: (p: any) => Q })
+      ?.fromPrimitives;
+    const deserializedQuery = QueryRegistry.has(primitives.type)
+      ? (QueryRegistry.fromPrimitives(primitives) as Q)
+      : typeof ctorFromPrimitives === "function"
+        ? ctorFromPrimitives.call(query.constructor, cloneValue(primitives))
+        : (QueryRegistry.fromPrimitives(primitives) as Q);
     const startTime = new Date();
     const correlationId = deserializedQuery.getMetadata().correlationId;
     const context: QueryBusContext = {

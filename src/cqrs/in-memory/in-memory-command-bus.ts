@@ -23,6 +23,7 @@ import type { EventBus } from "../../event-bus";
 import type { UnitOfWork } from "../../unit-of-work";
 import { CommitOutcomeUnknownError } from "../../unit-of-work/commit-outcome-unknown-error";
 import { DomainEventRegistry } from "../../domain-events";
+import { cloneValue } from "../../utils/object";
 import type { ExecutionContext, ExecutionContextStorage } from "../../types/execution-context";
 import type {
   IdempotencyExecution,
@@ -149,8 +150,13 @@ export class InMemoryCommandBus implements CommandBus {
     }
 
     const primitives = command.toPrimitives();
-    const deserializedCommand =
-      CommandRegistry.fromPrimitives(primitives) as C;
+    const ctorFromPrimitives = (command.constructor as { fromPrimitives?: (p: any) => C })
+      ?.fromPrimitives;
+    const deserializedCommand = CommandRegistry.has(primitives.type)
+      ? (CommandRegistry.fromPrimitives(primitives) as C)
+      : typeof ctorFromPrimitives === "function"
+        ? ctorFromPrimitives.call(command.constructor, cloneValue(primitives))
+        : (CommandRegistry.fromPrimitives(primitives) as C);
     const startTime = new Date();
     const correlationId =
       deserializedCommand.getMetadata().correlationId;

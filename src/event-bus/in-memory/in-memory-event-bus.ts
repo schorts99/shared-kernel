@@ -15,6 +15,7 @@ import {
 import type { BusDispatchOptions, BusCloseOptions } from "../../cqrs/bus-runtime";
 import type { Logger } from "../../logger";
 import type { ExecutionContext, ExecutionContextStorage } from "../../types/execution-context";
+import { cloneValue } from "../../utils/object";
 
 interface DeliveryFrame {
   active: boolean;
@@ -115,7 +116,24 @@ export class InMemoryEventBus implements EventBus {
 
     subs.splice(index, 1);
 
+    if (subs.length === 0) {
+      this.subscribers.delete(eventName);
+    }
+
     return true;
+  }
+
+  hasSubscribers(eventName: string): boolean {
+    return (this.subscribers.get(eventName)?.length ?? 0) > 0;
+  }
+
+  getSubscribedEvents(): string[] {
+    return Array.from(this.subscribers.keys()).filter(key => this.hasSubscribers(key));
+  }
+
+  clear(): void {
+    this.subscribers.clear();
+    this.middlewares.length = 0;
   }
 
   async publish<Event extends DomainEvent>(event: Event, options?: BusDispatchOptions) {
@@ -262,6 +280,15 @@ export class InMemoryEventBus implements EventBus {
     this.middlewares.push(middleware);
   }
 
+  removeMiddleware(middleware: EventBusMiddleware): boolean {
+    const index = this.middlewares.indexOf(middleware);
+    if (index >= 0) {
+      this.middlewares.splice(index, 1);
+      return true;
+    }
+    return false;
+  }
+
   private createContext(event: DomainEvent, config: EventBusConfig): EventBusContext {
     return {
       correlationId: event.getMetadata().correlationId,
@@ -300,7 +327,7 @@ export class InMemoryEventBus implements EventBus {
       const options = subscriber.getOptions?.() ?? {};
       const maxRetries = options.retryOnError === false ? 0 : options.maxRetries ?? config.maxRetries ?? 0;
       this.validateConfig({ maxRetries });
-      let currentEvent = event;
+      let currentEvent = this.hydrateSubscriberEvent(event);
 
       for (let attempt = 0; ; attempt++) {
         try {
@@ -312,11 +339,7 @@ export class InMemoryEventBus implements EventBus {
             throw error;
           }
           if (attempt < maxRetries) {
-            const primitives = event.toPrimitives();
-            currentEvent = DomainEventRegistry.fromPrimitives({
-              ...primitives,
-              meta: { ...primitives.meta, retries: attempt + 1 },
-            });
+            currentEvent = this.hydrateSubscriberEvent(event, attempt + 1);
             continue;
           }
           if (this.deadLetterStore) {
@@ -348,6 +371,33 @@ export class InMemoryEventBus implements EventBus {
     if (failures.length > 1) {
       throw new AggregateError(failures.map(result => result.reason), "Multiple event subscribers failed");
     }
+  }
+
+  private hydrateSubscriberEvent(event: DomainEvent, retries?: number): DomainEvent {
+    const basePrimitives = cloneValue(event.toPrimitives());
+    const primitives =
+      retries !== undefined
+        ? {
+            ...basePrimitives,
+            meta: {
+              ...basePrimitives.meta,
+              retries,
+            },
+          }
+        : basePrimitives;
+
+    if (DomainEventRegistry.has(primitives.type)) {
+      return DomainEventRegistry.fromPrimitives(primitives);
+    }
+
+    const ctorFromPrimitives = (
+      event.constructor as { fromPrimitives?: (p: any) => DomainEvent }
+    )?.fromPrimitives;
+    if (typeof ctorFromPrimitives === "function") {
+      return ctorFromPrimitives.call(event.constructor, primitives);
+    }
+
+    return cloneValue(event);
   }
 
   async replay() {

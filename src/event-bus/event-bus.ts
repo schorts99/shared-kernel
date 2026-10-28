@@ -46,6 +46,14 @@ export interface EventBus {
 
   use(middleware: EventBusMiddleware): void;
 
+  removeMiddleware?(middleware: EventBusMiddleware): boolean;
+
+  hasSubscribers?(eventName: string): boolean;
+
+  getSubscribedEvents?(): string[];
+
+  clear?(): void;
+
   replay(): Promise<void>;
 
   getConfig(): EventBusConfig;
