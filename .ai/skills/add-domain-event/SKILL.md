@@ -15,7 +15,7 @@ This skill details how to define a new `DomainEvent`, register it with `DomainEv
 2. Extend `DomainEvent<PayloadType>`.
 
 ```typescript
-import { DomainEvent } from "./domain-event";
+import { DomainEvent } from "./domain-event.js";
 
 export interface UserCreatedPayload {
   readonly userId: string;
@@ -46,8 +46,8 @@ export class UserCreatedDomainEvent extends DomainEvent<UserCreatedPayload> {
 Register event class with `DomainEventRegistry` to enable hydration from message broker payloads:
 
 ```typescript
-import { DomainEventRegistry } from "./domain-event-registry";
-import { UserCreatedDomainEvent } from "./user-created-domain-event";
+import { DomainEventRegistry } from "./domain-event-registry.js";
+import { UserCreatedDomainEvent } from "./user-created-domain-event.js";
 
 DomainEventRegistry.register(
   UserCreatedDomainEvent.EVENT_NAME,

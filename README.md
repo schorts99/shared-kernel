@@ -135,17 +135,23 @@ import { Criteria } from "@schorts/shared-kernel/criteria";
 import { FetchHTTPProvider } from "@schorts/shared-kernel/http";
 import { JSONAPIConnector } from "@schorts/shared-kernel/json-api";
 
+type UserAttributes = { name: string; status: string; created_at: string };
+
 const usersURL = new URL("https://api.example.com/users");
 
-const criteria = new Criteria()
+const criteria = Criteria.none()
   .where("status", "EQUAL", "active")
   .orderBy("created_at", "DESC")
   .limitResults(10);
 
 const connector = new JSONAPIConnector(new FetchHTTPProvider());
 
-// UserModel is your own Model class
-const users = await connector.findMany<UserModel>(usersURL, criteria);
+const users = await connector.findMany<UserAttributes>(usersURL, {
+  criteria,
+  include: ["organization"],
+});
+
+users.data.forEach(user => console.log(user.id, user.attributes.name));
 ```
 
 ## Migration: Next Major Release
@@ -160,11 +166,13 @@ No replacement UI package is provided.
 
 ## 🧪 Testing
 
-Each module is fully covered with unit tests using Jest. To run them:
+Tests use Jest and live in `__tests__/`. CI runs them on every push and pull request, with minimum coverage levels set in `jest.config.js`.
 
 ```bash
-npm run test
+npm test
 ```
+
+Before publishing, `npm run prepublishOnly` also checks import paths, types, the build, and that every entry point loads with both `import` and `require`.
 
 ## 📜 License
 

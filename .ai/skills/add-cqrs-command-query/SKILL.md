@@ -17,7 +17,7 @@ This skill details the process for implementing a new Command or Query alongside
 ### Command Template:
 
 ```typescript
-import { Command } from "./command";
+import { Command } from "./command.js";
 
 export interface CreateUserPayload {
   readonly email: string;
@@ -36,7 +36,7 @@ export class CreateUserCommand extends Command<CreateUserPayload> {
 ### Query Template:
 
 ```typescript
-import { Query } from "./query";
+import { Query } from "./query.js";
 
 export interface GetUserByIdPayload {
   readonly userId: string;
@@ -58,9 +58,9 @@ export class GetUserByIdQuery extends Query<GetUserByIdPayload> {
 ### CommandHandler Template:
 
 ```typescript
-import { CommandHandler } from "./command-handler";
-import { CreateUserCommand } from "./create-user-command";
-import { Result } from "../result";
+import { CommandHandler } from "./command-handler.js";
+import { CreateUserCommand } from "./create-user-command.js";
+import { Result } from "../result/index.js";
 
 export class CreateUserCommandHandler extends CommandHandler<CreateUserCommand, Result<string>> {
   subscribedTo(): string {

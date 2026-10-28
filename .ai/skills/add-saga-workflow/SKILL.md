@@ -14,7 +14,7 @@ This skill explains how to build a multi-step, stateful Saga workflow that handl
 Create a new Saga class extending `Saga<State>` in `src/sagas/`:
 
 ```typescript
-import { Saga } from "./saga";
+import { Saga } from "./saga.js";
 
 export interface OrderFulfillmentState {
   orderId: string;
@@ -80,8 +80,8 @@ saga.addStep({
 Run and persist state across restarts:
 
 ```typescript
-import { SagaManager } from "./saga-manager";
-import { InMemorySagaStateStore } from "./in-memory/in-memory-saga-state-store";
+import { SagaManager } from "./saga-manager.js";
+import { InMemorySagaStateStore } from "./in-memory/in-memory-saga-state-store.js";
 
 const stateStore = new InMemorySagaStateStore();
 const sagaManager = new SagaManager(stateStore);

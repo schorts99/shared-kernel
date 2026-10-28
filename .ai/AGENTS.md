@@ -95,7 +95,11 @@ Execute common engineering tasks by following the dedicated skill instructions u
 - **Build CJS Only**: `npm run build:cjs`
 - **Build ESM Only**: `npm run build:esm`
 - **Run Tests**: `npm test`
-- **Run Coverage**: `npm run test:coverage`
+- **Run Coverage**: `npm run test:coverage` (CI enforces the thresholds in `jest.config.js` via `npm run test:ci`)
+- **Typecheck**: `npm run typecheck`
+- **Check Import Paths**: `npm run lint:imports`
+- **Load Every Entry Point (after build)**: `npm run test:package`
+- **Lint Package Shape (after build)**: `npm run lint:package`
 
 ---
 
@@ -104,4 +108,4 @@ Execute common engineering tasks by following the dedicated skill instructions u
 1. **Check Subpath Exports**: Whenever you add a new module or file in `src/<module>/`, ensure it is exported in `src/<module>/index.ts`, `src/index.ts`, and listed under `"exports"` in `package.json`.
 2. **Preserve Immature State Safeguards**: Do not break public APIs or change method signatures without updating all invocation sites across the codebase.
 3. **No Dynamic Dependencies**: Rely only on standard TypeScript / Node.js primitives unless explicitly agreed upon.
-4. **Use Explicit Imports**: Use relative imports within `src/` modules (e.g. `import { ValueObject } from "../value-objects"`).
+4. **Use Explicit Imports**: Use relative imports within `src/` modules with explicit `.js` paths (e.g. `import { ValueObject } from "../value-objects/index.js"`, `import { Saga } from "./saga.js"`). Extensionless imports still compile but break the ESM build at runtime; `npm run lint:imports` rejects them.

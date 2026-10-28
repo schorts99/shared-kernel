@@ -18,7 +18,7 @@ This skill provides step-by-step instructions to create a new Value Object in `s
 ### Code Template:
 
 ```typescript
-import { BaseValueObject } from "./base-value-object";
+import { BaseValueObject } from "./base-value-object.js";
 
 export class CurrencyValue extends BaseValueObject<string> {
   readonly valueType = "Currency";
@@ -47,18 +47,20 @@ export class CurrencyValue extends BaseValueObject<string> {
 
 1. Add explicit export in `src/value-objects/index.ts`:
    ```typescript
-   export * from "./currency-value";
+   export * from "./currency-value.js";
    ```
-2. Verify `src/index.ts` exports `* from "./value-objects"`.
+2. Verify `src/index.ts` exports `* from "./value-objects/index.js"`.
+
+Relative imports in `src/` must use explicit `.js` paths (`"./currency-value.js"`, `"../result/index.js"`). `npm run lint:imports` fails on anything else.
 
 ---
 
 ## Step 3: Add Unit Tests
 
-Create a test file under `__tests__/value-objects/currency-value.spec.ts`:
+Create a test file under `__tests__/` whose name ends in `.test.ts` (e.g. `__tests__/currency-value.test.ts`). Import from the package source root:
 
 ```typescript
-import { CurrencyValue } from "../../src/value-objects/currency-value";
+import { CurrencyValue } from "../src";
 
 describe("CurrencyValue", () => {
   it("should validate correct ISO currency codes", () => {
@@ -86,4 +88,4 @@ describe("CurrencyValue", () => {
 
 ## Step 4: Verify Compilation
 
-Run `npm run build` to verify ESM and CJS outputs compile without type errors.
+Run `npm run lint:imports`, `npm test`, `npm run build`, and `npm run test:package` to verify imports, behavior, and that the ESM and CJS outputs load.

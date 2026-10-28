@@ -10,20 +10,26 @@ This rule specifies compiler settings, module design, subpath export structures,
 
 ### Subpath Export Rules:
 1. **Module Directories**: Every subfolder in `src/` (e.g., `src/criteria`, `src/value-objects`) MUST contain an `index.ts` file that re-exports all public classes, types, and interfaces within that subfolder.
-2. **Root Export**: `src/index.ts` MUST re-export every subfolder module using `export * from "./<module>"`.
+2. **Root Export**: `src/index.ts` MUST re-export every subfolder module using `export * from "./<module>/index.js"`.
 3. **Package.json Export Registration**:
-   When adding a new subfolder in `src/` (e.g. `src/new-module`), add a corresponding subpath entry in `package.json`:
+   When adding a new subfolder in `src/` (e.g. `src/new-module`), add a corresponding subpath entry in `package.json`. Each condition carries its own types:
    ```json
    "./new-module": {
-     "import": "./dist/esm/new-module/index.js",
-     "require": "./dist/cjs/new-module/index.js",
-     "types": "./dist/types/new-module/index.d.ts"
+     "import": {
+       "types": "./dist/esm/new-module/index.d.ts",
+       "default": "./dist/esm/new-module/index.js"
+     },
+     "require": {
+       "types": "./dist/types/new-module/index.d.ts",
+       "default": "./dist/cjs/new-module/index.js"
+     }
    }
    ```
+   `npm run test:package` fails when a `src/` module with an `index.ts` has no entry here.
 4. **Dual Build Targets**:
-   - ESM target: compiled via `tsconfig.esm.json` into `./dist/esm`.
-   - CJS target: compiled via `tsconfig.cjs.json` into `./dist/cjs`.
-   - Declaration maps: outputted to `./dist/types`.
+   - ESM target: compiled via `tsconfig.esm.json` into `./dist/esm`, with its declarations alongside.
+   - CJS target: compiled via `tsconfig.cjs.json` into `./dist/cjs`, with declarations in `./dist/types`.
+   - `npm run build` writes a `package.json` into each output (`"type": "module"` / `"type": "commonjs"`) so Node loads each format correctly.
 
 ---
 
@@ -33,7 +39,7 @@ This rule specifies compiler settings, module design, subpath export structures,
 2. **Indexed Access Safeguard**: `"noUncheckedIndexedAccess": true` is enabled. Array or index signature lookups return `T | undefined`. Always guard array element accesses.
 3. **Optional Property Types**: `"exactOptionalPropertyTypes": true` is enabled. A property declared as `prop?: string` cannot be explicitly assigned `undefined` unless declared as `prop?: string | undefined`.
 4. **Import Conventions**:
-   - Use relative imports within `src/` (e.g. `import { Entity } from "../entities"`).
+   - Use relative imports within `src/` with explicit `.js` paths: `"./file.js"` for a file, `"./dir/index.js"` for a folder (e.g. `import { Entity } from "../entities/index.js"`). Extensionless imports compile but fail when Node loads the ESM build; `npm run lint:imports` rejects them.
    - Use type-only imports (`import type { ... }`) when importing types or interfaces to prevent runtime import bloat in compiled output.
 
 ---
