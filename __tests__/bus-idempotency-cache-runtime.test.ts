@@ -15,6 +15,7 @@ import {
   Criteria,
   CrossDispatchCycleError,
   DateValue,
+  debounce,
   DomainEvent,
   DomainEventRegistry,
   EmailValue,
@@ -37,6 +38,7 @@ import {
   InMemoryIdempotencyStore,
   InMemoryIdentityProvider,
   InMemoryLogger,
+  InMemoryMailer,
   InMemoryOfflineStore,
   InMemoryPubSub,
   InMemoryQueryBus,
@@ -62,6 +64,7 @@ import {
   retry,
   Saga,
   SagaManager,
+  slugify,
   SlugValue,
   SnakeToCamel,
   StaticRBACPolicy,
@@ -1849,5 +1852,69 @@ describe("10. Schema Validation, Array Utilities, ErrorTrackingMiddleware on Eve
 
     await idp.deleteUser(createdUser.id);
     await expect(idp.verifyToken(idpToken)).rejects.toThrow();
+  });
+
+  it("aligns slugify with SlugValue, supports optional arrays/TypedArrays in ObjectValue, adds InMemoryMailer, and supports debounce.flush/pending", async () => {
+    class ArticleSlug extends SlugValue {
+      readonly attributeName = "slug";
+    }
+
+    const slugFromUnderscores = slugify("  Hello_World -- Café Crème!  ");
+    expect(slugFromUnderscores).toBe("hello-world-cafe-creme");
+    expect(new ArticleSlug(slugFromUnderscores).isValid).toBe(true);
+
+    interface OptionalArrayPayload {
+      title: string;
+      tags?: string[];
+      rawBytes?: Uint8Array;
+    }
+
+    class OptionalArrayObjectValue extends ObjectValue<OptionalArrayPayload> {
+      readonly attributeName = "payload";
+      constructor(value: OptionalArrayPayload) {
+        super(value, {
+          title: [{ required: true }, { type: "string" }],
+          tags: { _: [{ required: false }, { type: "string" }] },
+        });
+      }
+    }
+
+    const voWithBytes = new OptionalArrayObjectValue({
+      title: "Report",
+      rawBytes: new Uint8Array([1, 2, 3]),
+    });
+    expect(voWithBytes.isValid).toBe(true);
+
+    // InMemoryMailer
+    const mailer = new InMemoryMailer();
+    await mailer.send({
+      to: [{ name: "Ada", email: "Ada@Example.com" }],
+      cc: "team@example.com",
+      subject: "Welcome!",
+      text: "Hello Ada",
+    });
+
+    expect(mailer.getSentMails()).toHaveLength(1);
+    expect(mailer.getSentTo("ada@example.com")).toHaveLength(1);
+    expect(mailer.getSentTo("TEAM@example.com")).toHaveLength(1);
+    expect(mailer.getSentTo("other@example.com")).toHaveLength(0);
+    mailer.clear();
+    expect(mailer.getSentMails()).toHaveLength(0);
+
+    // debounce.flush() and debounce.pending()
+    const calls: string[] = [];
+    const debouncedFn = debounce((val: string) => {
+      calls.push(val);
+    }, 5000);
+
+    expect(debouncedFn.pending()).toBe(false);
+    debouncedFn("first");
+    debouncedFn("second");
+    expect(debouncedFn.pending()).toBe(true);
+    expect(calls).toEqual([]);
+
+    debouncedFn.flush();
+    expect(debouncedFn.pending()).toBe(false);
+    expect(calls).toEqual(["second"]);
   });
 });

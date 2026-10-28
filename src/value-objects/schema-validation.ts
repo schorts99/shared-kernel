@@ -3,13 +3,13 @@ import type { ValidationRule } from "../validators";
 type Primitive = string | number | boolean | null | undefined;
 
 export type ObjectSchema<Type> = {
-  [Key in keyof Type]?: Type[Key] extends Primitive
-    ? ValidationRule<Type[Key]>[]
-    : Type[Key] extends Primitive[]
-      ? { _: ValidationRule<Type[Key][number]>[] }
-      : Type[Key] extends (infer U)[]
+  [Key in keyof Type]?: NonNullable<Type[Key]> extends Primitive
+    ? ValidationRule<NonNullable<Type[Key]>>[]
+    : NonNullable<Type[Key]> extends Primitive[]
+      ? { _: ValidationRule<NonNullable<Type[Key]>[number]>[] }
+      : NonNullable<Type[Key]> extends (infer U)[]
         ? { _: ObjectSchema<U> }
-        : ObjectSchema<Type[Key]>;
+        : ObjectSchema<NonNullable<Type[Key]>>;
 };
 
 function isRuleRequired(rule: ValidationRule<any>): boolean {
@@ -116,14 +116,31 @@ export function validateObjectSchema(obj: any, schema: ObjectSchema<any>): boole
   });
 }
 
-export function deepFreezeValue<T>(obj: T): T {
+export function deepFreezeValue<T>(obj: T, seen: WeakSet<object> = new WeakSet()): T {
+  if (obj === null || typeof obj !== "object") {
+    return obj;
+  }
+
+  if (seen.has(obj)) {
+    return obj;
+  }
+  seen.add(obj);
+
+  if (
+    ArrayBuffer.isView(obj) ||
+    obj instanceof ArrayBuffer ||
+    (typeof SharedArrayBuffer !== "undefined" && obj instanceof SharedArrayBuffer)
+  ) {
+    return obj;
+  }
+
   if (Array.isArray(obj)) {
-    obj.forEach((item) => deepFreezeValue(item));
-  } else if (obj && typeof obj === "object") {
+    obj.forEach((item) => deepFreezeValue(item, seen));
+  } else if (!(obj instanceof Date) && !(obj instanceof RegExp) && !(obj instanceof Map) && !(obj instanceof Set)) {
     Object.getOwnPropertyNames(obj).forEach((prop) => {
       const value = (obj as any)[prop];
       if (value && typeof value === "object") {
-        deepFreezeValue(value);
+        deepFreezeValue(value, seen);
       }
     });
   }

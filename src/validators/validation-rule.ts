@@ -1,5 +1,5 @@
 export type ValidationRule<Type> =
-  | { required: true }
+  | { required: boolean }
   /** @deprecated Use `{ greaterThan: number }` instead */
   | { greater_than: number }
   | { greaterThan: number }

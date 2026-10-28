@@ -4,6 +4,7 @@ export function debounce<T extends unknown[]>(
   immediate = false,
 ) {
   let timeoutTimer: ReturnType<typeof setTimeout> | null = null;
+  let pendingArgs: T | null = null;
 
   const debounced = (...args: T) => {
     const callNow = immediate && !timeoutTimer;
@@ -12,11 +13,15 @@ export function debounce<T extends unknown[]>(
       clearTimeout(timeoutTimer);
     }
 
+    pendingArgs = immediate ? null : args;
+
     timeoutTimer = setTimeout(() => {
       timeoutTimer = null;
+      const argsToInvoke = pendingArgs;
+      pendingArgs = null;
 
-      if (!immediate) {
-        callback(...args);
+      if (!immediate && argsToInvoke !== null) {
+        callback(...argsToInvoke);
       }
     }, delay);
 
@@ -28,10 +33,26 @@ export function debounce<T extends unknown[]>(
   debounced.cancel = () => {
     if (timeoutTimer) {
       clearTimeout(timeoutTimer);
-
       timeoutTimer = null;
     }
+    pendingArgs = null;
   };
+
+  debounced.flush = () => {
+    if (timeoutTimer) {
+      clearTimeout(timeoutTimer);
+      timeoutTimer = null;
+
+      const argsToInvoke = pendingArgs;
+      pendingArgs = null;
+
+      if (!immediate && argsToInvoke !== null) {
+        callback(...argsToInvoke);
+      }
+    }
+  };
+
+  debounced.pending = (): boolean => timeoutTimer !== null;
 
   return debounced;
 }
