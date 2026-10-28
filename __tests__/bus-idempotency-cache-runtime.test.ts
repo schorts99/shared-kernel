@@ -2739,4 +2739,94 @@ describe("10. Schema Validation, Array Utilities, ErrorTrackingMiddleware on Eve
     expect(failedState?.data).toEqual({ steps: [], rolledBack: true });
     await commandBus.close();
   });
+
+  it("avoids spurious StateManager.subscribeToKey triggers on objects, normalizes RemoteFileToBase64 MIME params/timeout abort/cache, and supports circular SnakeToCamel/PascalCamelToSnake", async () => {
+    // 1. StateManager.subscribeToKey deep equality & per-listener isolation
+    const stateManager = new InMemoryStateManager({
+      user: { name: "Ada", tags: ["core"] },
+      counter: 0,
+    });
+    const userUpdates: Array<{ name: string; tags: string[] }> = [];
+    const seenByListener2: number[] = [];
+
+    stateManager.subscribeToKey("user", (u) => {
+      userUpdates.push(u);
+      u.name = "mutated-by-listener-1";
+    });
+    stateManager.subscribe((s) => {
+      seenByListener2.push(s.counter);
+      expect(s.user.name).not.toBe("mutated-by-listener-1");
+    });
+
+    // Updating an unrelated key ("counter") must NOT trigger subscribeToKey("user")
+    stateManager.setValue("counter", 1);
+    stateManager.setValue("counter", 2);
+    expect(userUpdates).toHaveLength(0);
+    expect(seenByListener2).toEqual([1, 2]);
+
+    // Setting the same deep value for "user" must NOT trigger subscribeToKey("user")
+    stateManager.setValue("user", { name: "Ada", tags: ["core"] });
+    expect(userUpdates).toHaveLength(0);
+
+    // Changing "user" triggers subscribeToKey("user") once
+    stateManager.setValue("user", { name: "Grace", tags: ["core", "compiler"] });
+    expect(userUpdates).toHaveLength(1);
+    expect(stateManager.getValue("user").name).toBe("Grace");
+
+    // 2. RemoteFileToBase64 MIME parameter matching, timeout abort propagation, & cache isolation
+    let getSignalAborted = false;
+    const converter = new RemoteFileToBase64({
+      get: async (url, options) => {
+        if (url.toString().includes("slow")) {
+          return await new Promise<any>((_resolve, reject) => {
+            options?.signal?.addEventListener(
+              "abort",
+              () => {
+                getSignalAborted = true;
+                reject(options.signal?.reason);
+              },
+              { once: true },
+            );
+          });
+        }
+        return new Blob(["charset test"], { type: "TEXT/PLAIN; charset=utf-8" }) as any;
+      },
+      post: async () => undefined as any,
+      put: async () => undefined as any,
+      patch: async () => undefined as any,
+      delete: async () => undefined as any,
+    });
+
+    const res = await converter.convert(new URL("https://cdn.example.com/file.txt"), {
+      cache: true,
+      expectedMimeTypes: ["text/plain"],
+    });
+    expect(res.mimeType).toBe("text/plain");
+    res.base64 = "mutated";
+
+    const cachedRes = await converter.convert(new URL("https://cdn.example.com/file.txt"), {
+      cache: true,
+    });
+    expect(cachedRes.base64).not.toBe("mutated");
+
+    await expect(
+      converter.convert(new URL("https://cdn.example.com/slow.txt"), { timeout: 15 }),
+    ).rejects.toThrow("Conversion timeout after 15ms");
+    expect(getSignalAborted).toBe(true);
+
+    // 3. SnakeToCamel & PascalCamelToSnake formatting and circular reference handling
+    expect(SnakeToCamel.format("USER_NAME")).toBe("userName");
+    expect(SnakeToCamel.format("first__name")).toBe("firstName");
+    expect(SnakeToCamel.format("alreadyCamel")).toBe("alreadyCamel");
+
+    const circularSnake: Record<string, any> = { first_name: "Alan" };
+    circularSnake.self_ref = circularSnake;
+    const formattedCamel = SnakeToCamel.formatObject(circularSnake);
+    expect(formattedCamel.firstName).toBe("Alan");
+    expect(formattedCamel.selfRef).toBe(formattedCamel);
+
+    const formattedBackToSnake = PascalCamelToSnake.formatObject(formattedCamel);
+    expect(formattedBackToSnake.first_name).toBe("Alan");
+    expect(formattedBackToSnake.self_ref).toBe(formattedBackToSnake);
+  });
 });

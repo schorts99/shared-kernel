@@ -47,15 +47,27 @@ export class RemoteFileToBase64 {
 
     try {
       let timeoutId: ReturnType<typeof setTimeout> | undefined;
+      const requestController = signal || timeout ? new AbortController() : undefined;
+      const onCallerAbort = () => {
+        requestController?.abort(new DOMException("Aborted", "AbortError"));
+      };
+      if (signal) {
+        if (signal.aborted) {
+          onCallerAbort();
+        } else {
+          signal.addEventListener("abort", onCallerAbort, { once: true });
+        }
+      }
+
       const timeoutPromise = timeout
         ? new Promise<never>((_, reject) => {
             timeoutId = setTimeout(() => {
-              reject(
-                new ConversionError(
-                  `Conversion timeout after ${timeout}ms`,
-                  "CONVERSION_TIMEOUT"
-                )
+              const timeoutError = new ConversionError(
+                `Conversion timeout after ${timeout}ms`,
+                "CONVERSION_TIMEOUT"
               );
+              requestController?.abort(timeoutError);
+              reject(timeoutError);
             }, timeout);
           })
         : null;
@@ -64,7 +76,7 @@ export class RemoteFileToBase64 {
       try {
         const blobPromise = this.httpProvider.get<Blob>(
           url,
-          signal ? { signal } : undefined,
+          requestController ? { signal: requestController.signal } : undefined,
         );
         blob = timeoutPromise
           ? await Promise.race([blobPromise, timeoutPromise])
@@ -73,6 +85,7 @@ export class RemoteFileToBase64 {
         if (timeoutId !== undefined) {
           clearTimeout(timeoutId);
         }
+        signal?.removeEventListener("abort", onCallerAbort);
       }
 
       if (!(blob instanceof Blob)) {
@@ -91,10 +104,11 @@ export class RemoteFileToBase64 {
         );
       }
 
+      const normalizedMimeType = this.normalizeMimeType(blob.type);
+
       if (expectedMimeTypes && expectedMimeTypes.length > 0) {
-        const mimeType = blob.type || "application/octet-stream";
         const isValidMime = expectedMimeTypes.some(expected =>
-          this.mimeTypeMatches(mimeType, expected)
+          this.mimeTypeMatches(normalizedMimeType, expected)
         );
 
         if (!isValidMime) {
@@ -106,19 +120,19 @@ export class RemoteFileToBase64 {
         }
       }
 
-      const base64 = await this.blobToBase64(blob, signal);
+      const base64 = await this.blobToBase64(blob, signal, normalizedMimeType);
       const result: ConversionResult = {
         base64,
-        mimeType: blob.type || "application/octet-stream",
+        mimeType: normalizedMimeType,
         size: blob.size,
         cached: false,
       };
 
       if (cache) {
-        this.conversionCache.set(cacheKey, result);
+        this.conversionCache.set(cacheKey, { ...result });
       }
 
-      return result;
+      return { ...result };
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
         throw new ConversionError(
@@ -151,7 +165,11 @@ export class RemoteFileToBase64 {
     return this.conversionCache.delete(url.toString());
   }
 
-  private async blobToBase64(blob: Blob, signal?: AbortSignal): Promise<string> {
+  private async blobToBase64(
+    blob: Blob,
+    signal?: AbortSignal,
+    normalizedMimeType?: string,
+  ): Promise<string> {
     if (signal?.aborted) {
       throw new DOMException("Aborted", "AbortError");
     }
@@ -178,7 +196,7 @@ export class RemoteFileToBase64 {
         if (signal?.aborted) {
           throw new DOMException("Aborted", "AbortError");
         }
-        const mimeType = blob.type || "application/octet-stream";
+        const mimeType = normalizedMimeType ?? this.normalizeMimeType(blob.type);
         return `data:${mimeType};base64,${Buffer.from(arrayBuffer).toString("base64")}`;
       } finally {
         abortCleanup?.();
@@ -236,12 +254,19 @@ export class RemoteFileToBase64 {
     });
   }
 
-  private mimeTypeMatches(actual: string, expected: string): boolean {
-    if (expected === "*/*") return true;
-    if (actual === expected) return true;
+  private normalizeMimeType(raw?: string): string {
+    const base = raw?.split(";")[0]?.trim().toLowerCase();
+    return base || "application/octet-stream";
+  }
 
-    const [expectedType, expectedSubtype] = expected.split("/");
-    const [actualType] = actual.split("/");
+  private mimeTypeMatches(actual: string, expected: string): boolean {
+    const normActual = this.normalizeMimeType(actual);
+    const normExpected = expected.split(";")[0]!.trim().toLowerCase();
+    if (normExpected === "*/*") return true;
+    if (normActual === normExpected) return true;
+
+    const [expectedType, expectedSubtype] = normExpected.split("/");
+    const [actualType] = normActual.split("/");
 
     if (expectedSubtype === "*") {
       return actualType === expectedType;

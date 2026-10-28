@@ -1,5 +1,5 @@
 import { MaybePromise } from "../types";
-import { cloneValue } from "../utils/object";
+import { cloneValue, deepEqual } from "../utils/object";
 
 export abstract class StateManager<Schema extends Record<string, any>, IsAsync extends boolean = false> {
   protected state: Schema;
@@ -37,21 +37,21 @@ export abstract class StateManager<Schema extends Record<string, any>, IsAsync e
     key: Key,
     listener: (value: Schema[Key]) => void
   ): () => void {
-    let lastValue = this.state[key];
+    let lastValue = cloneValue(this.state[key]);
 
     return this.subscribe((state) => {
       const currentValue = state[key];
 
-      if (currentValue !== lastValue) {
-        lastValue = currentValue;
-        listener(currentValue);
+      if (!deepEqual(currentValue, lastValue)) {
+        lastValue = cloneValue(currentValue);
+        listener(cloneValue(currentValue));
       }
     });
   }
 
   protected notifyListeners(): void {
-    const currentState = this.getState();
-
-    this.listeners.forEach(listener => listener(currentState));
+    for (const listener of [...this.listeners]) {
+      listener(this.getState());
+    }
   }
 }

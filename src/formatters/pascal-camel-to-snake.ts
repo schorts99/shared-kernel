@@ -14,9 +14,18 @@ export class PascalCamelToSnake {
       .toLowerCase();
   }
 
-  static formatObject<T = any>(obj: T): T {
+  static formatObject<T = any>(obj: T, seen: WeakMap<object, any> = new WeakMap()): T {
+    if (obj !== null && typeof obj === "object" && seen.has(obj as object)) {
+      return seen.get(obj as object);
+    }
+
     if (Array.isArray(obj)) {
-      return obj.map((v) => this.formatObject(v)) as any;
+      const result: any[] = [];
+      seen.set(obj, result);
+      for (const v of obj) {
+        result.push(this.formatObject(v, seen));
+      }
+      return result as any;
     }
 
     if (obj instanceof Date) {
@@ -24,12 +33,14 @@ export class PascalCamelToSnake {
     }
 
     if (isPlainObject(obj)) {
-      return Object.keys(obj).reduce((result, key) => {
+      const result = {} as T;
+      seen.set(obj, result);
+      for (const key of Object.keys(obj)) {
         const snakeKey = this.format(key);
-        (result as any)[snakeKey] = this.formatObject((obj as any)[key]);
+        (result as any)[snakeKey] = this.formatObject((obj as any)[key], seen);
+      }
 
-        return result;
-      }, {} as T);
+      return result;
     }
 
     return obj;

@@ -8,12 +8,29 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 export class SnakeToCamel {
   static format(text: string): string {
-    return text.replace(/_([a-z0-9])/gi, (_, letter: string) => letter.toUpperCase());
+    const trimmed = text.replace(/^_+/, "").replace(/_+$/, "");
+    if (!trimmed) return "";
+
+    const normalized =
+      trimmed.includes("_") || trimmed === trimmed.toUpperCase()
+        ? trimmed.toLowerCase()
+        : `${trimmed.charAt(0).toLowerCase()}${trimmed.slice(1)}`;
+
+    return normalized.replace(/_+([a-z0-9])/gi, (_, letter: string) => letter.toUpperCase());
   }
 
-  static formatObject<T = any>(obj: T): T {
+  static formatObject<T = any>(obj: T, seen: WeakMap<object, any> = new WeakMap()): T {
+    if (obj !== null && typeof obj === "object" && seen.has(obj as object)) {
+      return seen.get(obj as object);
+    }
+
     if (Array.isArray(obj)) {
-      return obj.map((v) => this.formatObject(v)) as any;
+      const result: any[] = [];
+      seen.set(obj, result);
+      for (const v of obj) {
+        result.push(this.formatObject(v, seen));
+      }
+      return result as any;
     }
 
     if (obj instanceof Date) {
@@ -21,12 +38,14 @@ export class SnakeToCamel {
     }
 
     if (isPlainObject(obj)) {
-      return Object.keys(obj).reduce((result, key) => {
+      const result = {} as T;
+      seen.set(obj, result);
+      for (const key of Object.keys(obj)) {
         const camelKey = this.format(key);
-        (result as any)[camelKey] = this.formatObject((obj as any)[key]);
+        (result as any)[camelKey] = this.formatObject((obj as any)[key], seen);
+      }
 
-        return result;
-      }, {} as T);
+      return result;
     }
 
     return obj;
