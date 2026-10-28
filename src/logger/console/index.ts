@@ -1,1 +1,1 @@
-export { ConsoleLogger } from "./console-logger";
+export { ConsoleLogger, type LogLevel } from "./console-logger";

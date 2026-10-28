@@ -1,10 +1,24 @@
-export class URLWithParamsBuilder {
-  constructor(private readonly base: URL) {}
+export type URLParamPrimitive = string | number | boolean | null | undefined;
+export type URLParamValue = URLParamPrimitive | Array<URLParamPrimitive>;
 
-  with(params: Record<string, string | number | boolean | Array<string | number>>): URLWithParamsBuilder {
+export class URLWithParamsBuilder {
+  private readonly base: URL;
+
+  constructor(base: URL | string) {
+    this.base = new URL(base.toString());
+  }
+
+  with(params: Record<string, URLParamValue>): URLWithParamsBuilder {
     Object.entries(params).forEach(([key, value]) => {
-      if (Array.isArray(value)) {
-        value.forEach(v => this.base.searchParams.append(key, String(v)));
+      if (value === undefined || value === null) {
+        this.base.searchParams.delete(key);
+      } else if (Array.isArray(value)) {
+        this.base.searchParams.delete(key);
+        value.forEach(v => {
+          if (v !== undefined && v !== null) {
+            this.base.searchParams.append(key, String(v));
+          }
+        });
       } else {
         this.base.searchParams.set(key, String(value));
       }
@@ -14,6 +28,6 @@ export class URLWithParamsBuilder {
   }
 
   build(): URL {
-    return this.base;
+    return new URL(this.base.toString());
   }
 }

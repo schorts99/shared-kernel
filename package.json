@@ -12,169 +12,174 @@
       "require": "./dist/cjs/node/index.js"
     },
     ".": {
+      "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js",
-      "types": "./dist/types/index.d.ts"
+      "require": "./dist/cjs/index.js"
     },
     "./abac": {
+      "types": "./dist/types/abac/index.d.ts",
       "import": "./dist/esm/abac/index.js",
-      "require": "./dist/cjs/abac/index.js",
-      "types": "./dist/types/abac/index.d.ts"
+      "require": "./dist/cjs/abac/index.js"
     },
     "./aggregates": {
+      "types": "./dist/types/aggregates/index.d.ts",
       "import": "./dist/esm/aggregates/index.js",
-      "require": "./dist/cjs/aggregates/index.js",
-      "types": "./dist/types/aggregates/index.d.ts"
+      "require": "./dist/cjs/aggregates/index.js"
     },
     "./auth": {
+      "types": "./dist/types/auth/index.d.ts",
       "import": "./dist/esm/auth/index.js",
-      "require": "./dist/cjs/auth/index.js",
-      "types": "./dist/types/auth/index.d.ts"
+      "require": "./dist/cjs/auth/index.js"
     },
     "./cache": {
+      "types": "./dist/types/cache/index.d.ts",
       "import": "./dist/esm/cache/index.js",
-      "require": "./dist/cjs/cache/index.js",
-      "types": "./dist/types/cache/index.d.ts"
+      "require": "./dist/cjs/cache/index.js"
     },
     "./converters": {
+      "types": "./dist/types/converters/index.d.ts",
       "import": "./dist/esm/converters/index.js",
-      "require": "./dist/cjs/converters/index.js",
-      "types": "./dist/types/converters/index.d.ts"
+      "require": "./dist/cjs/converters/index.js"
     },
     "./cqrs": {
+      "types": "./dist/types/cqrs/index.d.ts",
       "import": "./dist/esm/cqrs/index.js",
-      "require": "./dist/cjs/cqrs/index.js",
-      "types": "./dist/types/cqrs/index.d.ts"
+      "require": "./dist/cjs/cqrs/index.js"
     },
     "./criteria": {
+      "types": "./dist/types/criteria/index.d.ts",
       "import": "./dist/esm/criteria/index.js",
-      "require": "./dist/cjs/criteria/index.js",
-      "types": "./dist/types/criteria/index.d.ts"
+      "require": "./dist/cjs/criteria/index.js"
     },
     "./dao": {
+      "types": "./dist/types/dao/index.d.ts",
       "import": "./dist/esm/dao/index.js",
-      "require": "./dist/cjs/dao/index.js",
-      "types": "./dist/types/dao/index.d.ts"
+      "require": "./dist/cjs/dao/index.js"
     },
     "./domain-events": {
+      "types": "./dist/types/domain-events/index.d.ts",
       "import": "./dist/esm/domain-events/index.js",
-      "require": "./dist/cjs/domain-events/index.js",
-      "types": "./dist/types/domain-events/index.d.ts"
+      "require": "./dist/cjs/domain-events/index.js"
     },
     "./entities": {
+      "types": "./dist/types/entities/index.d.ts",
       "import": "./dist/esm/entities/index.js",
-      "require": "./dist/cjs/entities/index.js",
-      "types": "./dist/types/entities/index.d.ts"
+      "require": "./dist/cjs/entities/index.js"
+    },
+    "./error-tracking": {
+      "types": "./dist/types/error-tracking/index.d.ts",
+      "import": "./dist/esm/error-tracking/index.js",
+      "require": "./dist/cjs/error-tracking/index.js"
     },
     "./event-bus": {
+      "types": "./dist/types/event-bus/index.d.ts",
       "import": "./dist/esm/event-bus/index.js",
-      "require": "./dist/cjs/event-bus/index.js",
-      "types": "./dist/types/event-bus/index.d.ts"
+      "require": "./dist/cjs/event-bus/index.js"
     },
     "./files": {
+      "types": "./dist/types/files/index.d.ts",
       "import": "./dist/esm/files/index.js",
-      "require": "./dist/cjs/files/index.js",
-      "types": "./dist/types/files/index.d.ts"
+      "require": "./dist/cjs/files/index.js"
     },
     "./formatters": {
+      "types": "./dist/types/formatters/index.d.ts",
       "import": "./dist/esm/formatters/index.js",
-      "require": "./dist/cjs/formatters/index.js",
-      "types": "./dist/types/formatters/index.d.ts"
+      "require": "./dist/cjs/formatters/index.js"
     },
     "./http": {
+      "types": "./dist/types/http/index.d.ts",
       "import": "./dist/esm/http/index.js",
-      "require": "./dist/cjs/http/index.js",
-      "types": "./dist/types/http/index.d.ts"
+      "require": "./dist/cjs/http/index.js"
     },
     "./i18n": {
+      "types": "./dist/types/i18n/index.d.ts",
       "import": "./dist/esm/i18n/index.js",
-      "require": "./dist/cjs/i18n/index.js",
-      "types": "./dist/types/i18n/index.d.ts"
+      "require": "./dist/cjs/i18n/index.js"
     },
     "./idempotency": {
+      "types": "./dist/types/idempotency/index.d.ts",
       "import": "./dist/esm/idempotency/index.js",
-      "require": "./dist/cjs/idempotency/index.js",
-      "types": "./dist/types/idempotency/index.d.ts"
+      "require": "./dist/cjs/idempotency/index.js"
     },
     "./identity-providers": {
+      "types": "./dist/types/identity-providers/index.d.ts",
       "import": "./dist/esm/identity-providers/index.js",
-      "require": "./dist/cjs/identity-providers/index.js",
-      "types": "./dist/types/identity-providers/index.d.ts"
+      "require": "./dist/cjs/identity-providers/index.js"
     },
     "./json-api": {
+      "types": "./dist/types/json-api/index.d.ts",
       "import": "./dist/esm/json-api/index.js",
-      "require": "./dist/cjs/json-api/index.js",
-      "types": "./dist/types/json-api/index.d.ts"
+      "require": "./dist/cjs/json-api/index.js"
     },
     "./logger": {
+      "types": "./dist/types/logger/index.d.ts",
       "import": "./dist/esm/logger/index.js",
-      "require": "./dist/cjs/logger/index.js",
-      "types": "./dist/types/logger/index.d.ts"
+      "require": "./dist/cjs/logger/index.js"
     },
     "./mail": {
+      "types": "./dist/types/mail/index.d.ts",
       "import": "./dist/esm/mail/index.js",
-      "require": "./dist/cjs/mail/index.js",
-      "types": "./dist/types/mail/index.d.ts"
+      "require": "./dist/cjs/mail/index.js"
     },
     "./models": {
+      "types": "./dist/types/models/index.d.ts",
       "import": "./dist/esm/models/index.js",
-      "require": "./dist/cjs/models/index.js",
-      "types": "./dist/types/models/index.d.ts"
+      "require": "./dist/cjs/models/index.js"
     },
     "./offline": {
+      "types": "./dist/types/offline/index.d.ts",
       "import": "./dist/esm/offline/index.js",
-      "require": "./dist/cjs/offline/index.js",
-      "types": "./dist/types/offline/index.d.ts"
+      "require": "./dist/cjs/offline/index.js"
     },
     "./pub-sub": {
+      "types": "./dist/types/pub-sub/index.d.ts",
       "import": "./dist/esm/pub-sub/index.js",
-      "require": "./dist/cjs/pub-sub/index.js",
-      "types": "./dist/types/pub-sub/index.d.ts"
+      "require": "./dist/cjs/pub-sub/index.js"
     },
     "./rbac": {
+      "types": "./dist/types/rbac/index.d.ts",
       "import": "./dist/esm/rbac/index.js",
-      "require": "./dist/cjs/rbac/index.js",
-      "types": "./dist/types/rbac/index.d.ts"
+      "require": "./dist/cjs/rbac/index.js"
     },
     "./result": {
+      "types": "./dist/types/result/index.d.ts",
       "import": "./dist/esm/result/index.js",
-      "require": "./dist/cjs/result/index.js",
-      "types": "./dist/types/result/index.d.ts"
+      "require": "./dist/cjs/result/index.js"
     },
     "./sagas": {
+      "types": "./dist/types/sagas/index.d.ts",
       "import": "./dist/esm/sagas/index.js",
-      "require": "./dist/cjs/sagas/index.js",
-      "types": "./dist/types/sagas/index.d.ts"
+      "require": "./dist/cjs/sagas/index.js"
     },
     "./state-manager": {
+      "types": "./dist/types/state-manager/index.d.ts",
       "import": "./dist/esm/state-manager/index.js",
-      "require": "./dist/cjs/state-manager/index.js",
-      "types": "./dist/types/state-manager/index.d.ts"
+      "require": "./dist/cjs/state-manager/index.js"
     },
     "./types": {
+      "types": "./dist/types/types/index.d.ts",
       "import": "./dist/esm/types/index.js",
-      "require": "./dist/cjs/types/index.js",
-      "types": "./dist/types/types/index.d.ts"
+      "require": "./dist/cjs/types/index.js"
     },
     "./unit-of-work": {
+      "types": "./dist/types/unit-of-work/index.d.ts",
       "import": "./dist/esm/unit-of-work/index.js",
-      "require": "./dist/cjs/unit-of-work/index.js",
-      "types": "./dist/types/unit-of-work/index.d.ts"
+      "require": "./dist/cjs/unit-of-work/index.js"
     },
     "./utils": {
+      "types": "./dist/types/utils/index.d.ts",
       "import": "./dist/esm/utils/index.js",
-      "require": "./dist/cjs/utils/index.js",
-      "types": "./dist/types/utils/index.d.ts"
+      "require": "./dist/cjs/utils/index.js"
     },
     "./validators": {
+      "types": "./dist/types/validators/index.d.ts",
       "import": "./dist/esm/validators/index.js",
-      "require": "./dist/cjs/validators/index.js",
-      "types": "./dist/types/validators/index.d.ts"
+      "require": "./dist/cjs/validators/index.js"
     },
     "./value-objects": {
+      "types": "./dist/types/value-objects/index.d.ts",
       "import": "./dist/esm/value-objects/index.js",
-      "require": "./dist/cjs/value-objects/index.js",
-      "types": "./dist/types/value-objects/index.d.ts"
+      "require": "./dist/cjs/value-objects/index.js"
     }
   },
   "scripts": {

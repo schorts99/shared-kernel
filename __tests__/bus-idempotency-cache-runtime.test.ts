@@ -10,6 +10,7 @@ import {
   BooleanValue,
   CommandRegistry,
   CommitOutcomeUnknownError,
+  ConsoleLogger,
   CoordinatesValue,
   Criteria,
   CrossDispatchCycleError,
@@ -25,6 +26,7 @@ import {
   FetchHTTPProvider,
   FloatValue,
   HTMLValue,
+  InMemoryAuthProvider,
   InMemoryCache,
   InMemoryCommandBus,
   InMemoryDAO,
@@ -33,6 +35,8 @@ import {
   InMemoryEventStore,
   InMemoryFileProvider,
   InMemoryIdempotencyStore,
+  InMemoryIdentityProvider,
+  InMemoryLogger,
   InMemoryOfflineStore,
   InMemoryPubSub,
   InMemoryQueryBus,
@@ -66,6 +70,7 @@ import {
   URLCriteriaBuilder,
   URLCriteriaParser,
   URLValue,
+  URLWithParamsBuilder,
   UUIDValue,
 } from "../src";
 import type {
@@ -1730,5 +1735,119 @@ describe("10. Schema Validation, Array Utilities, ErrorTrackingMiddleware on Eve
     }
     expect(new FlagBoolean(true).isValid).toBe(true);
     expect(new FlagBoolean("true" as unknown as boolean).isValid).toBe(false);
+  });
+
+  it("supports non-mutating URLWithParamsBuilder, circular-safe ConsoleLogger, InMemoryLogger, InMemoryAuthProvider, and InMemoryIdentityProvider", async () => {
+    const originalUrl = new URL("https://api.example.com/items?tag=legacy&keep=1");
+    const builtUrl = new URLWithParamsBuilder(originalUrl)
+      .with({ tag: ["alpha", "beta"], keep: undefined, page: 2 })
+      .build();
+
+    expect(originalUrl.toString()).toBe("https://api.example.com/items?tag=legacy&keep=1");
+    expect(builtUrl.searchParams.getAll("tag")).toEqual(["alpha", "beta"]);
+    expect(builtUrl.searchParams.get("keep")).toBeNull();
+    expect(builtUrl.searchParams.get("page")).toBe("2");
+
+    // ConsoleLogger safe serialization for circular refs and BigInt
+    const consoleSpy = jest.spyOn(console, "info").mockImplementation(() => {});
+    try {
+      const consoleLogger = new ConsoleLogger("info");
+      const circular: Record<string, unknown> = { count: BigInt(42) };
+      circular.self = circular;
+      expect(() => consoleLogger.info("circular context", circular)).not.toThrow();
+      expect(consoleSpy).toHaveBeenCalledTimes(1);
+      expect(consoleSpy.mock.calls[0]?.[0]).toContain('"count":"42"');
+      expect(consoleSpy.mock.calls[0]?.[0]).toContain('"[Circular]"');
+    } finally {
+      consoleSpy.mockRestore();
+    }
+
+    // InMemoryLogger
+    const memLogger = new InMemoryLogger("info");
+    memLogger.debug("ignored debug");
+    const mutableCtx = { requestId: "req-1" };
+    memLogger.info("handled request", mutableCtx);
+    mutableCtx.requestId = "mutated";
+
+    expect(memLogger.getEntries()).toHaveLength(1);
+    expect(memLogger.getByLevel("info")[0]?.context).toEqual({ requestId: "req-1" });
+    memLogger.clear();
+    expect(memLogger.getEntries()).toHaveLength(0);
+
+    // InMemoryAuthProvider
+    class AuthUserEntity extends Entity<UUIDValue, { id: string; name: string }> {
+      constructor(id: UUIDValue, public name: string) {
+        super(id);
+      }
+      protected createId(rawId: string): UUIDValue {
+        return UUIDValue.fromPrimitives(rawId);
+      }
+      toPrimitives() {
+        return { id: this.id.value, name: this.name };
+      }
+      restoreFromPrimitives(data: { id: string; name: string }): void {
+        this.name = data.name;
+      }
+    }
+
+    const authUser = new AuthUserEntity(
+      new UUIDValue("123e4567-e89b-12d3-a456-426614174000"),
+      "Ada",
+    );
+    const authProvider = new InMemoryAuthProvider({
+      users: [
+        {
+          user: authUser,
+          email: "ada@example.com",
+          password: "secret",
+          roles: ["admin"],
+          permissions: [{ resource: "orders", action: "read" }],
+        },
+      ],
+    });
+
+    const authEvents: Array<string | null> = [];
+    const unsubscribe = authProvider.onAuthChange(session => {
+      authEvents.push(session ? String(session.user.id.value) : null);
+    });
+
+    const authResult = await authProvider.authenticate({
+      email: "ada@example.com",
+      password: "secret",
+    });
+    expect(authResult.token).toContain("access_");
+    expect(await authProvider.isAuthenticated()).toBe(true);
+    expect(await authProvider.getCurrentUserRoles()).toEqual(["admin"]);
+
+    const refreshed = await authProvider.refreshToken(authResult.refreshToken);
+    expect(refreshed.token).not.toBe(authResult.token);
+
+    await authProvider.logout();
+    expect(await authProvider.isAuthenticated()).toBe(false);
+    unsubscribe();
+    expect(authEvents).toEqual([
+      "123e4567-e89b-12d3-a456-426614174000",
+      "123e4567-e89b-12d3-a456-426614174000",
+      null,
+    ]);
+
+    // InMemoryIdentityProvider
+    const idp = new InMemoryIdentityProvider();
+    const createdUser = await idp.createUser({
+      email: "grace@example.com",
+      displayName: "Grace Hopper",
+      emailVerified: true,
+    });
+    await idp.setCustomClaims(createdUser.id, { tier: "enterprise" });
+
+    const idpToken = idp.issueToken(createdUser.id, undefined, { scope: "full" });
+    const verified = await idp.verifyToken(idpToken);
+    expect(verified).toEqual({
+      userId: createdUser.id,
+      claims: { tier: "enterprise", scope: "full" },
+    });
+
+    await idp.deleteUser(createdUser.id);
+    await expect(idp.verifyToken(idpToken)).rejects.toThrow();
   });
 });

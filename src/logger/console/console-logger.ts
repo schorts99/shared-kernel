@@ -54,8 +54,35 @@ export class ConsoleLogger extends Logger {
 
   private format(level: string, message: string, context?: LogContext): string {
     const timestamp = new Date().toISOString();
-    const contextStr = context ? ` | Context: ${JSON.stringify(context)}` : "";
+    const contextStr = context ? ` | Context: ${this.safeStringify(context)}` : "";
 
     return `[${timestamp}] [${level}] ${message}${contextStr}`;
+  }
+
+  private safeStringify(context: LogContext): string {
+    const seen = new WeakSet<object>();
+    try {
+      return JSON.stringify(context, (_key, value) => {
+        if (typeof value === "bigint") {
+          return value.toString();
+        }
+        if (value instanceof Error) {
+          return {
+            name: value.name,
+            message: value.message,
+            stack: value.stack,
+          };
+        }
+        if (typeof value === "object" && value !== null) {
+          if (seen.has(value)) {
+            return "[Circular]";
+          }
+          seen.add(value);
+        }
+        return value;
+      });
+    } catch {
+      return String(context);
+    }
   }
 }
