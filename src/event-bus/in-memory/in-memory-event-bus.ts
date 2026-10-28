@@ -53,13 +53,9 @@ export class InMemoryEventBus implements EventBus {
   async publish<Event extends DomainEvent>(event: Event) {
     const context = this.createContext(event);
 
-    await this.applyMiddlewares("beforePublish", event, context);
-
-    const primitives = event.toPrimitives();
-
-    await this.store.save(primitives);
-
     try {
+      await this.applyMiddlewares("beforePublish", event, context);
+      await this.store.save(event.toPrimitives());
       await this.dispatch(event);
       await this.applyMiddlewares("afterPublish", event, context);
     } catch (error) {
@@ -109,8 +105,9 @@ export class InMemoryEventBus implements EventBus {
 	private async dispatch(event: DomainEvent) {
 		const eventName = event.getEventName();
 		const subs = this.subscribers.get(eventName) ?? [];
-		const primitives = event.toPrimitives();
 		const eventId = event.getMetadata().id;
+		let retainForReplay = false;
+		const deadLettered = new Set<EventSubscriber<any>>();
 
 		if (await this.store.isProcessed(eventId)) {
 			return;
@@ -153,23 +150,36 @@ export class InMemoryEventBus implements EventBus {
 				const reason = error ? error.message : `Exceeded max retries (${maxRetries})`;
 
 				await this.deadLetterStore.add(failedEvent.toPrimitives(), reason, subscriber);
-				await this.store.delete(failedEvent.getMetadata().id);
-
-				throw new Error(`Subscriber failed permanently: ${reason}`);
+				deadLettered.add(subscriber);
+				throw error ?? new Error(`Subscriber failed permanently: ${reason}`);
 			} else {
 				throw error || new Error("Subscriber failed");
 			}
 		};
 
-		const subscriberPromises = subs.map(sub =>
-			executeSubscriber(sub, event).catch(err => retrySubscriber(event, sub, err))
-		);
+		const subscriberPromises = subs.map(async sub => {
+			try {
+				await executeSubscriber(sub, event);
+			} catch (error) {
+				try {
+					await retrySubscriber(event, sub, error instanceof Error ? error : new Error(String(error)));
+				} catch (retryError) {
+					if (!deadLettered.has(sub)) retainForReplay = true;
+					throw retryError;
+				}
+			}
+		});
 
-		try {
-			await Promise.all(subscriberPromises);
+		const results = await Promise.allSettled(subscriberPromises);
+		const failures = results.filter(result => result.status === "rejected");
+
+		if (failures.length === 0 || !retainForReplay) {
 			await this.store.delete(eventId);
-		} catch (error) {
-			console.error("Event processing failed:", error);
+		}
+
+		if (failures.length === 1) throw failures[0]!.reason;
+		if (failures.length > 1) {
+			throw new AggregateError(failures.map(result => result.reason), "Multiple event subscribers failed");
 		}
 	}
 
