@@ -127,7 +127,7 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
           : await execute();
 
         if (this.options.logging) {
-          this.logCommand(command, result, startTime);
+          this.logCommand(command, startTime);
         }
 
         return result;
@@ -270,7 +270,7 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
     return payload as R;
   }
 
-  private logCommand(command: C, result: R, startTime: Date): void {
+  private logCommand(command: C, startTime: Date): void {
     const duration = Date.now() - startTime.getTime();
 
     this.logger?.info(`[Command ${command.getType()}] completed in ${duration}ms`, {

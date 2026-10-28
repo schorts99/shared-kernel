@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The ESM build (`dist/esm`) now emits real ES modules instead of CommonJS, and each subpath's `import` condition resolves to ESM type declarations.
 
+### Changed
+
+- Declared `"sideEffects": false` so bundlers can tree-shake unused modules.
+- Declared `"engines": { "node": ">=18" }`.
+
 ### Removed
 
 - **Breaking (next major release):** Removed the guided tour module, its `@schorts/shared-kernel/tour-guide` subpath, and all tour exports from the package root. Tour integrations now belong in consuming applications.

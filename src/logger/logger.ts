@@ -40,7 +40,7 @@ export class ScopedLogger extends Logger {
     this.base.error(message, { ...this.baseContext, ...context }, error);
   }
 
-  child(context: LogContext): ScopedLogger {
+  override child(context: LogContext): ScopedLogger {
     return new ScopedLogger(this.base, { ...this.baseContext, ...context });
   }
 }

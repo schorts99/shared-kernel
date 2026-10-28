@@ -26,7 +26,7 @@ export class InMemoryLogger extends Logger {
   private readonly entries: LogEntry[] = [];
   private readonly levelValue: number;
 
-  constructor(private readonly level: LogLevel = "debug") {
+  constructor(level: LogLevel = "debug") {
     super();
     this.levelValue = LOG_LEVEL_VALUES[level];
   }

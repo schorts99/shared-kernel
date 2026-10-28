@@ -13,7 +13,7 @@ const LOG_LEVEL_VALUES: Record<LogLevel, number> = {
 export class ConsoleLogger extends Logger {
   private readonly levelValue: number;
 
-  constructor(private readonly level: LogLevel = "info") {
+  constructor(level: LogLevel = "info") {
     super();
     this.levelValue = LOG_LEVEL_VALUES[level];
   }

@@ -2,9 +2,11 @@
   "name": "@schorts/shared-kernel",
   "version": "10.7.0",
   "description": "A modular, type-safe foundation for building expressive, maintainable applications. This package provides core abstractions for domain modeling, HTTP integration, authentication, state management, and more — designed to be framework-agnostic and highly extensible.",
+  "type": "commonjs",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",
+  "sideEffects": false,
   "exports": {
     "./node": {
       "import": {
@@ -362,20 +364,26 @@
     "build:cjs": "tsc --project tsconfig.cjs.json",
     "build:esm": "tsc --project tsconfig.esm.json",
     "build": "npm run clean && npm run build:cjs && npm run build:esm && node scripts/write-dist-package-json.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint:package": "publint --strict && attw --pack . --profile node16",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:ci": "jest --ci --coverage --watchAll=false"
+    "test:ci": "jest --ci --coverage --watchAll=false",
+    "prepublishOnly": "npm run typecheck && npm run test:ci && npm run build && npm run lint:package"
   },
   "author": "Jorge Castillo (https://github.com/schorts99)",
   "license": "LGPL-3.0-or-later",
+  "engines": {
+    "node": ">=18"
+  },
   "devDependencies": {
-    "@jest/globals": "^27.5.1",
-    "@types/jest": "^30.0.0",
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@types/jest": "^29.5.14",
     "@types/node": "^24.12.2",
     "expect-type": "^1.2.2",
     "jest": "^29.7.0",
-    "jest-html-reporter": "^3.10.2",
+    "publint": "^0.3.25",
     "ts-jest": "^29.4.1",
     "typescript": "^5.9.2"
   },
