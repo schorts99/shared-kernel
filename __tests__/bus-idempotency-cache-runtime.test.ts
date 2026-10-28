@@ -75,6 +75,7 @@ import {
   URLValue,
   URLWithParamsBuilder,
   UUIDValue,
+  ValuesNotValid,
 } from "../src";
 import type {
   CommandHandlerContext,
@@ -1916,5 +1917,105 @@ describe("10. Schema Validation, Array Utilities, ErrorTrackingMiddleware on Eve
     debouncedFn.flush();
     expect(debouncedFn.pending()).toBe(false);
     expect(calls).toEqual(["second"]);
+  });
+
+  it("enforces type-safe Entity/AggregateRoot equality, exact event sequence numbers, FloatValue Infinity/rounding fixes, ValuesNotValid message, and InMemoryPubSub isolation/wildcards", async () => {
+    const sharedUuid = new UUIDValue("123e4567-e89b-12d3-a456-426614174000");
+
+    class UserEntity extends Entity<UUIDValue, { id: string }> {
+      toPrimitives() {
+        return { id: this.id.value };
+      }
+    }
+    class OrderEntity extends Entity<UUIDValue, { id: string }> {
+      toPrimitives() {
+        return { id: this.id.value };
+      }
+    }
+
+    const userEnt = new UserEntity(sharedUuid);
+    const userEnt2 = new UserEntity(sharedUuid);
+    const orderEnt = new OrderEntity(sharedUuid);
+
+    expect(userEnt.equals(userEnt2)).toBe(true);
+    expect(userEnt.equals(orderEnt)).toBe(false);
+
+    class OrderAggregate extends AggregateRoot<UUIDValue> {
+      touchWithoutEvent(): void {
+        this.incrementVersion();
+      }
+      emit(event: DomainEvent): void {
+        this.recordDomainEvent(event);
+      }
+      toPrimitives() {
+        return { id: this.id.value };
+      }
+    }
+    class InvoiceAggregate extends AggregateRoot<UUIDValue> {
+      toPrimitives() {
+        return { id: this.id.value };
+      }
+    }
+
+    const orderAgg = new OrderAggregate(sharedUuid, 0);
+    const invoiceAgg = new InvoiceAggregate(sharedUuid, 0);
+
+    expect(orderAgg.equals(null)).toBe(false);
+    expect(orderAgg.equals(invoiceAgg)).toBe(false);
+    expect(orderAgg.equals(new OrderAggregate(sharedUuid, 5))).toBe(true);
+
+    orderAgg.emit(new TestDomainEvent("c-1", { id: "1" }, { id: "ev-1" })); // version 1, seq 1
+    orderAgg.touchWithoutEvent(); // version 2
+    orderAgg.emit(new TestDomainEvent("c-1", { id: "2" }, { id: "ev-2" })); // version 3, seq 3
+
+    const pulled = orderAgg.pullDomainEvents();
+    expect(pulled.map(e => e.sequenceNumber)).toEqual([1, 3]);
+
+    orderAgg.emit(new TestDomainEvent("c-1", { id: "3" }, { id: "ev-3" })); // version 4
+    expect(orderAgg.version).toBe(4);
+    orderAgg.clearDomainEvents();
+    expect(orderAgg.version).toBe(3);
+
+    // FloatValue Infinity rejection and IEEE-754 rounding
+    class PriceFloat extends FloatValue {
+      readonly attributeName = "price";
+    }
+    expect(new PriceFloat(Number.POSITIVE_INFINITY).isValid).toBe(false);
+    expect(new PriceFloat(Number.NEGATIVE_INFINITY).isValid).toBe(false);
+    const roundedPrice = new PriceFloat(1.005, 2);
+    expect(roundedPrice.value).toBe(1.01);
+    expect(roundedPrice.toString()).toBe("1.01");
+    expect(roundedPrice.toJSON()).toBe(1.01);
+
+    // ValuesNotValid message and name
+    const invalidErr = new ValuesNotValid([
+      Object.assign(new Error("Must be valid email"), { attributeName: "email" }),
+      Object.assign(new Error(""), { attributeName: "age" }),
+    ]);
+    expect(invalidErr.name).toBe("ValuesNotValid");
+    expect(invalidErr.message).toBe("Invalid values: email (Must be valid email), age");
+
+    // InMemoryPubSub payload isolation and wildcard subscriptions
+    const pubSub = new InMemoryPubSub();
+    const receivedByExact: Array<{ count: number }> = [];
+    const receivedByChannelWildcard: Array<{ count: number }> = [];
+    const receivedByGlobalWildcard: Array<{ count: number }> = [];
+
+    await pubSub.subscribe<{ count: number }>("orders", "created", payload => {
+      payload.count = 999; // mutate in first subscriber
+      receivedByExact.push(payload);
+    });
+    await pubSub.subscribe<{ count: number }>("orders", "*", payload => {
+      receivedByChannelWildcard.push(payload);
+    });
+    await pubSub.subscribe<{ count: number }>("*", "*", payload => {
+      receivedByGlobalWildcard.push(payload);
+    });
+
+    await pubSub.publish("orders", "created", { count: 1 });
+
+    expect(receivedByExact).toEqual([{ count: 999 }]);
+    expect(receivedByChannelWildcard).toEqual([{ count: 1 }]);
+    expect(receivedByGlobalWildcard).toEqual([{ count: 1 }]);
   });
 });

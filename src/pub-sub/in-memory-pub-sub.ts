@@ -1,6 +1,7 @@
 import { Publisher } from "./publisher";
 import { Subscriber, Subscription, MessageHandler } from "./subscription";
 import type { Logger } from "../logger";
+import { cloneValue } from "../utils";
 
 export interface InMemoryPubSubOptions {
   logger?: Logger | undefined;
@@ -23,19 +24,30 @@ export class InMemoryPubSub implements Publisher<any>, Subscriber {
   }
 
   async publish(channel: string, event: string, payload: any): Promise<void> {
-    const channelHandlers = this.handlers.get(channel);
+    const matchedHandlers = new Set<MessageHandler>();
 
-    if (!channelHandlers) return;
+    const collectFromChannel = (targetChannel: string) => {
+      const channelHandlers = this.handlers.get(targetChannel);
+      if (!channelHandlers) return;
 
-    const eventHandlers = channelHandlers.get(event);
+      channelHandlers.get(event)?.forEach(h => matchedHandlers.add(h));
+      if (event !== "*") {
+        channelHandlers.get("*")?.forEach(h => matchedHandlers.add(h));
+      }
+    };
 
-    if (!eventHandlers) return;
+    collectFromChannel(channel);
+    if (channel !== "*") {
+      collectFromChannel("*");
+    }
+
+    if (matchedHandlers.size === 0) return;
 
     const errors: Error[] = [];
 
-    for (const handler of Array.from(eventHandlers)) {
+    for (const handler of Array.from(matchedHandlers)) {
       try {
-        await handler(payload);
+        await handler(cloneValue(payload));
       } catch (rawError) {
         const error = rawError instanceof Error ? rawError : new Error(String(rawError));
         this.logger?.error(
@@ -43,7 +55,7 @@ export class InMemoryPubSub implements Publisher<any>, Subscriber {
           { channel, event, error: error.message },
           error,
         );
-        this.onError?.(error, { channel, event, payload });
+        this.onError?.(error, { channel, event, payload: cloneValue(payload) });
         errors.push(error);
       }
     }

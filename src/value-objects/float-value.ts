@@ -16,7 +16,8 @@ export abstract class FloatValue implements ValueObject {
 
   get isValid(): boolean {
     return (
-      !isNaN(this.value) &&
+      typeof this.value === "number" &&
+      Number.isFinite(this.value) &&
       (this.min !== undefined ? this.value >= this.min : true) &&
       (this.max !== undefined ? this.value <= this.max : true)
     );
@@ -27,6 +28,14 @@ export abstract class FloatValue implements ValueObject {
     if (!this.isValid || !valueObject.isValid) return false;
 
     return this.value === valueObject.value;
+  }
+
+  toString(): string {
+    return String(this.value);
+  }
+
+  toJSON(): number {
+    return this.value;
   }
 
   toPrimitives(): number {
@@ -46,10 +55,15 @@ export abstract class FloatValue implements ValueObject {
   abstract readonly attributeName: string;
 
   private transform(value: number): number {
-    if (this.decimals === undefined) return value;
+    if (this.decimals === undefined || !Number.isFinite(value)) return value;
+    if (!Number.isInteger(this.decimals) || this.decimals < 0) return Number.NaN;
+
+    const shifted = Number(`${value}e+${this.decimals}`);
+    if (Number.isFinite(shifted)) {
+      return Number(`${Math.round(shifted)}e-${this.decimals}`);
+    }
 
     const factor = Math.pow(10, this.decimals);
-
     return Math.round(value * factor) / factor;
   }
 }

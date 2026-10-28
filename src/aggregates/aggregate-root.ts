@@ -2,7 +2,7 @@ import { ValueObject } from "../value-objects";
 import { DomainEvent } from "../domain-events";
 
 export abstract class AggregateRoot<IDValue extends ValueObject> {
-  private domainEvents: Array<DomainEvent> = [];
+  private domainEvents: Array<{ event: DomainEvent; sequenceNumber: number }> = [];
   private _version: number = 0;
   private _uncommittedChanges: boolean = false;
 
@@ -28,11 +28,8 @@ export abstract class AggregateRoot<IDValue extends ValueObject> {
   }
 
   pullDomainEvents(): Array<DomainEvent & { sequenceNumber: number }> {
-    const domainEvents = this.domainEvents.map((event, index) => {
-      const sequencedEvent = Object.assign(event, {
-        sequenceNumber: this._version - this.domainEvents.length + index + 1,
-      });
-      return sequencedEvent;
+    const domainEvents = this.domainEvents.map(({ event, sequenceNumber }) => {
+      return Object.assign(event, { sequenceNumber });
     });
     this.domainEvents = [];
 
@@ -40,15 +37,37 @@ export abstract class AggregateRoot<IDValue extends ValueObject> {
   }
 
   recordDomainEvent(domainEvent: DomainEvent): void {
-    this.domainEvents.push(domainEvent);
     this.incrementVersion();
+    this.domainEvents.push({
+      event: domainEvent,
+      sequenceNumber: this._version,
+    });
   }
 
   clearDomainEvents(): void {
-    this.domainEvents = [];
+    if (this.domainEvents.length > 0) {
+      this._version = Math.max(0, this._version - this.domainEvents.length);
+      this.domainEvents = [];
+    }
   }
 
-  equals(other: AggregateRoot<IDValue>): boolean {
+  equals(other: unknown): boolean {
+    if (other === null || other === undefined) {
+      return false;
+    }
+
+    if (!(other instanceof AggregateRoot)) {
+      return false;
+    }
+
+    if (this.constructor !== other.constructor) {
+      return false;
+    }
+
+    if (this === other) {
+      return true;
+    }
+
     return this.id.equals(other.id);
   }
 

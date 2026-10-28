@@ -31,6 +31,10 @@ export abstract class Entity<IDValue extends ValueObject, M extends Model> {
       return false;
     }
 
+    if (this.constructor !== other.constructor) {
+      return false;
+    }
+
     if (this === other) {
       return true;
     }
