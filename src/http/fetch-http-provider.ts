@@ -194,6 +194,18 @@ export class FetchHTTPProvider implements HTTPProvider {
     return finalUrl;
   }
 
+  private isNativeBodyInit(body: unknown): body is BodyInit {
+    if (typeof body === "string") return true;
+    if (typeof FormData !== "undefined" && body instanceof FormData) return true;
+    if (typeof Blob !== "undefined" && body instanceof Blob) return true;
+    if (typeof URLSearchParams !== "undefined" && body instanceof URLSearchParams) return true;
+    if (typeof ArrayBuffer !== "undefined" && (body instanceof ArrayBuffer || ArrayBuffer.isView(body))) {
+      return true;
+    }
+    if (typeof ReadableStream !== "undefined" && body instanceof ReadableStream) return true;
+    return false;
+  }
+
   private async prepareRequest(method: string, options?: HTTPRequestOptions): Promise<RequestInit> {
     const headers = new Headers(this.config.headers);
 
@@ -201,7 +213,10 @@ export class FetchHTTPProvider implements HTTPProvider {
       Object.entries(options.headers).forEach(([k, v]) => headers.set(k, v));
     }
 
-    if (options?.body !== undefined && !headers.has("Content-Type")) {
+    const rawBody = options?.body;
+    const isNativeBody = rawBody !== undefined && rawBody !== null && this.isNativeBodyInit(rawBody);
+
+    if (rawBody !== undefined && !isNativeBody && !headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
     }
 
@@ -214,7 +229,12 @@ export class FetchHTTPProvider implements HTTPProvider {
     const init: RequestInit = {
       method,
       headers,
-      body: options?.body !== undefined ? JSON.stringify(options.body) : null,
+      body:
+        rawBody === undefined
+          ? null
+          : isNativeBody
+            ? rawBody
+            : JSON.stringify(rawBody),
     };
 
     if (this.config.credentials) {

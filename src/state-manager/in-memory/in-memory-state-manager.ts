@@ -1,4 +1,5 @@
 import { StateManager } from "../state-manager";
+import { cloneValue } from "../../utils/object";
 
 export class InMemoryStateManager<Schema extends Record<string, any>> extends StateManager<Schema> {
   constructor(initialState: Schema = {} as Schema) {
@@ -6,13 +7,13 @@ export class InMemoryStateManager<Schema extends Record<string, any>> extends St
   }
 
   getValue<Key extends keyof Schema>(key: Key): Schema[Key] {
-    return this.state[key];
+    return cloneValue(this.state[key]);
   }
 
   setValue<Key extends keyof Schema>(key: Key, value: Schema[Key]): void {
     this.state = {
       ...this.state,
-      [key]: value,
+      [key]: cloneValue(value),
     };
 
     this.notifyListeners();
@@ -28,14 +29,14 @@ export class InMemoryStateManager<Schema extends Record<string, any>> extends St
   patch(values: Partial<Schema>): void {
     this.state = {
       ...this.state,
-      ...values,
+      ...cloneValue(values),
     };
 
     this.notifyListeners();
   }
 
   reset(): void {
-    this.state = { ...this.initialState };
+    this.state = cloneValue(this.initialState);
 
     this.notifyListeners();
   }

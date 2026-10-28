@@ -1,47 +1,116 @@
-import { Permission, BaseAction } from './permission';
-import { BaseResource } from './base-resource';
-import { Predicate } from '../abac';
+import { Permission, BaseAction } from "./permission";
+import { BaseResource } from "./base-resource";
+import {
+  Predicate,
+  AsyncPredicate,
+  ContextualPredicate,
+  AsyncContextualPredicate,
+} from "../abac";
 
 export abstract class RBACPolicy<Action extends string = BaseAction> {
   abstract getPermissions(role: string): Permission<Action>[];
 
   can(roles: string | string[], action: Action | BaseAction, resource: string | BaseResource): boolean {
     const roleList = Array.isArray(roles) ? roles : [roles];
-    const resourceName = typeof resource === 'string' ? resource : resource.name;
+    const resourceName = typeof resource === "string" ? resource : resource.name;
 
     return roleList.some((role) => {
       const permissions = this.getPermissions(role);
 
       return permissions.some(
         (perm) =>
-          (perm.resource === '*' || perm.resource === resourceName) &&
-          (perm.action === '*' || perm.action === 'manage' || perm.action === action)
+          (perm.resource === "*" || perm.resource === resourceName) &&
+          (perm.action === "*" || perm.action === "manage" || perm.action === action)
       );
     });
   }
 
-  canWithAttributes<User extends { id: string }, Resource extends BaseResource>(
+  canWithAttributes<
+    User extends { id: string },
+    Resource extends BaseResource,
+    Context = {},
+  >(
     user: User,
     roles: string | string[],
     action: Action | BaseAction,
     resource: Resource,
-    predicates: Predicate<User, Resource>[],
+    predicates: Array<Predicate<User, Resource> | ContextualPredicate<User, Resource, Context>>,
+    context?: Context,
   ): boolean {
     if (!this.can(roles, action, resource)) return false;
 
-    return predicates.every((predicate) => predicate(user, resource));
+    return predicates.every((predicate) => predicate(user, resource, context));
   }
 
-  canAnyWithAttributes<User extends { id: string }, Resource extends BaseResource>(
+  canAnyWithAttributes<
+    User extends { id: string },
+    Resource extends BaseResource,
+    Context = {},
+  >(
     user: User,
     roles: string | string[],
     action: Action | BaseAction,
     resource: Resource,
-    predicates: Predicate<User, Resource>[]
+    predicates: Array<Predicate<User, Resource> | ContextualPredicate<User, Resource, Context>>,
+    context?: Context,
   ): boolean {
     if (!this.can(roles, action, resource)) return false;
 
-    return predicates.some((predicate) => predicate(user, resource));
+    return predicates.some((predicate) => predicate(user, resource, context));
+  }
+
+  async canWithAttributesAsync<
+    User extends { id: string },
+    Resource extends BaseResource,
+    Context = {},
+  >(
+    user: User,
+    roles: string | string[],
+    action: Action | BaseAction,
+    resource: Resource,
+    predicates: Array<
+      | Predicate<User, Resource>
+      | AsyncPredicate<User, Resource>
+      | ContextualPredicate<User, Resource, Context>
+      | AsyncContextualPredicate<User, Resource, Context>
+    >,
+    context?: Context,
+  ): Promise<boolean> {
+    if (!this.can(roles, action, resource)) return false;
+
+    for (const predicate of predicates) {
+      const allowed = await predicate(user, resource, context);
+      if (!allowed) return false;
+    }
+
+    return true;
+  }
+
+  async canAnyWithAttributesAsync<
+    User extends { id: string },
+    Resource extends BaseResource,
+    Context = {},
+  >(
+    user: User,
+    roles: string | string[],
+    action: Action | BaseAction,
+    resource: Resource,
+    predicates: Array<
+      | Predicate<User, Resource>
+      | AsyncPredicate<User, Resource>
+      | ContextualPredicate<User, Resource, Context>
+      | AsyncContextualPredicate<User, Resource, Context>
+    >,
+    context?: Context,
+  ): Promise<boolean> {
+    if (!this.can(roles, action, resource)) return false;
+
+    for (const predicate of predicates) {
+      const allowed = await predicate(user, resource, context);
+      if (allowed) return true;
+    }
+
+    return false;
   }
 }
 

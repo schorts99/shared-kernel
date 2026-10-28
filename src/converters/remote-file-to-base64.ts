@@ -60,12 +60,20 @@ export class RemoteFileToBase64 {
           })
         : null;
 
-      const blobPromise = this.httpProvider.get<Blob>(url);
-      const blob = timeoutPromise
-        ? await Promise.race([blobPromise, timeoutPromise])
-        : await blobPromise;
-
-      if (timeoutId) clearTimeout(timeoutId);
+      let blob: Blob;
+      try {
+        const blobPromise = this.httpProvider.get<Blob>(
+          url,
+          signal ? { signal } : undefined,
+        );
+        blob = timeoutPromise
+          ? await Promise.race([blobPromise, timeoutPromise])
+          : await blobPromise;
+      } finally {
+        if (timeoutId !== undefined) {
+          clearTimeout(timeoutId);
+        }
+      }
 
       if (!(blob instanceof Blob)) {
         throw new ConversionError(
@@ -143,7 +151,40 @@ export class RemoteFileToBase64 {
     return this.conversionCache.delete(url.toString());
   }
 
-  private blobToBase64(blob: Blob, signal?: AbortSignal): Promise<string> {
+  private async blobToBase64(blob: Blob, signal?: AbortSignal): Promise<string> {
+    if (signal?.aborted) {
+      throw new DOMException("Aborted", "AbortError");
+    }
+
+    if (typeof FileReader === "undefined") {
+      let abortCleanup: (() => void) | undefined;
+      const abortPromise = signal
+        ? new Promise<never>((_, reject) => {
+            const onAbort = () => reject(new DOMException("Aborted", "AbortError"));
+            if (signal.aborted) {
+              onAbort();
+              return;
+            }
+            signal.addEventListener("abort", onAbort, { once: true });
+            abortCleanup = () => signal.removeEventListener("abort", onAbort);
+          })
+        : undefined;
+
+      try {
+        const bufferPromise = blob.arrayBuffer();
+        const arrayBuffer = abortPromise
+          ? await Promise.race([bufferPromise, abortPromise])
+          : await bufferPromise;
+        if (signal?.aborted) {
+          throw new DOMException("Aborted", "AbortError");
+        }
+        const mimeType = blob.type || "application/octet-stream";
+        return `data:${mimeType};base64,${Buffer.from(arrayBuffer).toString("base64")}`;
+      } finally {
+        abortCleanup?.();
+      }
+    }
+
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
 
@@ -154,6 +195,10 @@ export class RemoteFileToBase64 {
       };
 
       if (signal) {
+        if (signal.aborted) {
+          reject(new DOMException("Aborted", "AbortError"));
+          return;
+        }
         signal.addEventListener("abort", abortListener);
       }
 

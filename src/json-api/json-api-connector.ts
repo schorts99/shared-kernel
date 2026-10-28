@@ -18,13 +18,9 @@ export class JSONAPIConnector {
     options?: JSONAPIRequestOptions
   ): Promise<JSONAPISingle<A>> {
     try {
-      const fullUrl = new URLCriteriaBuilder(
-        url instanceof URL ? url : new URL(url),
-        options?.criteria,
-        options?.include
-      ).build();
+      const targetUrl = this.buildCriteriaUrl(url, options?.criteria, options?.include);
 
-      return await this.http.get(fullUrl, options);
+      return await this.http.get(targetUrl, options);
     } catch (error) {
       this.handleError(error);
     }
@@ -35,16 +31,31 @@ export class JSONAPIConnector {
     options?: JSONAPIRequestOptions
   ): Promise<JSONAPIList<A>> {
     try {
-      const fullUrl = new URLCriteriaBuilder(
-        url instanceof URL ? url : new URL(url),
-        options?.criteria,
-        options?.include
-      ).build();
+      const targetUrl = this.buildCriteriaUrl(url, options?.criteria, options?.include);
 
-      return await this.http.get(fullUrl, options);
+      return await this.http.get(targetUrl, options);
     } catch (error) {
       this.handleError(error);
     }
+  }
+
+  private buildCriteriaUrl(
+    url: string | URL,
+    criteria?: Criteria,
+    include?: string[],
+  ): string | URL {
+    if (url instanceof URL) {
+      return new URLCriteriaBuilder(url, criteria, include).build();
+    }
+    if (/^https?:\/\//i.test(url)) {
+      return new URLCriteriaBuilder(new URL(url), criteria, include).build();
+    }
+
+    const dummyBase = new URL("http://localhost");
+    const resolved = new URL(url, dummyBase);
+    const built = new URLCriteriaBuilder(resolved, criteria, include).build();
+    const relativePath = url.startsWith("/") ? built.pathname : built.pathname.replace(/^\//, "");
+    return `${relativePath}${built.search}${built.hash}`;
   }
 
   async create<A>(

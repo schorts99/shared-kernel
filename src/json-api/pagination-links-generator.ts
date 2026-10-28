@@ -27,8 +27,25 @@ export class PaginationLinksGenerator {
     };
   }
 
-  private generateLink(offset: number, limit: number) {
-    return `${this.url.href}?page[offset]=${offset}&page[limit]=${limit}`;
+  private generateLink(offset: number, limit: number): string {
+    const baseHref = this.url.href.split("?")[0]!;
+    const existingSearch = this.url.search
+      ? this.url.search
+          .slice(1)
+          .split("&")
+          .filter(
+            part =>
+              part !== "" &&
+              !part.startsWith("page[offset]=") &&
+              !part.startsWith("page%5Boffset%5D=") &&
+              !part.startsWith("page[limit]=") &&
+              !part.startsWith("page%5Blimit%5D="),
+          )
+      : [];
+    const paginationParams = [`page[offset]=${offset}`, `page[limit]=${limit}`];
+    const query = [...existingSearch, ...paginationParams].join("&");
+
+    return `${baseHref}?${query}`;
   }
 }
 

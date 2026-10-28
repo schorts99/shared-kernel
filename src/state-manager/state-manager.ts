@@ -1,4 +1,5 @@
 import { MaybePromise } from "../types";
+import { cloneValue } from "../utils/object";
 
 export abstract class StateManager<Schema extends Record<string, any>, IsAsync extends boolean = false> {
   protected state: Schema;
@@ -6,8 +7,8 @@ export abstract class StateManager<Schema extends Record<string, any>, IsAsync e
   private listeners: Array<(state: Schema) => void> = [];
 
   constructor(initialState: Schema = {} as Schema) {
-    this.initialState = { ...initialState };
-    this.state = { ...initialState };
+    this.initialState = cloneValue(initialState);
+    this.state = cloneValue(initialState);
   }
 
   abstract getValue<Key extends keyof Schema>(key: Key): MaybePromise<IsAsync, Schema[Key]>;
@@ -21,7 +22,7 @@ export abstract class StateManager<Schema extends Record<string, any>, IsAsync e
   abstract reset(): MaybePromise<IsAsync, void>;
 
   getState(): Schema {
-    return { ...this.state };
+    return cloneValue(this.state);
   }
 
   subscribe(listener: (state: Schema) => void): () => void {

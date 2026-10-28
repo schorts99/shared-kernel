@@ -42,7 +42,7 @@ export class Criteria {
   }
 
   limitResults(limit: number): Criteria {
-    if (limit < 1) {
+    if (!Number.isSafeInteger(limit) || limit < 1) {
       throw new LimitNotValid(limit);
     }
 
@@ -50,7 +50,7 @@ export class Criteria {
   }
 
   offsetResults(offset: number): Criteria {
-    if (offset < 1) {
+    if (!Number.isSafeInteger(offset) || offset < 0) {
       throw new OffsetNotValid(offset);
     }
 

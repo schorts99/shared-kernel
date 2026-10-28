@@ -38,11 +38,15 @@ export class URLCriteriaParser {
 
     const limit = params.get("page[limit]");
 
-    if (limit) criteria = criteria.limitResults(Number(limit));
+    if (limit !== null && limit.trim() !== "") {
+      criteria = criteria.limitResults(Number(limit));
+    }
 
     const offset = params.get("page[offset]");
 
-    if (offset) criteria = criteria.offsetResults(Number(offset));
+    if (offset !== null && offset.trim() !== "") {
+      criteria = criteria.offsetResults(Number(offset));
+    }
 
     return criteria;
   }
@@ -56,8 +60,8 @@ export class URLCriteriaParser {
       case "gte": return "GREATER_THAN_OR_EQUAL";
       case "lte": return "LESS_THAN_OR_EQUAL";
       case "in": return "IN";
-			case "array_contains": return "ARRAY_CONTAINS";
-			case "array_contains_any": return "ARRAY_CONTAINS_ANY";
+      case "array_contains": return "ARRAY_CONTAINS";
+      case "array_contains_any": return "ARRAY_CONTAINS_ANY";
       case "nin": return "NOT_IN";
       case "like": return "LIKE";
       case "between": return "BETWEEN";
@@ -67,11 +71,22 @@ export class URLCriteriaParser {
   }
 
   private parseValue(operator: Operator, raw: string): any {
-    const tryParsePrimitive = (val: string): any => {
-      const maybeDate = new Date(val);
+    const isoDatePattern =
+      /^\d{4}-\d{2}-\d{2}(?:[T\s]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/;
 
-      if (!isNaN(maybeDate.getTime())) return maybeDate;
-      if (!isNaN(Number(val)) && val.trim() !== "") return Number(val);
+    const tryParsePrimitive = (val: string): any => {
+      const trimmed = val.trim();
+      if (trimmed === "true") return true;
+      if (trimmed === "false") return false;
+      if (trimmed !== "" && !Number.isNaN(Number(trimmed))) {
+        return Number(trimmed);
+      }
+      if (isoDatePattern.test(trimmed)) {
+        const maybeDate = new Date(trimmed);
+        if (!Number.isNaN(maybeDate.getTime())) {
+          return maybeDate;
+        }
+      }
 
       return val;
     };
@@ -80,6 +95,7 @@ export class URLCriteriaParser {
       case "IN":
       case "NOT_IN":
       case "BETWEEN":
+      case "ARRAY_CONTAINS_ANY":
         return raw.split(",").map((v) => tryParsePrimitive(v.trim()));
       case "GEO_RADIUS": {
         const [latStr, lngStr, radiusStr] = raw.split(",");

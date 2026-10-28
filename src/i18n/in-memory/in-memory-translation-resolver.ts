@@ -8,7 +8,7 @@ export class InMemoryTranslationResolver implements TranslationResolver {
 
     if (params) {
       Object.entries(params).forEach(([k, v]) => {
-        message = message.replace(`{${k}}`, String(v));
+        message = message.replaceAll(`{${k}}`, String(v));
       });
     }
 
