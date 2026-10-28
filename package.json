@@ -146,11 +146,6 @@
       "require": "./dist/cjs/state-manager/index.js",
       "types": "./dist/types/state-manager/index.d.ts"
     },
-    "./tour-guide": {
-      "import": "./dist/esm/tour-guide/index.js",
-      "require": "./dist/cjs/tour-guide/index.js",
-      "types": "./dist/types/tour-guide/index.d.ts"
-    },
     "./types": {
       "import": "./dist/esm/types/index.js",
       "require": "./dist/cjs/types/index.js",

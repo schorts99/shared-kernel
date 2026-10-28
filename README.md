@@ -90,14 +90,13 @@ Integrate seamlessly with external services and clients.
   - `Mailer`: Interface for sending email messages.
   - `Mail`: Type-safe structure representing an email payload.
 
-### 💻 State & UI
-Helpers for building robust frontend experiences.
+### 💻 State Management
+Framework-neutral helpers for managing application state.
 
 - **State Manager:**
   - `StateManager`: Abstract reactive state manager with listener support.
-  - Includes `SessionStorageStateManager`, `LocalStorageStateManager`, and `InMemoryStateManager`.
-- **Guided Tours:**
-  - `TourGuide`: Abstract base class for defining UI onboarding tours. Integrates with libraries like Driver.js or Intro.js.
+  - Includes `InMemoryStateManager` for in-memory state.
+  - Extend `StateManager` in your application to provide custom persistence.
 - **i18n (Internationalization):**
   - `TranslationResolver`: Infrastructure-agnostic interface for resolving localized strings within the domain.
 
@@ -148,6 +147,16 @@ const connector = new JSONAPIConnector(new FetchHTTPProvider());
 // UserModel is your own Model class
 const users = await connector.findMany<UserModel>(usersURL, criteria);
 ```
+
+## Migration: Next Major Release
+
+Guided tours and browser-backed state managers have been removed from the kernel.
+
+- Remove imports from `@schorts/shared-kernel/tour-guide`. `TourGuide`, `TourGuideOptions`, `BaseTourGuide`, `TourStep`, `TourSide`, and `TourAlign` are no longer exported from the package root either. Keep tour integrations and their types in your application.
+- `LocalStorageStateManager` and `SessionStorageStateManager` are no longer exported from the package root or `@schorts/shared-kernel/state-manager`. Implement browser persistence in your application by extending `StateManager`; `InMemoryStateManager` is not a persistent replacement.
+- `StateManager` and `InMemoryStateManager` remain available from the package root and `@schorts/shared-kernel/state-manager`.
+
+No replacement UI package is provided.
 
 ## 🧪 Testing
 

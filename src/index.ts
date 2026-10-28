@@ -25,7 +25,6 @@ export * from "./pub-sub";
 export * from "./rbac";
 export * from "./result";
 export * from "./state-manager";
-export * from "./tour-guide";
 export * from "./types";
 export * from "./unit-of-work";
 export * from "./utils";

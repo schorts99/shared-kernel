@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Removed
+
+- **Breaking (next major release):** Removed the guided tour module, its `@schorts/shared-kernel/tour-guide` subpath, and all tour exports from the package root. Tour integrations now belong in consuming applications.
+- **Breaking (next major release):** Removed `LocalStorageStateManager` and `SessionStorageStateManager`. `StateManager` and `InMemoryStateManager` remain available; applications must provide their own browser persistence.
+
 ## [10.7.0]
 
 ### Added

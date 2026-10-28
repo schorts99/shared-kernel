@@ -48,8 +48,7 @@ src/
 ├── rbac/                 # Role-Based Access Control (Policies & Permissions)
 ├── result/               # Result Monad (Success/Failure Handling)
 ├── sagas/                # Saga Orchestration, Saga Manager & State Store
-├── state-manager/        # Reactive State Management (Session/Local/Memory)
-├── tour-guide/           # Guided UI Onboarding Tour Interfaces
+├── state-manager/        # Framework-Neutral State Management & In-Memory Implementation
 ├── types/                # Core TypeScript Utility Types
 ├── unit-of-work/         # Transactional Unit of Work Boundaries
 ├── utils/                # Standard Utility Helpers (async, assert, object, string, url)
