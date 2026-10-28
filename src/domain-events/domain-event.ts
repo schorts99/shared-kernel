@@ -55,7 +55,8 @@ export abstract class DomainEvent<T = any> {
   ) {
     this.payload = payload;
     const generateId = () =>
-      `${Date.now()}-${Math.random().toString(36).substr(2, 11)}`;
+      globalThis.crypto?.randomUUID?.() ??
+      `${Date.now()}-${Math.random().toString(36).slice(2, 13)}`;
     this.metadata = {
       id: customMetadata?.id ?? generateId(),
       occurredAt: customMetadata?.occurredAt ?? new Date(),

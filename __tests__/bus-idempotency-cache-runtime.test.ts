@@ -17,17 +17,23 @@ import {
   EmailValue,
   Entity,
   EntityRegistry,
+  FloatValue,
+  HTMLValue,
   InMemoryCache,
   InMemoryCommandBus,
   InMemoryDAO,
   InMemoryEventBus,
   InMemoryEventStore,
   InMemoryIdempotencyStore,
+  InMemoryPubSub,
   InMemoryQueryBus,
   InMemorySagaStateStore,
   InMemoryTransactionalIdempotencyAdapter,
   InMemoryUnitOfWork,
   InMemoryUnitOfWorkRunner,
+  Logger,
+  LoggingMailer,
+  MarkdownValue,
   QueryRegistry,
   Result,
   Saga,
@@ -1169,5 +1175,65 @@ describe("7. Transactional Outbox on UnitOfWork and Async Combinators / Serializ
     expect(restoredErr.error).toBeInstanceOf(Error);
     expect(restoredErr.error.name).toBe("CustomDomainError");
     expect(restoredErr.error.message).toBe("wrapped:boom");
+  });
+
+  it("routes InMemoryPubSub and LoggingMailer logs through Logger contract and normalizes Float/HTML/Markdown value objects", async () => {
+    const loggedErrors: Array<{ message: string; context?: Record<string, unknown> }> = [];
+    const loggedInfos: Array<{ message: string; context?: Record<string, unknown> }> = [];
+
+    class TestLogger extends Logger {
+      log() {}
+      info(message: string, context?: Record<string, unknown>) {
+        loggedInfos.push({ message, ...(context ? { context } : {}) });
+      }
+      debug() {}
+      warn() {}
+      error(message: string, context?: Record<string, unknown>) {
+        loggedErrors.push({ message, ...(context ? { context } : {}) });
+      }
+    }
+
+    const logger = new TestLogger();
+    const pubSub = new InMemoryPubSub({ logger });
+
+    await pubSub.subscribe("orders", "created", async () => {
+      throw new Error("handler failed");
+    });
+    await pubSub.publish("orders", "created", { orderId: "123" });
+
+    expect(loggedErrors).toHaveLength(1);
+    expect(loggedErrors[0]?.message).toBe("Error in handler for orders:created");
+
+    const mailer = new LoggingMailer(logger);
+    await mailer.send({
+      from: "noreply@example.com",
+      to: ["customer@example.com"],
+      subject: "Order Confirmation",
+      body: "Thanks!",
+    });
+    expect(loggedInfos).toHaveLength(1);
+    expect(loggedInfos[0]?.message).toContain("Order Confirmation");
+
+    class PriceFloat extends FloatValue {
+      readonly attributeName = "price";
+    }
+    class SnippetHTML extends HTMLValue {
+      readonly attributeName = "snippet";
+    }
+    class ReadmeMarkdown extends MarkdownValue {
+      readonly attributeName = "readme";
+    }
+
+    const price = PriceFloat.fromPrimitives(19.995, 2);
+    expect(price.toPrimitives()).toBe(20);
+    expect(price.isValid).toBe(true);
+
+    const html = SnippetHTML.fromPrimitives("<p>Hello</p>");
+    expect(html.toPrimitives()).toBe("<p>Hello</p>");
+    expect(html.isValid).toBe(true);
+
+    const md = ReadmeMarkdown.fromPrimitives("# Title");
+    expect(md.toPrimitives()).toBe("# Title");
+    expect(md.isValid).toBe(true);
   });
 });

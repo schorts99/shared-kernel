@@ -58,7 +58,8 @@ export abstract class AbstractCommand<T = any> implements Command<T> {
   ) {
     this.payload = payload;
     const generateId = () =>
-      `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      globalThis.crypto?.randomUUID?.() ??
+      `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
     this.metadata = {
       id: customMetadata?.id ?? generateId(),
       createdAt: customMetadata?.createdAt ?? new Date(),

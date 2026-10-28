@@ -1,8 +1,26 @@
 import { Publisher } from "./publisher";
 import { Subscriber, Subscription, MessageHandler } from "./subscription";
+import type { Logger } from "../logger";
+
+export interface InMemoryPubSubOptions {
+  logger?: Logger | undefined;
+  throwOnHandlerError?: boolean | undefined;
+  onError?: ((error: Error, context: { channel: string; event: string; payload: any }) => void) | undefined;
+}
 
 export class InMemoryPubSub implements Publisher<any>, Subscriber {
-  private handlers: Map<string, Map<string, Set<MessageHandler>>> = new Map();
+  private readonly handlers: Map<string, Map<string, Set<MessageHandler>>> = new Map();
+  private readonly logger?: Logger | undefined;
+  private readonly throwOnHandlerError: boolean;
+  private readonly onError?:
+    | ((error: Error, context: { channel: string; event: string; payload: any }) => void)
+    | undefined;
+
+  constructor(options: InMemoryPubSubOptions = {}) {
+    this.logger = options.logger;
+    this.throwOnHandlerError = options.throwOnHandlerError ?? false;
+    this.onError = options.onError;
+  }
 
   async publish(channel: string, event: string, payload: any): Promise<void> {
     const channelHandlers = this.handlers.get(channel);
@@ -13,19 +31,29 @@ export class InMemoryPubSub implements Publisher<any>, Subscriber {
 
     if (!eventHandlers) return;
 
-    eventHandlers.forEach((handler) => {
-      try {
-        const result = handler(payload);
+    const errors: Error[] = [];
 
-        if (result instanceof Promise) {
-          result.catch((error) => {
-            console.error(`[InMemoryPubSub] Error in async handler for ${channel}:${event}:`, error);
-          });
-        }
-      } catch (error) {
-        console.error(`[InMemoryPubSub] Error in handler for ${channel}:${event}:`, error);
+    for (const handler of Array.from(eventHandlers)) {
+      try {
+        await handler(payload);
+      } catch (rawError) {
+        const error = rawError instanceof Error ? rawError : new Error(String(rawError));
+        this.logger?.error(
+          `Error in handler for ${channel}:${event}`,
+          { channel, event, error: error.message },
+          error,
+        );
+        this.onError?.(error, { channel, event, payload });
+        errors.push(error);
       }
-    });
+    }
+
+    if (this.throwOnHandlerError && errors.length > 0) {
+      if (errors.length === 1) {
+        throw errors[0]!;
+      }
+      throw new AggregateError(errors, `Multiple handler errors for ${channel}:${event}`);
+    }
   }
 
   async subscribe<T = any>(
