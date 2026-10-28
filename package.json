@@ -1,6 +1,6 @@
 {
   "name": "@schorts/shared-kernel",
-  "version": "10.7.0",
+  "version": "11.0.0",
   "description": "A modular, type-safe foundation for building expressive, maintainable applications. This package provides core abstractions for domain modeling, HTTP integration, authentication, state management, and more — designed to be framework-agnostic and highly extensible.",
   "type": "commonjs",
   "main": "./dist/cjs/index.js",
@@ -378,7 +378,7 @@
   "author": "Jorge Castillo (https://github.com/schorts99)",
   "license": "LGPL-3.0-or-later",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",

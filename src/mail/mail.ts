@@ -2,7 +2,8 @@ export type MailAddress = string | { name: string; email: string };
 
 export type MailAttachment = {
   filename: string;
-  content: string | Buffer;
+  /** Text or bytes. A Node `Buffer` is a `Uint8Array`, so it still works. */
+  content: string | Uint8Array;
   contentType?: string;
 };
 

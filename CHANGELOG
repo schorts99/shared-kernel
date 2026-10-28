@@ -7,13 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
-- The ESM build (`dist/esm`) now emits real ES modules instead of CommonJS, and each subpath's `import` condition resolves to ESM type declarations.
-- `randomString` now draws from `crypto.getRandomValues` without modulo bias instead of `Math.random`, rejects invalid lengths, and throws when the Web Crypto API is unavailable (for example on Node 18 without `--experimental-global-webcrypto`).
-- Inline ABAC predicates passed to `RBACPolicy.canWithAttributes`, `canAnyWithAttributes`, and their async variants now get typed `user`, `resource`, and `context` parameters instead of implicit `any`. Predicates typed as `Predicate` or `AsyncPredicate` are still accepted.
-- `URLCriteriaBuilder` now serializes every `GEO_RADIUS` and `BETWEEN` shape the in-memory DAO accepts. It used to drop `radiusInKm`, `lon`, and `{ min, max }` / `{ from, to }` bounds, and wrote `undefined` into the URL for an incomplete geo filter; it now skips filters it cannot read, like it does for other operators.
-- `JSONAPIConnector` converts an HTTP error into `JSONAPIErrors` only when its body has an `errors` array.
+## [11.0.0] - 2026-10-28
 
 ### Added
 
@@ -24,21 +18,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
+- **Breaking:** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Declared `"sideEffects": false` so bundlers can tree-shake unused modules.
-- Declared `"engines": { "node": ">=18" }`.
-- **Breaking (next major release):** `AbstractCommandHandler.execute` and `AbstractQueryHandler.execute` are now `protected`, so they can only run through `handle`, which applies validation, authorization, idempotency, timeouts, and logging. Subclasses that declare `execute` keep compiling; code that calls `handler.execute(...)` directly must call `handle` instead.
-- **Breaking (next major release):** `Criteria.where` types `value` by operator (for example `IN` needs an array, `LIKE` a string, `GREATER_THAN` a number, string, boolean, bigint, or Date). `Filter` is now a union keyed on `operator`, so narrowing on `filter.operator` types `filter.value`. Values the in-memory DAO already ignored are now type errors.
-- **Breaking (next major release):** Values the library hands back are typed `unknown` instead of `any`: `HTTPException.body`; `context` on commands, queries, and events and their metadata; bus and subscriber context `metadata`; `details`/`context` on exceptions; identity provider claims; JSON:API `attributes`, `relationships`, and `meta`; `Result.fromPrimitives` hydrate callback inputs and `toPrimitives()` output; primitives `payload`; and the default type parameter of `Command`, `Query`, `DomainEvent`, `Publisher`, `MessageHandler`, `Dictionary`, and the HTTP body/response generics. Narrow or cast these values before use.
+- **Breaking:** Node.js 20 or later is required (`"engines": { "node": ">=20" }`). Node 18 is past end of life and lacks the global Web Crypto API the kernel uses for IDs and `randomString`.
+- **Breaking:** `AbstractCommandHandler.execute` and `AbstractQueryHandler.execute` are now `protected`, so they can only run through `handle`, which applies validation, authorization, idempotency, timeouts, and logging. Subclasses that declare `execute` keep compiling; code that calls `handler.execute(...)` directly must call `handle` instead.
+- **Breaking:** `Criteria.where` types `value` by operator (for example `IN` needs an array, `LIKE` a string, `GREATER_THAN` a number, string, boolean, bigint, or Date). `Filter` is now a union keyed on `operator`, so narrowing on `filter.operator` types `filter.value`. Values the in-memory DAO already ignored are now type errors.
+- **Breaking:** Values the library hands back are typed `unknown` instead of `any`: `HTTPException.body`; `context` on commands, queries, and events and their metadata; bus and subscriber context `metadata`; `details`/`context` on exceptions; identity provider claims; JSON:API `attributes`, `relationships`, and `meta`; `Result.fromPrimitives` hydrate callback inputs and `toPrimitives()` output; primitives `payload`; and the default type parameter of `Command`, `Query`, `DomainEvent`, `Publisher`, `MessageHandler`, `Dictionary`, and the HTTP body/response generics. Narrow or cast these values before use.
 - Inputs that accepted `any` now accept `unknown` (still any value): `addContext`, translation params, `assert`, `isObject`, `OfflinePayload.args`, pub-sub payloads, and `createId` on entities and aggregates.
+- **Breaking:** `MailAttachment.content` is `string | Uint8Array` instead of `string | Buffer`, so the mail types no longer depend on Node. A `Buffer` is a `Uint8Array` and is still accepted.
 
 ### Removed
 
-- **Breaking (next major release):** Removed `execute` from the `CommandHandler` and `QueryHandler` interfaces. Buses only call `handle`, so hand-written handlers no longer need an `execute` method.
-- **Breaking (next major release):** Removed the guided tour module, its `@schorts/shared-kernel/tour-guide` subpath, and all tour exports from the package root. Tour integrations now belong in consuming applications.
-- **Breaking (next major release):** Removed `LocalStorageStateManager` and `SessionStorageStateManager`. `StateManager` and `InMemoryStateManager` remain available; applications must provide their own browser persistence.
+- **Breaking:** Removed the deprecated `greater_than`, `greater_than_or_equal`, `less_than`, and `less_than_or_equal` validation rules. Use `greaterThan`, `greaterThanOrEqual`, `lessThan`, and `lessThanOrEqual`. Schemas that still use the old keys (for example from JavaScript or JSON) throw a `TypeError` naming the replacement instead of silently passing.
+- **Breaking:** Removed `execute` from the `CommandHandler` and `QueryHandler` interfaces. Buses only call `handle`, so hand-written handlers no longer need an `execute` method.
+- **Breaking:** Removed the guided tour module, its `@schorts/shared-kernel/tour-guide` subpath, and all tour exports from the package root. Tour integrations now belong in consuming applications.
+- **Breaking:** Removed `LocalStorageStateManager` and `SessionStorageStateManager`. `StateManager` and `InMemoryStateManager` remain available; applications must provide their own browser persistence.
 
-## [10.7.0]
+### Fixed
+
+- The ESM build (`dist/esm`) now emits real ES modules instead of CommonJS, and each subpath's `import` condition resolves to ESM type declarations.
+- `randomString` now draws from `crypto.getRandomValues` without modulo bias instead of `Math.random`, rejects invalid lengths, and throws when the Web Crypto API is unavailable.
+- Inline ABAC predicates passed to `RBACPolicy.canWithAttributes`, `canAnyWithAttributes`, and their async variants now get typed `user`, `resource`, and `context` parameters instead of implicit `any`. Predicates typed as `Predicate` or `AsyncPredicate` are still accepted.
+- `URLCriteriaBuilder` now serializes every `GEO_RADIUS` and `BETWEEN` shape the in-memory DAO accepts. It used to drop `radiusInKm`, `lon`, and `{ min, max }` / `{ from, to }` bounds, and wrote `undefined` into the URL for an incomplete geo filter; it now skips filters it cannot read, like it does for other operators.
+- `JSONAPIConnector` converts an HTTP error into `JSONAPIErrors` only when its body has an `errors` array.
+
+## [10.7.0] - 2026-10-28
 
 ### Added
 
@@ -108,7 +112,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Add serialization/deserialization of queries in order to allow operations in external systems/services.
 
 ## [9.24.1] - 2026-08-08
@@ -121,7 +124,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Allow Aggregates on AuthProvider instead of only Entities.
 
 ## [9.22.0] - 2026-07-18
@@ -249,7 +251,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Added the possibility to be optional on `StringValue`.
 
 ## [8.9.0] - 2026-03-19
@@ -280,7 +281,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Added the possibily to be async or sync using a generic in most of the abstractions.
 
 ## [7.0.3] - 2025-11-14
@@ -343,14 +343,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Added `Async` prefix on CQRS in memory to homologate the event bus.
 
 ## [5.2.4] - 2025-11-08
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Homologate `Query` and `Command` to `DomainEvent`. `type` is not `getType()`.
 
 ## [5.2.3] - 2025-11-08
@@ -370,7 +368,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Change `TourGuide` from abstract class to interface.
 
 ## [5.2.0] - 2025-11-05
@@ -406,14 +403,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Removed `from` from `Mail`.
 
 ## [4.4.1] - 2025-10-29
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Added the capacility to attach a text body and a HTML instead of only one.
 
 ## [4.4.0] - 2025-10-29
@@ -457,7 +452,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Allow any params in the `init` method of the `Telemetry` and `Subscription`.
 
 ## [4.1.1] - 2025-10-21
@@ -518,7 +512,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Update how filters are stored in the `Criteria` to allow multiple filters over one field.
 
 ## [2.6.0] - 2025-10-14
@@ -573,14 +566,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Allow `DateValue` to be optional.
 
 ## [2.5.1] - 2025-10-13
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - `toPrimitives` method from `DomainEvent` now is defined in the abstract class. In future versions the `DomainEventRegistry` will be updated to handle the transformation of values like date/string and preserve it between conversions.
 
 ## [2.5.0] - 2025-10-12
@@ -605,14 +596,12 @@ _ Added `event-bus` with `in-memory` implementations.
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Now the `JSONAPIConnector` throws a `JSONAPIErrors` exception instead of a generic `HTTPException`.
 
 ## [2.3.4] - 2025-10-11
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Allow partial attributes in the `create` and `update` methods of the `JSONAPIConnector`.
 
 ## [2.3.3] - 2025-10-11
@@ -631,7 +620,6 @@ _ Added `event-bus` with `in-memory` implementations.
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - `userID` now is protected in the `RBACPolicy`.
 
 ## [2.3.0] - 2025-10-10
@@ -644,14 +632,12 @@ _ Added `event-bus` with `in-memory` implementations.
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Remove `Optional` param in the `EnumValue`. Instead allow null values in the `allowedTypes` array.
 
 ## [2.2.3] - 2025-10-10
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Allow `optional` param in the `EnumValue`.
 
 ## [2.2.2] - 2025-10-10
@@ -670,7 +656,6 @@ _ Added `event-bus` with `in-memory` implementations.
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Now the `FetchHTTPProvider` returns the body of the request even on errors to handle JSON/API errors better.
 
 ## [2.0.1]
@@ -683,14 +668,12 @@ _ Added `event-bus` with `in-memory` implementations.
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Rename method `currentUser` to `getCurrentUser` on the `AuthProvider` interface.
 
 ## [1.3.2]
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Now the `.authenticate` method from `AuthProvider` should return the token to remove responsabilities from it. A `AuthManager` should be implemented instead in case of future needs.
 
 ## [1.3.1] - 2025-10-04
@@ -713,7 +696,6 @@ _ Added `event-bus` with `in-memory` implementations.
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Added to constructor of the `FetchHTTPProvider` the possibility to receive a function to fetch the `Authorization`.
 
 ## [1.2.2] - 2025-10-03
@@ -724,14 +706,12 @@ _ Added `event-bus` with `in-memory` implementations.
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - `FetchHTTPProvider` now supports the `headers` options.
 
 ## [1.2.1] - 2025-10-03
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - `FetchHTTPProvider` now supports the `credentials` options.
 
 ## [1.2.0] - 2025-10-02
@@ -744,7 +724,6 @@ _ Added `event-bus` with `in-memory` implementations.
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Now the `BaseModel` is more flexible to avoid typing issues in the `fromPrimitives` method.
 
 ## [1.1.4] - 2025-10-01
@@ -763,7 +742,6 @@ _ Added `event-bus` with `in-memory` implementations.
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Now the `DAO` actions like `create`, `update` and `delete` can receive a `UnitOfWork`.
 
 ## [1.1.1] - 2025-09-30
@@ -776,7 +754,6 @@ _ Added `event-bus` with `in-memory` implementations.
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Now the `ValueObject` for ID property on `Entity` is required.
 
 ### Added
@@ -804,7 +781,6 @@ _ Added `event-bus` with `in-memory` implementations.
 
 ### Changed
 
-- **Breaking (next major release):** A saga whose step failed is now final, like a completed one: later events for the same saga ID are ignored instead of re-running steps whose compensation already ran. `Saga.getOptions()` now returns `{ retryOnError: false }`, so the event bus no longer retries a failed saga delivery (it re-ran the whole step after compensating, up to three more times). Retry transient work inside the step, and delete the saga's state to run it again.
 - Removed indirect dependencies from the `package.json`.
 
 [8.9.0]: https://github.com/schorts99/shared-kernel/releases/tag/v8.9.0

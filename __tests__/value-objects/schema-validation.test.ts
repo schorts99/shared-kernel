@@ -12,14 +12,14 @@ describe("validateSchemaRule", () => {
     [{ required: false }, undefined, true],
     [{ greaterThan: 5 }, 6, true],
     [{ greaterThan: 5 }, 5, false],
-    [{ greater_than: 5 }, 6, true],
+    [{ greaterThan: 5 }, 6.5, true],
     [{ greaterThan: 5 }, "6", false],
     [{ greaterThanOrEqual: 5 }, 5, true],
-    [{ greater_than_or_equal: 5 }, 4, false],
+    [{ greaterThanOrEqual: 5 }, 4, false],
     [{ lessThan: 5 }, 4, true],
-    [{ less_than: 5 }, 5, false],
+    [{ lessThan: 5 }, 5, false],
     [{ lessThanOrEqual: 5 }, 5, true],
-    [{ less_than_or_equal: 5 }, 6, false],
+    [{ lessThanOrEqual: 5 }, 6, false],
     [{ lessThan: 5 }, null, false],
     [{ type: "string" }, "x", true],
     [{ type: "number" }, "1", false],
@@ -36,6 +36,15 @@ describe("validateSchemaRule", () => {
     [{ custom: (v: unknown) => v === 42 }, 41, false],
   ])("%j on %p is %p", (rule, value, expected) => {
     expect(validateSchemaRule(value, rule as never)).toBe(expected);
+  });
+
+  it.each([
+    ["greater_than", "greaterThan"],
+    ["greater_than_or_equal", "greaterThanOrEqual"],
+    ["less_than", "lessThan"],
+    ["less_than_or_equal", "lessThanOrEqual"],
+  ])("rejects the removed %s rule and names %s", (removed, replacement) => {
+    expect(() => validateSchemaRule(1, { [removed]: 5 } as never)).toThrow(`use "${replacement}"`);
   });
 
   it("accepts any value for an unknown rule shape", () => {

@@ -34,4 +34,22 @@ describe("Mailers", () => {
     mailer.clear();
     expect(mailer.getSentMails()).toHaveLength(0);
   });
+
+  it("accepts Uint8Array and Buffer attachments", async () => {
+    const mailer = new InMemoryMailer();
+    const bytes = new Uint8Array([37, 80, 68, 70]);
+
+    await mailer.send({
+      to: "ada@example.com",
+      subject: "Invoice",
+      attachments: [
+        { filename: "invoice.pdf", content: bytes, contentType: "application/pdf" },
+        { filename: "notes.txt", content: Buffer.from("paid") },
+      ],
+    });
+
+    const [sent] = mailer.getSentMails();
+    expect(sent?.attachments?.map(a => a.filename)).toEqual(["invoice.pdf", "notes.txt"]);
+    expect(Array.from(sent?.attachments?.[0]?.content as Uint8Array)).toEqual([37, 80, 68, 70]);
+  });
 });

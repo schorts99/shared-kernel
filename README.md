@@ -165,7 +165,11 @@ const users = await connector.findMany<UserAttributes>(usersURL, {
 users.data.forEach(user => console.log(user.id, user.attributes.name));
 ```
 
-## Migration: Next Major Release
+## Migrating to 11.0
+
+11.0 requires Node.js 20 or later. The [CHANGELOG](CHANGELOG) lists every change; the [migrate-to-v11 skill](ai/skills/migrate-to-v11/SKILL.md) walks through the upgrade step by step (and works as instructions for an AI agent).
+
+### Removed modules
 
 Guided tours and browser-backed state managers have been removed from the kernel.
 
@@ -189,6 +193,12 @@ Values the kernel hands back are now `unknown` instead of `any`, so mistakes tha
 
 - `HTTPException.body`, exception `details`, JSON:API `attributes`, identity claims, and `context` values: narrow with a type guard or cast to the shape you expect.
 - `Command`, `Query`, and `DomainEvent` without a type argument now have an `unknown` payload. Pass the payload type (`AbstractCommand<CreateUserPayload>`) as usual.
+
+### Validation rules, sagas, and mail
+
+- The snake_case validation rules (`greater_than`, `greater_than_or_equal`, `less_than`, `less_than_or_equal`) are gone; use `greaterThan`, `greaterThanOrEqual`, `lessThan`, `lessThanOrEqual`. Schemas that still use the old keys throw a `TypeError` naming the replacement.
+- A saga whose step failed is now final, and the event bus no longer retries saga deliveries. Retry transient work inside the step; delete the saga's state to run it again.
+- `MailAttachment.content` is `string | Uint8Array`. Node `Buffer`s still work.
 
 ### Typed criteria values
 

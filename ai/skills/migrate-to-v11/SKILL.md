@@ -9,6 +9,8 @@ Work through the steps in order, running your type checker after each. Most chan
 
 ## 1. Update and type-check
 
+11.x requires Node.js 20 or later. Upgrade older runtimes first.
+
 ```bash
 npm install @schorts/shared-kernel@^11
 npx tsc --noEmit
@@ -121,7 +123,7 @@ export class LocalStorageStateManager<Schema extends Record<string, unknown>> ex
 
 ## 6. Behavior changes to check
 
-- `randomString` uses `crypto.getRandomValues` and throws if Web Crypto is unavailable (Node 18 without `--experimental-global-webcrypto`). It also rejects negative or non-integer lengths.
+- `randomString` uses `crypto.getRandomValues` and throws if Web Crypto is unavailable. It also rejects negative or non-integer lengths.
 - `JSONAPIConnector` converts an error into `JSONAPIErrors` only when the response body has an `errors` array; other error bodies now surface as `HTTPException`.
 - ABAC predicates passed inline to `canWithAttributes` and friends now have typed parameters; remove explicit `any` annotations you added to them.
 - A saga whose step failed is final: later events for it are ignored, and the event bus no longer retries saga deliveries. If you relied on bus retries for transient failures, retry inside the step instead; delete the saga's state to run it again. If a saga subclass defines its own `getOptions`, mark it `override`.

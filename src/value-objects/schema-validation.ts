@@ -16,38 +16,28 @@ function isRuleRequired(rule: ValidationRule<any>): boolean {
   return "required" in rule && Boolean(rule.required);
 }
 
+// Removed in 11.0. Rules built without type checking (JavaScript, JSON) could still use
+// them, and an unrecognized rule passes, so fail loudly instead of accepting every value.
+const REMOVED_RULES: Record<string, string> = {
+  greater_than: "greaterThan",
+  greater_than_or_equal: "greaterThanOrEqual",
+  less_than: "lessThan",
+  less_than_or_equal: "lessThanOrEqual",
+};
+
 export function validateSchemaRule(value: any, rule: ValidationRule<any>): boolean {
+  for (const removed of Object.keys(REMOVED_RULES)) {
+    if (removed in rule) {
+      throw new TypeError(`Validation rule "${removed}" was removed in 11.0; use "${REMOVED_RULES[removed]}"`);
+    }
+  }
   if ("required" in rule) {
     return rule.required ? value !== undefined && value !== null : true;
   }
-  if ("greaterThan" in rule || "greater_than" in rule) {
-    return (
-      typeof value === "number" &&
-      ("greaterThan" in rule ? value > rule.greaterThan : value > rule.greater_than)
-    );
-  }
-  if ("greaterThanOrEqual" in rule || "greater_than_or_equal" in rule) {
-    return (
-      typeof value === "number" &&
-      ("greaterThanOrEqual" in rule
-        ? value >= rule.greaterThanOrEqual
-        : value >= rule.greater_than_or_equal)
-    );
-  }
-  if ("lessThan" in rule || "less_than" in rule) {
-    return (
-      typeof value === "number" &&
-      ("lessThan" in rule ? value < rule.lessThan : value < rule.less_than)
-    );
-  }
-  if ("lessThanOrEqual" in rule || "less_than_or_equal" in rule) {
-    return (
-      typeof value === "number" &&
-      ("lessThanOrEqual" in rule
-        ? value <= rule.lessThanOrEqual
-        : value <= rule.less_than_or_equal)
-    );
-  }
+  if ("greaterThan" in rule) return typeof value === "number" && value > rule.greaterThan;
+  if ("greaterThanOrEqual" in rule) return typeof value === "number" && value >= rule.greaterThanOrEqual;
+  if ("lessThan" in rule) return typeof value === "number" && value < rule.lessThan;
+  if ("lessThanOrEqual" in rule) return typeof value === "number" && value <= rule.lessThanOrEqual;
   if ("type" in rule) return typeof value === rule.type;
   if ("enum" in rule) return rule.enum.includes(value);
   if ("regex" in rule) return typeof value === "string" && rule.regex.test(value);
