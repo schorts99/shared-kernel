@@ -1,18 +1,25 @@
-import { Entity as BaseEntity } from "../../entities";
+import {
+  Entity as BaseEntity,
+  EntityRegistration,
+  EntityRegistry,
+} from "../../entities";
 import { ValueObject } from "../../value-objects";
 import { Model as BaseModel } from "../../models";
+import { cloneValue } from "../../utils/object";
 import { JSONAPIList } from "../json-api-list";
 import { JSONAPISingle } from "../json-api-single";
 
-export class EntityJSONAPIMapper<Model extends BaseModel, Entity extends BaseEntity<ValueObject, Model>> {
+export class EntityJSONAPIMapper<
+  Model extends BaseModel,
+  Entity extends BaseEntity<ValueObject, Model>,
+> {
   constructor(
     private readonly type: string,
-  )  {}
+    private readonly entityRegistration?: EntityRegistration<Model, Entity>,
+  ) {}
 
   mapEntity(entity: Entity): JSONAPISingle<Model> {
-    const attributes: Record<string, any> = entity.toPrimitives();
-
-    delete attributes.id;
+    const { id: _, ...attributes } = cloneValue(entity.toPrimitives()) as Record<string, any>;
 
     return {
       data: {
@@ -25,5 +32,35 @@ export class EntityJSONAPIMapper<Model extends BaseModel, Entity extends BaseEnt
 
   mapEntities(entities: Array<Entity>): JSONAPIList<Model> {
     return { data: entities.map((e) => this.mapEntity(e).data) };
+  }
+
+  toEntity(doc: JSONAPISingle<Model>): Entity {
+    return this.hydrateResource(doc.data);
+  }
+
+  toEntities(doc: JSONAPIList<Model>): Array<Entity> {
+    return doc.data.map((resource) => this.hydrateResource(resource));
+  }
+
+  private hydrateResource(resource: {
+    id: string;
+    type: string;
+    attributes: Omit<Model, "id">;
+  }): Entity {
+    const primitives = {
+      ...cloneValue(resource.attributes),
+      id: resource.id,
+    } as unknown as Model;
+
+    if (this.entityRegistration) {
+      if (typeof (this.entityRegistration as { fromPrimitives?: unknown }).fromPrimitives === "function") {
+        return (this.entityRegistration as { fromPrimitives(model: unknown): Entity }).fromPrimitives(
+          primitives,
+        );
+      }
+      return (this.entityRegistration as (model: unknown) => Entity)(primitives);
+    }
+
+    return EntityRegistry.fromPrimitives<Entity>(resource.type || this.type, primitives);
   }
 }
