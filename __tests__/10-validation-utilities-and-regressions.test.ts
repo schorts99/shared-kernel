@@ -756,20 +756,16 @@ describe("10. Schema Validation, Array Utilities, ErrorTrackingMiddleware on Eve
     }
 
     const commandBus = new InMemoryCommandBus({ executionContext });
-    const doubleAmount = async (cmd: LocalUnregisteredCommand) => cmd.getPayload().amount * 2;
     commandBus.register<LocalUnregisteredCommand, number>(LocalUnregisteredCommand.TYPE, {
-      handle: doubleAmount,
-      execute: doubleAmount,
+      handle: async cmd => cmd.getPayload().amount * 2,
     });
     expect(
       await commandBus.dispatch(new LocalUnregisteredCommand("corr-local", { amount: 21 })),
     ).toBe(42);
 
     const queryBus = new InMemoryQueryBus({ executionContext });
-    const findItem = async (qry: LocalUnregisteredQuery) => `found:${qry.getPayload().id}`;
     queryBus.register<LocalUnregisteredQuery, string>(LocalUnregisteredQuery.TYPE, {
-      handle: findItem,
-      execute: findItem,
+      handle: async qry => `found:${qry.getPayload().id}`,
     });
     expect(
       await queryBus.dispatch(new LocalUnregisteredQuery("corr-local", { id: "item-7" })),

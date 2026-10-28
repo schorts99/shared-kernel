@@ -35,8 +35,6 @@ export interface QueryHandler<Q extends Query = Query, R = unknown> {
 
   authorize?(query: Q): Promise<void>;
 
-  execute(query: Q, context?: QueryHandlerContext): Promise<R>;
-
   getCacheKey?(query: Q): string | null;
 
   shouldCache?(query: Q, result: R): boolean;
@@ -192,7 +190,8 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
 
   public async authorize(_: Q): Promise<void> { }
 
-  public abstract execute(query: Q, context: QueryHandlerContext): Promise<R>;
+  /** Runs the query. Called only by `handle`, after validation and authorization. */
+  protected abstract execute(query: Q, context: QueryHandlerContext): Promise<R>;
 
   getCacheKey?(query: Q): string | null {
     const primitives = query.toPrimitives?.();

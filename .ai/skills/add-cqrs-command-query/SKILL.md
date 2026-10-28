@@ -12,23 +12,24 @@ This skill details the process for implementing a new Command or Query alongside
 ## Step 1: Create Command or Query Class
 
 1. Create a file under `src/cqrs/` (or your feature domain folder, e.g. `src/cqrs/create-user-command.ts`).
-2. Extend `Command` for state mutations, or `Query` for read requests.
+2. Extend `AbstractCommand` for state mutations, or `AbstractQuery` for read requests. (`Command` and `Query` are the interfaces they implement.)
+3. Implement `getType()`. The constructor takes the correlation ID first, then the payload.
 
 ### Command Template:
 
 ```typescript
-import { Command } from "./command.js";
+import { AbstractCommand } from "./command.js";
 
 export interface CreateUserPayload {
   readonly email: string;
   readonly name: string;
 }
 
-export class CreateUserCommand extends Command<CreateUserPayload> {
-  static readonly COMMAND_NAME = "user.create";
+export class CreateUserCommand extends AbstractCommand<CreateUserPayload> {
+  static readonly TYPE = "user.create";
 
-  constructor(payload: CreateUserPayload, correlationId?: string) {
-    super(CreateUserCommand.COMMAND_NAME, payload, correlationId);
+  getType(): string {
+    return CreateUserCommand.TYPE;
   }
 }
 ```
@@ -36,17 +37,17 @@ export class CreateUserCommand extends Command<CreateUserPayload> {
 ### Query Template:
 
 ```typescript
-import { Query } from "./query.js";
+import { AbstractQuery } from "./query.js";
 
 export interface GetUserByIdPayload {
   readonly userId: string;
 }
 
-export class GetUserByIdQuery extends Query<GetUserByIdPayload> {
-  static readonly QUERY_NAME = "user.get_by_id";
+export class GetUserByIdQuery extends AbstractQuery<GetUserByIdPayload> {
+  static readonly TYPE = "user.get_by_id";
 
-  constructor(payload: GetUserByIdPayload) {
-    super(GetUserByIdQuery.QUERY_NAME, payload);
+  getType(): string {
+    return GetUserByIdQuery.TYPE;
   }
 }
 ```
@@ -55,25 +56,44 @@ export class GetUserByIdQuery extends Query<GetUserByIdPayload> {
 
 ## Step 2: Create Handler Class
 
+Extend `AbstractCommandHandler` or `AbstractQueryHandler` and implement the protected `execute` method. Do not override `handle`: the bus calls `handle`, which runs validation, authorization, idempotency, timeouts, and logging around `execute`. Override `validate` or `authorize` to add checks.
+
 ### CommandHandler Template:
 
 ```typescript
-import { CommandHandler } from "./command-handler.js";
+import { AbstractCommandHandler } from "./command-handler.js";
 import { CreateUserCommand } from "./create-user-command.js";
 import { Result } from "../result/index.js";
 
-export class CreateUserCommandHandler extends CommandHandler<CreateUserCommand, Result<string>> {
-  subscribedTo(): string {
-    return CreateUserCommand.COMMAND_NAME;
+export class CreateUserCommandHandler extends AbstractCommandHandler<CreateUserCommand, Result<string>> {
+  override async validate(command: CreateUserCommand): Promise<void> {
+    if (!command.getPayload().email.includes("@")) {
+      throw new Error("A valid email is required");
+    }
   }
 
-  async handle(command: CreateUserCommand): Promise<Result<string>> {
-    const { email, name } = command.payload;
+  protected async execute(command: CreateUserCommand): Promise<Result<string>> {
+    const { email, name } = command.getPayload();
     // Perform domain logic or call DAO / Repository
-    return Result.success("user-123");
+    return Result.success(`user:${email}:${name}`);
   }
 }
 ```
+
+### QueryHandler Template:
+
+```typescript
+import { AbstractQueryHandler } from "./query-handler.js";
+import { GetUserByIdQuery } from "./get-user-by-id-query.js";
+
+export class GetUserByIdQueryHandler extends AbstractQueryHandler<GetUserByIdQuery, { id: string } | null> {
+  protected async execute(query: GetUserByIdQuery): Promise<{ id: string } | null> {
+    return { id: query.getPayload().userId };
+  }
+}
+```
+
+A bus also accepts any object that implements the `CommandHandler` / `QueryHandler` interface, which only requires `handle`. Prefer the abstract classes unless you need full control.
 
 ---
 
@@ -82,17 +102,21 @@ export class CreateUserCommandHandler extends CommandHandler<CreateUserCommand, 
 Register the handler with `InMemoryCommandBus` or `InMemoryQueryBus`:
 
 ```typescript
-import { InMemoryCommandBus } from "@schorts/shared-kernel/cqrs";
+import { CommandRegistry, InMemoryCommandBus } from "@schorts/shared-kernel/cqrs";
+
+// Lets the bus rebuild the command from primitives (idempotency replay, offline sync).
+CommandRegistry.register(CreateUserCommand.TYPE, CreateUserCommand);
 
 const commandBus = new InMemoryCommandBus();
-const handler = new CreateUserCommandHandler();
-commandBus.register(CreateUserCommand.COMMAND_NAME, handler);
+commandBus.register(CreateUserCommand.TYPE, new CreateUserCommandHandler());
 
-const result = await commandBus.dispatch(new CreateUserCommand({ email: "test@example.com", name: "Alice" }));
+const result = await commandBus.dispatch(
+  new CreateUserCommand("correlation-id", { email: "test@example.com", name: "Alice" }),
+);
 ```
 
 ---
 
 ## Step 4: Update Exports
 
-Ensure exports are added in `src/cqrs/index.ts` and `src/index.ts`.
+Ensure exports are added in `src/cqrs/index.ts` and `src/index.ts`, using explicit `.js` paths (`export * from "./create-user-command.js";`).

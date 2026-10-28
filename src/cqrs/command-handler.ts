@@ -48,8 +48,6 @@ export interface CommandHandler<C extends Command = Command, R = void> {
 
   authorize?(command: C): Promise<void>;
 
-  execute(command: C, context?: CommandHandlerContext): Promise<R>;
-
   getIdempotencyKey?(command: C): string | null;
 
   canRetry?(command: C, error: Error): boolean;
@@ -196,7 +194,8 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
 
   public async authorize(_: C): Promise<void> { }
 
-  public abstract execute(command: C, context: CommandHandlerContext): Promise<R>;
+  /** Runs the command. Called only by `handle`, after validation and authorization. */
+  protected abstract execute(command: C, context: CommandHandlerContext): Promise<R>;
 
   private async runWithTimeout(command: C, handlerContext: CommandHandlerContext): Promise<R> {
     const timeoutMs = this.options.timeout;

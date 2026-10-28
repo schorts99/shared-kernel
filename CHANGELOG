@@ -21,9 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Declared `"sideEffects": false` so bundlers can tree-shake unused modules.
 - Declared `"engines": { "node": ">=18" }`.
+- **Breaking (next major release):** `AbstractCommandHandler.execute` and `AbstractQueryHandler.execute` are now `protected`, so they can only run through `handle`, which applies validation, authorization, idempotency, timeouts, and logging. Subclasses that declare `execute` keep compiling; code that calls `handler.execute(...)` directly must call `handle` instead.
 
 ### Removed
 
+- **Breaking (next major release):** Removed `execute` from the `CommandHandler` and `QueryHandler` interfaces. Buses only call `handle`, so hand-written handlers no longer need an `execute` method.
 - **Breaking (next major release):** Removed the guided tour module, its `@schorts/shared-kernel/tour-guide` subpath, and all tour exports from the package root. Tour integrations now belong in consuming applications.
 - **Breaking (next major release):** Removed `LocalStorageStateManager` and `SessionStorageStateManager`. `StateManager` and `InMemoryStateManager` remain available; applications must provide their own browser persistence.
 

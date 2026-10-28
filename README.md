@@ -164,6 +164,14 @@ Guided tours and browser-backed state managers have been removed from the kernel
 
 No replacement UI package is provided.
 
+### Command and query handlers
+
+`execute` is no longer part of the `CommandHandler` and `QueryHandler` interfaces, and it is `protected` on `AbstractCommandHandler` and `AbstractQueryHandler`.
+
+- Handlers that extend the abstract classes keep working. Declaring `execute` as `protected` is recommended but not required.
+- Hand-written handlers only need `handle`; remove any `execute` you added just to satisfy the interface.
+- Replace direct `handler.execute(command)` calls with `handler.handle(command)` or `bus.dispatch(command)`. Calling `execute` directly skipped validation, authorization, idempotency, and timeouts.
+
 ## 🧪 Testing
 
 Tests use Jest and live in `__tests__/`. CI runs them on every push and pull request, with minimum coverage levels set in `jest.config.js`.
