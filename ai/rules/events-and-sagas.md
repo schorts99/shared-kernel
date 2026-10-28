@@ -25,10 +25,10 @@ Applies to `event-bus`, `sagas`, and `pub-sub`.
 - In `configure()`, map events to steps with `this.on(Event.NAME, async (event, ctx) => { ... })`. Inside a step use `ctx.dispatch(command)`, `ctx.updateState(next)`, `ctx.completeStep(stepId, compensate?)`, and `ctx.completeSaga()`.
 - `configure()` runs inside the `Saga` constructor, before the subclass's own fields exist. Do not read `this.someField` in `configure()`; read dependencies inside step callbacks instead.
 - Throw from a step to fail the saga: every completed step is compensated in reverse order and the saga is marked `failed`.
-- Give every saga `getOptions() { return { retryOnError: false }; }`. Without it the event bus retries a failed delivery (three times by default), and each retry re-runs the step after its compensation already ran.
+- A failed saga is final, like a completed one: later events for its ID are ignored, and the event bus does not retry sagas. Retry transient work inside the step before throwing; to run a failed saga again, delete its state from the `SagaStateStore`.
 - Register compensation declaratively with `this.registerStepCompensation(stepId, ctx => ...)` in `configure()`, then mark the step done with `ctx.completeStep(stepId)`. Declarative compensation is found by step ID, so it still runs after a restart. A closure passed as `ctx.completeStep(stepId, async () => ...)` lives only in memory and is lost on restart.
 - `getSagaId(event)` receives a plain `DomainEvent`, so its payload is `unknown`; read the ID with a type guard, or use `event.correlationId` when every event in the flow shares it.
-- Events for the same saga ID run one at a time; different saga IDs run concurrently. A completed saga ignores further events.
+- Events for the same saga ID run one at a time; different saga IDs run concurrently.
 - Register sagas with `new SagaManager(eventBus).register(saga)`; it subscribes the saga to everything `subscribedTo()` returns.
 - Saga state must be plain serializable data; provide a durable `SagaStateStore` in production.
 

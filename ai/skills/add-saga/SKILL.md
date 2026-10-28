@@ -71,13 +71,12 @@ export class PaymentFailed extends DomainEvent<OrderRef & { reason: string }> {
 - `configure()` maps events to steps. It runs inside the base constructor, before your subclass's own fields exist, so use only `ctx` inside steps.
 - Register compensation with `registerStepCompensation` and mark the step with `ctx.completeStep(stepId)`. If any later step throws, completed steps are compensated in reverse order and the saga is marked `failed`. Declarative compensation survives restarts; a closure passed to `completeStep` does not.
 - Handle expected business failures explicitly (dispatch the undo commands and complete the saga) instead of throwing.
-- Turn off event bus retries for the saga with `getOptions()` returning `{ retryOnError: false }`. Otherwise the bus retries a failed delivery (three times by default) and each retry runs the step again from the start, after its compensation already ran.
+- A failed saga is finished: later events for the same saga ID are ignored, and the event bus does not retry sagas. Retry transient work inside the step (for example with `retry` from `utils`) before letting it throw. To run a failed saga again, delete its state with `stateStore.delete(sagaId)`.
 
 ```ts
 // file: checkout/checkout-saga.ts
 import { Saga } from "@schorts/shared-kernel/sagas";
 import type { DomainEvent } from "@schorts/shared-kernel/domain-events";
-import type { EventSubscriberOptions } from "@schorts/shared-kernel/event-bus";
 import { OrderPlaced } from "../domain/order-events.js";
 import { ChargePayment, PaymentCaptured, PaymentFailed, ReleaseStock, ReserveStock, ShipOrder } from "./messages.js";
 
@@ -95,11 +94,6 @@ function orderIdOf(event: DomainEvent): string {
 }
 
 export class CheckoutSaga extends Saga<CheckoutState> {
-  // Compensation already handled a failed step; a bus retry would run the whole step again.
-  getOptions(): EventSubscriberOptions {
-    return { retryOnError: false };
-  }
-
   protected getInitialState(): CheckoutState {
     return { orderId: null, stage: "started" };
   }
@@ -234,6 +228,6 @@ describe("CheckoutSaga", () => {
 - [ ] `configure()` uses only `this.on`, `this.registerStepCompensation`, and `ctx` (no subclass fields).
 - [ ] Each step that needs undoing has a declarative compensation and calls `ctx.completeStep`.
 - [ ] Business failures handled explicitly; unexpected failures throw and compensate.
-- [ ] `getOptions()` returns `{ retryOnError: false }`.
+- [ ] Transient failures retried inside the step, not by the event bus.
 - [ ] Registered through `SagaManager`; durable `SagaStateStore` in production.
 - [ ] Tests cover success, business failure, and a throwing step.

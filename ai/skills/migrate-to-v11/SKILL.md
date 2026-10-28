@@ -124,6 +124,7 @@ export class LocalStorageStateManager<Schema extends Record<string, unknown>> ex
 - `randomString` uses `crypto.getRandomValues` and throws if Web Crypto is unavailable (Node 18 without `--experimental-global-webcrypto`). It also rejects negative or non-integer lengths.
 - `JSONAPIConnector` converts an error into `JSONAPIErrors` only when the response body has an `errors` array; other error bodies now surface as `HTTPException`.
 - ABAC predicates passed inline to `canWithAttributes` and friends now have typed parameters; remove explicit `any` annotations you added to them.
+- A saga whose step failed is final: later events for it are ignored, and the event bus no longer retries saga deliveries. If you relied on bus retries for transient failures, retry inside the step instead; delete the saga's state to run it again. If a saga subclass defines its own `getOptions`, mark it `override`.
 
 ## 7. Packaging
 

@@ -1,5 +1,5 @@
 import { DomainEvent } from "../domain-events/index.js";
-import { EventSubscriber, EventSubscriberContext } from "../event-bus/index.js";
+import { EventSubscriber, EventSubscriberContext, EventSubscriberOptions } from "../event-bus/index.js";
 import { Command, CommandBus } from "../cqrs/index.js";
 import {
   addWaitEdge,
@@ -141,7 +141,8 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
     const processedEventIds = persisted?.processedEventIds ?? [];
     const handler = this.handlers.get(event.getEventName());
 
-    if (persisted?.status === "completed" || processedEventIds.includes(event.id)) {
+    // Completed and failed sagas are finished: a failed saga has already compensated its steps.
+    if (persisted?.status === "completed" || persisted?.status === "failed" || processedEventIds.includes(event.id)) {
       return;
     }
 
@@ -215,6 +216,15 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
 
   getName(): string {
     return this.constructor.name;
+  }
+
+  /**
+   * Sagas are not retried by the event bus: a failed step has already been compensated and
+   * the saga is marked failed, so a retry could only hide the failure. Retry transient work
+   * inside the step instead.
+   */
+  getOptions(): EventSubscriberOptions {
+    return { retryOnError: false };
   }
 
   protected async completeSaga(sagaId: string, eventId?: string): Promise<void> {
