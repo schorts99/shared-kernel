@@ -3,6 +3,8 @@ export interface HTTPRequestOptions<T = any> {
   query?: Record<string, string | number | boolean | undefined>;
   headers?: Record<string, string>;
   deduplicate?: boolean;
+  signal?: AbortSignal;
+  timeoutMs?: number;
 }
 
 export interface HTTPProvider {

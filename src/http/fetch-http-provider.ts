@@ -47,7 +47,16 @@ export class FetchHTTPProvider implements HTTPProvider {
     url: string | URL,
     options?: HTTPRequestOptions
   ): Promise<R> {
+    let cleanup = () => {};
+
     try {
+      if (options?.timeoutMs !== undefined &&
+        (!Number.isInteger(options.timeoutMs) || options.timeoutMs < 0 || options.timeoutMs > 2_147_483_647)) {
+        throw new RangeError("timeoutMs must be an integer between 0 and 2147483647");
+      }
+
+      options?.signal?.throwIfAborted();
+
       const fullUrl = this.buildUrl(url, options?.query);
       let init = await this.prepareRequest(method, options);
 
@@ -55,6 +64,14 @@ export class FetchHTTPProvider implements HTTPProvider {
         if (interceptor.request) {
           init = await interceptor.request(init, fullUrl);
         }
+      }
+
+      const cancellation = this.prepareCancellation(options?.signal, init.signal, options?.timeoutMs);
+      cleanup = cancellation.cleanup;
+
+      if (cancellation.signal) {
+        init.signal = cancellation.signal;
+        init.signal.throwIfAborted();
       }
 
       const key = options?.deduplicate && method === "GET" &&
@@ -98,7 +115,57 @@ export class FetchHTTPProvider implements HTTPProvider {
       }
 
       throw finalError;
+    } finally {
+      cleanup();
     }
+  }
+
+  private prepareCancellation(
+    callerSignal: AbortSignal | undefined,
+    interceptorSignal: AbortSignal | null | undefined,
+    timeoutMs: number | undefined,
+  ): { signal: AbortSignal | undefined; cleanup: () => void } {
+    const signals = [...new Set([callerSignal, interceptorSignal].filter(
+      (signal): signal is AbortSignal => signal !== undefined && signal !== null,
+    ))];
+
+    if (signals.length === 0 && timeoutMs === undefined) {
+      return { signal: undefined, cleanup: () => {} };
+    }
+
+    const controller = new AbortController();
+    const listeners: Array<() => void> = [];
+
+    for (const signal of signals) {
+      if (signal.aborted) {
+        controller.abort(signal.reason);
+        break;
+      }
+
+      const onAbort = () => controller.abort(signal.reason);
+      signal.addEventListener("abort", onAbort, { once: true });
+      listeners.push(() => signal.removeEventListener("abort", onAbort));
+    }
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    if (!controller.signal.aborted && timeoutMs !== undefined) {
+      const onTimeout = () => controller.abort(new DOMException("HTTP request timed out", "TimeoutError"));
+
+      if (timeoutMs === 0) {
+        onTimeout();
+      } else {
+        timer = setTimeout(onTimeout, timeoutMs);
+      }
+    }
+
+    return {
+      signal: controller.signal,
+      cleanup: () => {
+        if (timer !== undefined) clearTimeout(timer);
+        listeners.forEach(removeListener => removeListener());
+      },
+    };
   }
 
   private buildUrl(url: string | URL, query?: Record<string, any>): URL {
@@ -153,6 +220,8 @@ export class FetchHTTPProvider implements HTTPProvider {
     if (this.config.credentials) {
       init.credentials = this.config.credentials;
     }
+
+    if (options?.signal) init.signal = options.signal;
 
     return init;
   }

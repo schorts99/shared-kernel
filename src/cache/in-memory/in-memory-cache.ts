@@ -1,4 +1,5 @@
 import { Cache } from "../../cache";
+import { getExpirationTime } from "../../utils/expiration";
 
 export class InMemoryCache<T = unknown> implements Cache<T> {
   private readonly cache = new Map<string, { value: T; expiresAt?: number; tags?: string[] }>();
@@ -9,8 +10,8 @@ export class InMemoryCache<T = unknown> implements Cache<T> {
 
     if (!entry) return undefined;
 
-    if (entry.expiresAt && Date.now() > entry.expiresAt) {
-      this.delete(key);
+    if (entry.expiresAt !== undefined && Date.now() >= entry.expiresAt) {
+      this.deleteEntry(key);
 
       return undefined;
     }
@@ -19,14 +20,11 @@ export class InMemoryCache<T = unknown> implements Cache<T> {
   }
 
   async set(key: string, value: T, ttl?: number, tags?: string[]): Promise<void> {
-    const expiresAt = ttl ? Date.now() + ttl : undefined;
-    const oldEntry = this.cache.get(key);
+    const expiresAt = getExpirationTime(ttl);
 
-    if (oldEntry?.tags) {
-      for (const tag of oldEntry.tags) {
-        this.tagMap.get(tag)?.delete(key);
-      }
-    }
+    this.deleteEntry(key);
+
+    if (ttl === 0) return;
 
     const newEntry: { value: T; expiresAt?: number; tags?: string[] } = { value };
 
@@ -35,7 +33,7 @@ export class InMemoryCache<T = unknown> implements Cache<T> {
     }
 
     if (tags !== undefined) {
-      newEntry.tags = tags;
+      newEntry.tags = [...tags];
     }
 
     this.cache.set(key, newEntry);
@@ -52,6 +50,10 @@ export class InMemoryCache<T = unknown> implements Cache<T> {
   }
 
   async delete(key: string): Promise<boolean> {
+    return this.deleteEntry(key);
+  }
+
+  private deleteEntry(key: string): boolean {
     const entry = this.cache.get(key);
 
     if (entry?.tags) {
@@ -91,8 +93,8 @@ export class InMemoryCache<T = unknown> implements Cache<T> {
 
     if (!entry) return false;
 
-    if (entry.expiresAt && Date.now() > entry.expiresAt) {
-      this.delete(key);
+    if (entry.expiresAt !== undefined && Date.now() >= entry.expiresAt) {
+      await this.delete(key);
 
       return false;
     }

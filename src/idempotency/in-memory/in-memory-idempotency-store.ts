@@ -1,4 +1,5 @@
 import { IdempotencyStore } from "../idempotency-store";
+import { getExpirationTime } from "../../utils/expiration";
 
 export class InMemoryIdempotencyStore implements IdempotencyStore {
   private readonly processed = new Map<string, { result: unknown; expiresAt?: number }>();
@@ -8,7 +9,7 @@ export class InMemoryIdempotencyStore implements IdempotencyStore {
 
     if (!entry) return false;
 
-    if (entry.expiresAt && Date.now() > entry.expiresAt) {
+    if (entry.expiresAt !== undefined && Date.now() >= entry.expiresAt) {
       this.processed.delete(key);
 
       return false;
@@ -18,8 +19,12 @@ export class InMemoryIdempotencyStore implements IdempotencyStore {
   }
 
   async markProcessed(key: string, result: unknown, ttl?: number): Promise<void> {
-    if (ttl) {
-      this.processed.set(key, { result, expiresAt: Date.now() + ttl });
+    const expiresAt = getExpirationTime(ttl);
+
+    if (ttl === 0) {
+      this.processed.delete(key);
+    } else if (expiresAt !== undefined) {
+      this.processed.set(key, { result, expiresAt });
     } else {
       this.processed.set(key, { result });
     }
@@ -38,7 +43,7 @@ export class InMemoryIdempotencyStore implements IdempotencyStore {
 
     if (!entry) return undefined;
 
-    if (entry.expiresAt && Date.now() > entry.expiresAt) {
+    if (entry.expiresAt !== undefined && Date.now() >= entry.expiresAt) {
       this.processed.delete(key);
 
       return undefined;
