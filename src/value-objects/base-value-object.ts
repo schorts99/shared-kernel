@@ -1,4 +1,5 @@
 import { ValueObject } from "./value-object";
+import { deepEqual } from "../utils/object";
 
 export abstract class BaseValueObject<T> implements ValueObject<T> {
   abstract readonly valueType: string;
@@ -17,7 +18,7 @@ export abstract class BaseValueObject<T> implements ValueObject<T> {
     if (this.valueType !== other.valueType) return false;
     if (!this.isValid || !other.isValid) return false;
 
-    return this.value === other.value;
+    return deepEqual(this.value, other.value);
   }
 
   toString(): string {

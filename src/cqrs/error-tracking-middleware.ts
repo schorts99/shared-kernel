@@ -2,19 +2,25 @@ import { CommandBusMiddleware, CommandBusContext } from "./command-bus";
 import { QueryBusMiddleware, QueryBusContext } from "./query-bus";
 import { Command } from "./command";
 import { Query } from "./query";
+import { DomainEvent } from "../domain-events";
+import { EventBusContext, EventBusMiddleware } from "../event-bus";
 import { ErrorTracker } from "../error-tracking";
 
-export class ErrorTrackingMiddleware implements CommandBusMiddleware, QueryBusMiddleware {
-  constructor(private readonly tracker: ErrorTracker) { }
+export class ErrorTrackingMiddleware
+  implements CommandBusMiddleware, QueryBusMiddleware, EventBusMiddleware {
+  constructor(private readonly tracker: ErrorTracker) {}
 
   async onError(
-    request: Command | Query,
+    requestOrEvent: Command | Query | DomainEvent,
     error: Error,
-    context: CommandBusContext | QueryBusContext
+    context: CommandBusContext | QueryBusContext | EventBusContext,
   ): Promise<void> {
-    const isCommand = "events" in context;
-    const requestType = isCommand ? "command" : "query";
-    const typeName = request.getType();
+    const isEvent = "getEventName" in requestOrEvent;
+    const isCommand = !isEvent && "events" in context;
+    const requestType = isEvent ? "event" : isCommand ? "command" : "query";
+    const typeName = isEvent
+      ? requestOrEvent.getEventName()
+      : requestOrEvent.getType();
 
     const trackingContext = {
       ...context.metadata,
@@ -22,13 +28,13 @@ export class ErrorTrackingMiddleware implements CommandBusMiddleware, QueryBusMi
       typeName,
       correlationId: context.correlationId,
       startTime: context.startTime.toISOString(),
-      payload: request.toPrimitives?.().payload ?? {},
+      payload: requestOrEvent.toPrimitives?.().payload ?? {},
     };
 
     await this.tracker.track(
       error,
       trackingContext,
-      `Failed to execute ${requestType}: ${typeName}`
+      `Failed to execute ${requestType}: ${typeName}`,
     );
   }
 }

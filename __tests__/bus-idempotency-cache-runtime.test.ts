@@ -4,6 +4,7 @@ import {
   AbstractQuery,
   AbstractQueryHandler,
   AggregateRoot,
+  ArrayValue,
   AsyncUnitOfWorkRunner,
   BaseValueObject,
   CommandRegistry,
@@ -19,6 +20,7 @@ import {
   EntityJSONAPIMapper,
   EntityRegistry,
   ErrorTracker,
+  ErrorTrackingMiddleware,
   FetchHTTPProvider,
   FloatValue,
   HTMLValue,
@@ -43,16 +45,20 @@ import {
   Logger,
   LoggingMailer,
   MarkdownValue,
+  ObjectValue,
   OfflineCommandSync,
   PaginationLinksGenerator,
   PascalCamelToSnake,
   QueryRegistry,
   RemoteFileToBase64,
   Result,
+  retry,
   Saga,
+  SagaManager,
   SlugValue,
   SnakeToCamel,
   StaticRBACPolicy,
+  unorderedObjectArrayEqual,
   URLCriteriaBuilder,
   URLCriteriaParser,
   URLValue,
@@ -1536,5 +1542,142 @@ describe("9. Formatters, i18n, RemoteFileToBase64, EntityJSONAPIMapper, and InMe
     );
     await fileProvider.delete("invoices/2026", "inv-001.txt");
     expect(await fileProvider.exists("invoices/2026", "inv-001.txt")).toBe(false);
+  });
+});
+
+describe("10. Schema Validation, Array Utilities, ErrorTrackingMiddleware on EventBus, SagaManager, and Retry", () => {
+  it("handles { required: false } and key-order-independent equals in ObjectValue/ArrayValue, and multiplicity in unorderedObjectArrayEqual", () => {
+    interface ConfigPayload {
+      host: string;
+      port?: number | undefined;
+    }
+
+    class ConfigObjectValue extends ObjectValue<ConfigPayload> {
+      readonly attributeName = "config";
+      constructor(value: ConfigPayload) {
+        super(value, {
+          host: [{ required: true }, { type: "string" }],
+          port: [{ required: false }, { type: "number" }],
+        });
+      }
+    }
+
+    const cfgWithoutOptional = new ConfigObjectValue({ host: "localhost" });
+    expect(cfgWithoutOptional.isValid).toBe(true);
+
+    const cfgKeyOrder1 = new ConfigObjectValue({ host: "localhost", port: 8080 });
+    const cfgKeyOrder2 = new ConfigObjectValue({ port: 8080, host: "localhost" });
+    expect(cfgKeyOrder1.equals(cfgKeyOrder2)).toBe(true);
+
+    class TagsArrayValue extends ArrayValue<{ a: number; b: number }> {
+      readonly attributeName = "tags";
+      readonly isPrimitive = false;
+      constructor(value: Array<{ a: number; b: number }>) {
+        super(value, {
+          a: [{ required: true }, { type: "number" }],
+          b: [{ required: true }, { type: "number" }],
+        });
+      }
+    }
+
+    const arr1 = new TagsArrayValue([{ a: 1, b: 2 }]);
+    const arr2 = new TagsArrayValue([{ b: 2, a: 1 }]);
+    expect(arr1.equals(arr2)).toBe(true);
+
+    // unorderedObjectArrayEqual checks duplicate counts and nested keys
+    expect(
+      unorderedObjectArrayEqual(
+        [{ id: 1 }, { id: 1 }, { id: 2 }],
+        [{ id: 1 }, { id: 2 }, { id: 2 }],
+      ),
+    ).toBe(false);
+
+    expect(
+      unorderedObjectArrayEqual(
+        [{ meta: { x: 1, y: 2 } }, { meta: { a: 3, b: 4 } }],
+        [{ meta: { b: 4, a: 3 } }, { meta: { y: 2, x: 1 } }],
+      ),
+    ).toBe(true);
+  });
+
+  it("tracks EventBus errors in ErrorTrackingMiddleware, supports SagaManager.unregister, and supports retry options", async () => {
+    const executionContext = new NodeExecutionContext();
+    const errorStore = new InMemoryErrorStore();
+    const errorTracker = new ErrorTracker(errorStore, { upload: async () => {} });
+    const middleware = new ErrorTrackingMiddleware(errorTracker);
+
+    const eventBus = new InMemoryEventBus(
+      new InMemoryEventStore(),
+      { maxRetries: 0 },
+      undefined,
+      undefined,
+      executionContext,
+    );
+    eventBus.use(middleware);
+
+    eventBus.subscribe(TestDomainEvent.NAME, {
+      getName: () => "failing-sub",
+      handle: async () => {
+        throw new Error("event subscriber failed");
+      },
+    });
+
+    await expect(
+      eventBus.publish(new TestDomainEvent("corr-err-mw", { id: "e-mw" }, { id: "evt-mw-1" })),
+    ).rejects.toThrow("event subscriber failed");
+
+    const tracked = await errorStore.all();
+    expect(tracked).toHaveLength(1);
+    expect(tracked[0]?.reason).toBe(`Failed to execute event: ${TestDomainEvent.NAME}`);
+    expect(tracked[0]?.context?.requestType).toBe("event");
+
+    // SagaManager register / unregister
+    const commandBus = new InMemoryCommandBus({ executionContext });
+    const stateStore = new InMemorySagaStateStore();
+    let sagaCalls = 0;
+
+    class UnregisterableSaga extends Saga {
+      protected getInitialState() {
+        return {};
+      }
+      protected getSagaId(event: DomainEvent): string {
+        return event.id;
+      }
+      protected configure(): void {
+        this.on(SecondaryCommand.TYPE, async () => {
+          sagaCalls++;
+        });
+      }
+    }
+
+    const sagaManager = new SagaManager(eventBus);
+    const saga = new UnregisterableSaga(commandBus, stateStore);
+    sagaManager.register(saga);
+    expect(sagaManager.getRegisteredSagas()).toEqual([saga]);
+    expect(sagaManager.unregister(saga)).toBe(true);
+    expect(sagaManager.getRegisteredSagas()).toEqual([]);
+
+    await eventBus.close();
+
+    // retry with options & shouldRetry
+    let attempts = 0;
+    const result = await retry(
+      async () => {
+        attempts++;
+        if (attempts < 3) {
+          throw new Error("transient");
+        }
+        return "recovered";
+      },
+      {
+        retries: 3,
+        delayMs: 5,
+        backoffFactor: 2,
+        maxDelayMs: 20,
+        shouldRetry: err => err instanceof Error && err.message === "transient",
+      },
+    );
+    expect(result).toBe("recovered");
+    expect(attempts).toBe(3);
   });
 });
