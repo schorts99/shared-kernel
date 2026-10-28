@@ -1,34 +1,35 @@
 import { LimitNotValid, OffsetNotValid } from "../criteria";
 
-type PaginationLinks = {
-	self: string;
-	first: string;
-	prev: string | null;
-	next: string | null;
-	last: string;
+export type PaginationLinks = {
+  self: string;
+  first: string;
+  prev: string | null;
+  next: string | null;
+  last: string;
 };
 
 export class PaginationLinksGenerator {
   constructor(private readonly url: URL) {}
 
   generate(offset: number, limit: number, total: number): PaginationLinks {
-    if (limit <= 0) throw new LimitNotValid(limit);
-    if (offset < 0) throw new OffsetNotValid(offset);
+    if (!Number.isSafeInteger(limit) || limit <= 0) throw new LimitNotValid(limit);
+    if (!Number.isSafeInteger(offset) || offset < 0) throw new OffsetNotValid(offset);
 
-    const totalPages = Math.ceil(total / limit);
+    const safeTotal = Math.max(0, total);
+    const totalPages = Math.ceil(safeTotal / limit);
     const currentPage = Math.floor(offset / limit) + 1;
 
     return {
       self: this.generateLink(offset, limit),
-			first: this.generateLink(0, limit),
-			prev: currentPage > 1 ? this.generateLink((currentPage - 2) * limit, limit) : null,
-			next: currentPage < totalPages ? this.generateLink(currentPage * limit, limit) : null,
-			last: this.generateLink(totalPages > 0 ? (totalPages - 1) * limit : 0, limit),
+      first: this.generateLink(0, limit),
+      prev: currentPage > 1 ? this.generateLink((currentPage - 2) * limit, limit) : null,
+      next: currentPage < totalPages ? this.generateLink(currentPage * limit, limit) : null,
+      last: this.generateLink(totalPages > 0 ? (totalPages - 1) * limit : 0, limit),
     };
   }
 
   private generateLink(offset: number, limit: number): string {
-    const baseHref = this.url.href.split("?")[0]!;
+    const baseHref = `${this.url.origin}${this.url.pathname}`;
     const existingSearch = this.url.search
       ? this.url.search
           .slice(1)
@@ -45,7 +46,7 @@ export class PaginationLinksGenerator {
     const paginationParams = [`page[offset]=${offset}`, `page[limit]=${limit}`];
     const query = [...existingSearch, ...paginationParams].join("&");
 
-    return `${baseHref}?${query}`;
+    return `${baseHref}?${query}${this.url.hash}`;
   }
 }
 

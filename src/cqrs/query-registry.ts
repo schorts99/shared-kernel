@@ -42,6 +42,18 @@ export class QueryRegistry {
     this.registry.set(queryType, constructorOrFactory);
   }
 
+  static has(queryType: string): boolean {
+    return this.registry.has(queryType);
+  }
+
+  static unregister(queryType: string): boolean {
+    return this.registry.delete(queryType);
+  }
+
+  static clear(): void {
+    this.registry.clear();
+  }
+
   static fromPrimitives<Q extends Query = Query>(primitives: QueryPrimitives): Q {
     const registered = this.registry.get(primitives.type);
 

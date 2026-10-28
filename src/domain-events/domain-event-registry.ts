@@ -42,6 +42,18 @@ export class DomainEventRegistry {
     this.registry.set(eventName, constructorOrFactory);
   }
 
+  static has(eventName: string): boolean {
+    return this.registry.has(eventName);
+  }
+
+  static unregister(eventName: string): boolean {
+    return this.registry.delete(eventName);
+  }
+
+  static clear(): void {
+    this.registry.clear();
+  }
+
   static fromPrimitives<E extends DomainEvent = DomainEvent>(primitives: DomainEventPrimitives): E {
     const registered = this.registry.get(primitives.type);
 
@@ -77,9 +89,9 @@ export class DomainEventRegistry {
         version: primitives.version,
         userId: primitives.user_id,
         tenantId: primitives.tenant_id,
-        retries: primitives.meta.retries,
-        headers: primitives.meta.headers,
-        context: primitives.meta.context,
+        retries: primitives.meta?.retries,
+        headers: primitives.meta?.headers,
+        context: primitives.meta?.context,
       },
     );
   }

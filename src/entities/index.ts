@@ -6,3 +6,4 @@ export {
   type EntityRegistration,
 } from "./entity-registry";
 export { RegisterEntity } from "./register-entity.decorator";
+export * from "./exceptions";

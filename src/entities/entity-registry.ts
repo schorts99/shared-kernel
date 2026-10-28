@@ -21,6 +21,18 @@ export class EntityRegistry {
     this.registry.set(entityName, constructorOrFactory);
   }
 
+  static has(entityName: string): boolean {
+    return this.registry.has(entityName);
+  }
+
+  static unregister(entityName: string): boolean {
+    return this.registry.delete(entityName);
+  }
+
+  static clear(): void {
+    this.registry.clear();
+  }
+
   static fromPrimitives<E = any, M = any>(
     entityName: string,
     model: M,

@@ -8,6 +8,7 @@ import {
   AsyncUnitOfWorkRunner,
   BaseValueObject,
   BooleanValue,
+  CommandNotRegistered,
   CommandRegistry,
   CommitOutcomeUnknownError,
   ConsoleLogger,
@@ -21,6 +22,7 @@ import {
   EmailValue,
   Entity,
   EntityJSONAPIMapper,
+  EntityNotRegistered,
   EntityRegistry,
   ErrorTracker,
   ErrorTrackingMiddleware,
@@ -71,6 +73,7 @@ import {
   retry,
   Saga,
   SagaManager,
+  SharedKernelTranslationKeys,
   slugify,
   SlugValue,
   SnakeToCamel,
@@ -2136,5 +2139,68 @@ describe("10. Schema Validation, Array Utilities, ErrorTrackingMiddleware on Eve
     const notAuthen = new NotAuthenticated();
     expect(notAuthen.name).toBe("NotAuthenticated");
     expect(notAuthen.message).toBe("Not Authenticated");
+  });
+
+  it("supports registry has/unregister/clear, i18n param forwarding on *NotRegistered exceptions, and hash-preserving PaginationLinksGenerator", () => {
+    CommandRegistry.register("temp.cmd", p => TestCommand.fromPrimitives(p));
+    expect(CommandRegistry.has("temp.cmd")).toBe(true);
+    expect(CommandRegistry.unregister("temp.cmd")).toBe(true);
+    expect(CommandRegistry.has("temp.cmd")).toBe(false);
+
+    QueryRegistry.register("temp.qry", p => TestQuery.fromPrimitives(p));
+    expect(QueryRegistry.has("temp.qry")).toBe(true);
+    QueryRegistry.clear();
+    expect(QueryRegistry.has("temp.qry")).toBe(false);
+
+    EntityRegistry.register("temp.entity", () => ({}) as any);
+    expect(EntityRegistry.has("temp.entity")).toBe(true);
+    expect(EntityRegistry.unregister("temp.entity")).toBe(true);
+    expect(EntityRegistry.has("temp.entity")).toBe(false);
+
+    class MinimalRegisteredEvent extends DomainEvent<{ ok: boolean }> {
+      getEventName(): string {
+        return "temp.event";
+      }
+      getPayload() {
+        return this.payload;
+      }
+    }
+    DomainEventRegistry.register("temp.event", MinimalRegisteredEvent);
+    expect(DomainEventRegistry.has("temp.event")).toBe(true);
+    const hydratedMinimal = DomainEventRegistry.fromPrimitives({
+      id: "ev-min-1",
+      type: "temp.event",
+      correlation_id: "corr-min",
+      occurred_at: "2026-01-01T00:00:00.000Z",
+      payload: { ok: true },
+    } as any);
+    expect(hydratedMinimal.getPayload()).toEqual({ ok: true });
+    DomainEventRegistry.unregister("temp.event");
+    expect(DomainEventRegistry.has("temp.event")).toBe(false);
+
+    // i18n interpolation on EntityNotRegistered & CommandNotRegistered
+    const i18n = new InMemoryTranslationResolver({
+      [SharedKernelTranslationKeys.entities.errors.EntityNotRegistered]:
+        "Missing entity: {entityName}",
+      [SharedKernelTranslationKeys.cqrs.errors.CommandNotRegistered]:
+        "Missing command: {command}",
+    });
+
+    const entityErr = new EntityNotRegistered("Invoice", i18n);
+    expect(entityErr.name).toBe("EntityNotRegistered");
+    expect(entityErr.message).toBe("Missing entity: Invoice");
+
+    const cmdErr = new CommandNotRegistered("CreateInvoice", i18n);
+    expect(cmdErr.name).toBe("CommandNotRegistered");
+    expect(cmdErr.message).toBe("Missing command: CreateInvoice");
+
+    // PaginationLinksGenerator with hash fragment and safe integer check
+    const linksGen = new PaginationLinksGenerator(
+      new URL("https://api.example.com/orders#results"),
+    );
+    const links = linksGen.generate(0, 10, 25);
+    expect(links.self).toBe("https://api.example.com/orders?page[offset]=0&page[limit]=10#results");
+    expect(links.next).toBe("https://api.example.com/orders?page[offset]=10&page[limit]=10#results");
+    expect(() => linksGen.generate(1.5, 10, 25)).toThrow(OffsetNotValid);
   });
 });

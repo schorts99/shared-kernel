@@ -42,6 +42,18 @@ export class CommandRegistry {
     this.registry.set(commandType, constructorOrFactory);
   }
 
+  static has(commandType: string): boolean {
+    return this.registry.has(commandType);
+  }
+
+  static unregister(commandType: string): boolean {
+    return this.registry.delete(commandType);
+  }
+
+  static clear(): void {
+    this.registry.clear();
+  }
+
   static fromPrimitives<C extends Command = Command>(primitives: CommandPrimitives): C {
     const registered = this.registry.get(primitives.type);
 
