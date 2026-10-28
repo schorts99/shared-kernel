@@ -30,5 +30,25 @@ export abstract class UUIDValue<Required extends boolean = true> implements Valu
     return this.value === valueObject.value;
   }
 
+  toString(): string {
+    return String(this.value);
+  }
+
+  toJSON(): UUIDInput<Required> {
+    return this.value;
+  }
+
+  toPrimitives(): UUIDInput<Required> {
+    return this.value;
+  }
+
+  static fromPrimitives<V extends UUIDValue<any> = UUIDValue<any>>(
+    this: new (value: any, optional?: boolean) => V,
+    value: string | null,
+    optional = false,
+  ): V {
+    return new this(value, optional);
+  }
+
   abstract readonly attributeName: string;
 }

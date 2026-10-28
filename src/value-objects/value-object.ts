@@ -9,4 +9,6 @@ export interface ValueObject<T = any> {
   toString?(): string;
 
   toJSON?(): T;
+
+  toPrimitives?(): T;
 }

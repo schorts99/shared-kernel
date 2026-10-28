@@ -32,5 +32,20 @@ export abstract class DateValue<Required extends boolean = true> implements Valu
     return this.value?.getTime() === valueObject.value?.getTime();
   }
 
+  toPrimitives(): string | null {
+    return this.value ? this.value.toISOString() : null;
+  }
+
+  static fromPrimitives<V extends DateValue<any> = DateValue<any>>(
+    this: new (value: any, beforeDate?: Date, afterDate?: Date, optional?: boolean) => V,
+    value: Date | string | number | null,
+    beforeDate?: Date,
+    afterDate?: Date,
+    optional = false,
+  ): V {
+    const parsed = value === null || value instanceof Date ? value : new Date(value);
+    return new this(parsed, beforeDate, afterDate, optional);
+  }
+
   abstract readonly attributeName: string;
 }

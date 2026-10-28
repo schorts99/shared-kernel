@@ -48,5 +48,19 @@ export abstract class StringValue<Optional extends boolean = false> implements V
     return this.value;
   }
 
+  toPrimitives(): Optional extends true ? string | null : string {
+    return this.value;
+  }
+
+  static fromPrimitives<V extends StringValue<any> = StringValue<any>>(
+    this: new (value: any, minLength?: number, maxLength?: number, optional?: any) => V,
+    value: string | null,
+    minLength = 0,
+    maxLength?: number,
+    optional = false,
+  ): V {
+    return new this(value, minLength, maxLength, optional);
+  }
+
   abstract readonly attributeName: string;
 }

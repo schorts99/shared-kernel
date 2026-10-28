@@ -9,21 +9,42 @@ import {
   CommandRegistry,
   CommandPostCommitError,
 } from "..";
-import { BusRuntime, validateBusConfig } from "../bus-runtime";
-import type { BusDispatchOptions, BusCloseOptions } from "../bus-runtime";
+import {
+  BusRuntime,
+  CrossDispatchCycleError,
+  collectUpstreamWaiters,
+  findDependencyPath,
+  registerInFlightTask,
+  validateBusConfig,
+} from "../bus-runtime";
+import type { BusDispatchOptions, BusCloseOptions, ExecutionNode } from "../bus-runtime";
 import type { Logger } from "../../logger";
 import type { EventBus } from "../../event-bus";
 import type { UnitOfWork } from "../../unit-of-work";
 import { CommitOutcomeUnknownError } from "../../unit-of-work/commit-outcome-unknown-error";
 import { DomainEventRegistry } from "../../domain-events";
 import type { ExecutionContext, ExecutionContextStorage } from "../../types/execution-context";
-import type { IdempotencyExecution, IdempotencyStore, TransactionalIdempotencyAdapter,
-  CommittedIdempotencyRecord } from "../../idempotency";
+import type {
+  IdempotencyExecution,
+  IdempotencyStore,
+  TransactionalIdempotencyAdapter,
+  CommittedIdempotencyRecord,
+  UnknownCommitReconciliation,
+} from "../../idempotency";
 
 interface IdempotencyFrame {
   active: boolean;
   keys: ReadonlyArray<{ store: IdempotencyStore; key: string }>;
+  node?: ExecutionNode | undefined;
 }
+
+interface SharedIdempotencyEntry {
+  promise: Promise<unknown>;
+  controller: AbortController;
+  waiters: Set<symbol>;
+}
+
+const sharedInFlightByStore = new WeakMap<IdempotencyStore, Map<string, SharedIdempotencyEntry>>();
 
 export interface InMemoryCommandBusDependencies {
   executionContext?: ExecutionContext;
@@ -98,7 +119,19 @@ export class InMemoryCommandBus implements CommandBus {
     options?: BusDispatchOptions,
   ): Promise<R> {
     const config = this.getConfig();
-    return this.runtime.run(command.getType(), config, signal => this.execute<C, R>(command, config, signal), options);
+    const commandType = command.getType();
+    const primitives = command.toPrimitives();
+    const dispatchKey = `command:${commandType}:${JSON.stringify(primitives.payload)}`;
+    return this.runtime.run(
+      commandType,
+      config,
+      signal => this.execute<C, R>(command, config, signal),
+      {
+        ...options,
+        label: `command:${commandType}`,
+        dispatchKey,
+      },
+    );
   }
 
   private async execute<C extends Command, R>(
@@ -175,13 +208,13 @@ export class InMemoryCommandBus implements CommandBus {
       const result = handler.deserializeResult ? handler.deserializeResult(record.result) : record.result as R;
       return completion(result, true, true);
     };
-    const operation = async (serialize = false): Promise<IdempotencyExecution<R>> => {
+    const operation = async (serialize = false, executionSignal: AbortSignal = signal): Promise<IdempotencyExecution<R>> => {
       let unitOfWork: UnitOfWork | undefined;
       let committed = false;
       let commitAttempted = false;
       let recoveryRecord: CommittedIdempotencyRecord | undefined;
       try {
-        signal.throwIfAborted();
+        executionSignal.throwIfAborted();
         if (config.transactional) {
           unitOfWork = this.dependencies.createUnitOfWork!();
           await unitOfWork.begin();
@@ -196,31 +229,37 @@ export class InMemoryCommandBus implements CommandBus {
             }
           }
         }
-        signal.throwIfAborted();
+        executionSignal.throwIfAborted();
+        context.signal = executionSignal;
         for (const mw of this.middleware) {
           await mw.beforeDispatch?.(deserializedCommand, context);
         }
 
-        signal.throwIfAborted();
+        executionSignal.throwIfAborted();
         const result = await handler.handle(deserializedCommand, {
           correlationId,
           startTime,
           events: context.events,
           metadata: deserializedCommand.getMetadata.bind(deserializedCommand),
           options,
-          signal,
+          signal: executionSignal,
           idempotencyManagedByBus: serialize,
           deferCacheInvalidation: config.transactional ?? false,
           ...(unitOfWork ? { unitOfWork } : {}),
         });
-        signal.throwIfAborted();
+        executionSignal.throwIfAborted();
 
         for (const mw of this.middleware) {
           await mw.afterDispatch?.(deserializedCommand, result, context);
         }
 
-        signal.throwIfAborted();
+        executionSignal.throwIfAborted();
         if (serialize) serializedResult = handler.serializeResult ? handler.serializeResult(result) : result;
+        const stagedCompletion = completion(result, true, serialize);
+        const stagedExecution: IdempotencyExecution<unknown> = {
+          result: serialize ? serializedResult : result,
+          ...(stagedCompletion.complete ? { complete: stagedCompletion.complete } : {}),
+        };
         if (unitOfWork) {
           if (durable && key != null) {
             await durable.record(unitOfWork, key, {
@@ -228,20 +267,29 @@ export class InMemoryCommandBus implements CommandBus {
               events: context.events.map(event => event.toPrimitives()),
             });
           }
-          signal.throwIfAborted();
+          executionSignal.throwIfAborted();
           commitAttempted = true;
           try {
             await unitOfWork.commit();
             committed = true;
           } catch (commitError) {
-            if (!durable || key == null) throw new CommitOutcomeUnknownError(commitError, key ?? undefined);
+            const rawCause = commitError instanceof CommitOutcomeUnknownError ? commitError.cause : commitError;
+            if (!durable || key == null) {
+              throw new CommitOutcomeUnknownError(rawCause, key ?? undefined, stagedExecution);
+            }
             let resolution;
             try {
               resolution = await durable.resolve(key);
             } catch (resolutionError) {
-              throw new CommitOutcomeUnknownError(new AggregateError([commitError, resolutionError]), key);
+              throw new CommitOutcomeUnknownError(
+                new AggregateError([rawCause, resolutionError]),
+                key,
+                stagedExecution,
+              );
             }
-            if (resolution.status === "unknown") throw new CommitOutcomeUnknownError(commitError, key);
+            if (resolution.status === "unknown") {
+              throw new CommitOutcomeUnknownError(rawCause, key, stagedExecution);
+            }
             if (resolution.status === "not-committed") {
               commitAttempted = false;
               throw commitError;
@@ -290,21 +338,136 @@ export class InMemoryCommandBus implements CommandBus {
         await handler.validate(deserializedCommand);
         await handler.authorize(deserializedCommand);
         signal.throwIfAborted();
+
+        const currentNode = this.runtime.getCurrentNode();
         const parent = this.idempotencyContext.getStore();
         const keys = parent?.active ? parent.keys : [];
         if (keys.some(entry => entry.store === store && entry.key === key)) {
-          throw new Error(`Recursive command dispatch for idempotency key '${key}'`);
+          throw new CrossDispatchCycleError(
+            [`command:${commandType}`, `command:${commandType}`],
+            `Recursive command dispatch for idempotency key '${key}'`,
+          );
         }
-        const frame: IdempotencyFrame = { active: true, keys: [...keys, { store, key }] };
-        try {
-          const serialized = await this.runtime.waitFor(this.idempotencyContext.run(frame, () => store.executeWithCompletion(key, async () => {
-            const outcome = await operation(true);
+        if (currentNode) {
+          for (const upstream of collectUpstreamWaiters(currentNode)) {
+            if (upstream.active && upstream.idempotencyKeys.some(entry => entry.store === store && entry.key === key)) {
+              const path = findDependencyPath(upstream, currentNode) ?? [upstream.label, currentNode.label];
+              throw new CrossDispatchCycleError(
+                [...path, `command:${commandType}`],
+                `Recursive command dispatch for idempotency key '${key}'`,
+              );
+            }
+          }
+          (currentNode as { idempotencyKeys: ReadonlyArray<{ store: unknown; key: string }> }).idempotencyKeys = [
+            ...currentNode.idempotencyKeys,
+            { store, key },
+          ];
+        }
+
+        const frame: IdempotencyFrame = {
+          active: true,
+          keys: [...keys, { store, key }],
+          node: currentNode,
+        };
+
+        let storeMap = sharedInFlightByStore.get(store);
+        if (!storeMap) {
+          storeMap = new Map();
+          sharedInFlightByStore.set(store, storeMap);
+        }
+        const existingInFlight = storeMap.get(key);
+        const waiterId = Symbol(key);
+        const reconcile = durable
+          ? async (): Promise<UnknownCommitReconciliation<unknown>> => {
+            const resolution = await durable.resolve(key);
+            if (resolution.status === "unknown") return { status: "unknown" };
+            if (resolution.status === "not-committed") return { status: "not-committed" };
+            const recovered = recover(resolution.record);
             return {
-              result: serializedResult,
-              ...(outcome.complete ? { complete: outcome.complete } : {}),
+              status: "committed",
+              execution: {
+                result: serializedResult,
+                ...(recovered.complete ? { complete: recovered.complete } : {}),
+              },
             };
-          })), config, signal);
-          return handler.deserializeResult ? handler.deserializeResult(serialized) : serialized as R;
+          }
+          : undefined;
+
+        try {
+          if (existingInFlight) {
+            existingInFlight.waiters.add(waiterId);
+            const onFollowerAbort = () => {
+              existingInFlight.waiters.delete(waiterId);
+              if (existingInFlight.waiters.size === 0) {
+                existingInFlight.controller.abort(signal.reason);
+              }
+            };
+            signal.addEventListener("abort", onFollowerAbort, { once: true });
+            try {
+              const serialized = await this.runtime.waitFor(
+                existingInFlight.promise,
+                config,
+                signal,
+                `Recursive command dispatch for idempotency key '${key}'`,
+              );
+              return handler.deserializeResult ? handler.deserializeResult(serialized) : serialized as R;
+            } finally {
+              existingInFlight.waiters.delete(waiterId);
+              signal.removeEventListener("abort", onFollowerAbort);
+            }
+          }
+
+          const sharedController = new AbortController();
+          const waiters = new Set<symbol>([waiterId]);
+          const onLeaderAbort = () => {
+            waiters.delete(waiterId);
+            if (waiters.size === 0) {
+              sharedController.abort(signal.reason);
+            }
+          };
+          signal.addEventListener("abort", onLeaderAbort, { once: true });
+
+          const executionPromise = this.idempotencyContext.run(frame, () =>
+            store.executeWithCompletion(
+              key,
+              async () => {
+                const outcome = await operation(true, sharedController.signal);
+                return {
+                  result: serializedResult,
+                  ...(outcome.complete ? { complete: outcome.complete } : {}),
+                };
+              },
+              undefined,
+              reconcile,
+            ),
+          );
+          registerInFlightTask(executionPromise, currentNode);
+          const cleanedPromise = executionPromise.finally(() => {
+            if (storeMap!.get(key)?.promise === cleanedPromise) {
+              storeMap!.delete(key);
+            }
+          });
+          registerInFlightTask(cleanedPromise, currentNode);
+          storeMap.set(key, {
+            promise: cleanedPromise,
+            controller: sharedController,
+            waiters,
+          });
+
+          try {
+            const abortRace = new Promise<never>((_, reject) => {
+              if (signal.aborted) {
+                reject(signal.reason);
+                return;
+              }
+              signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+            });
+            const serialized = await Promise.race([cleanedPromise, abortRace]);
+            return handler.deserializeResult ? handler.deserializeResult(serialized) : serialized as R;
+          } finally {
+            waiters.delete(waiterId);
+            signal.removeEventListener("abort", onLeaderAbort);
+          }
         } finally {
           frame.active = false;
         }

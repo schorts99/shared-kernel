@@ -4,6 +4,13 @@ import { Direction } from "./direction";
 import { OffsetNotValid, LimitNotValid } from "./exceptions";
 import { Filters } from "./filters";
 
+export interface CriteriaPrimitives {
+  filters: Filters;
+  orders: Array<Order>;
+  limit?: number | undefined;
+  offset?: number | undefined;
+}
+
 export class Criteria {
   constructor(
     readonly filters: Filters = [],
@@ -57,5 +64,22 @@ export class Criteria {
   public hasOrders(): boolean {
     return this.orders.length > 0;
   }
-}
 
+  toPrimitives(): CriteriaPrimitives {
+    return {
+      filters: this.filters.map(filter => ({ ...filter })),
+      orders: this.orders.map(order => ({ ...order })),
+      ...(this.limit !== undefined ? { limit: this.limit } : {}),
+      ...(this.offset !== undefined ? { offset: this.offset } : {}),
+    };
+  }
+
+  static fromPrimitives(primitives: Partial<CriteriaPrimitives> = {}): Criteria {
+    return new Criteria(
+      primitives.filters ? primitives.filters.map(filter => ({ ...filter })) : [],
+      primitives.orders ? primitives.orders.map(order => ({ ...order })) : [],
+      primitives.limit,
+      primitives.offset,
+    );
+  }
+}

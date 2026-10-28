@@ -33,6 +33,10 @@ export abstract class DomainEvent<T = any> {
 
   abstract getEventName(): string;
 
+  getPayload(): T {
+    return this.payload;
+  }
+
   getMetadata(): DomainEventMetadata {
     return this.metadata;
   }
@@ -55,6 +59,33 @@ export abstract class DomainEvent<T = any> {
         context: this.metadata.context,
       },
     };
+  }
+
+  static fromPrimitives<E extends DomainEvent = DomainEvent>(
+    this: new (
+      correlationId: string,
+      payload: any,
+      customMetadata?: Partial<DomainEventMetadata>,
+    ) => E,
+    primitives: DomainEventPrimitives,
+  ): E {
+    return new this(
+      primitives.correlation_id,
+      primitives.payload,
+      {
+        id: primitives.id,
+        occurredAt: new Date(primitives.occurred_at),
+        correlationId: primitives.correlation_id,
+        causationId: primitives.causation_id,
+        requestId: primitives.request_id,
+        version: primitives.version,
+        userId: primitives.user_id,
+        tenantId: primitives.tenant_id,
+        retries: primitives.meta?.retries ?? 0,
+        headers: primitives.meta?.headers ?? null,
+        context: primitives.meta?.context ?? null,
+      },
+    );
   }
 
   setCorrelationId(correlationId: string): void {

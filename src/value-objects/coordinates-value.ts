@@ -46,5 +46,16 @@ export abstract class CoordinatesValue implements ValueObject {
     return latDiff < EPSILON && lonDiff < EPSILON;
   }
 
+  toPrimitives(): CoordinatesValue["value"] {
+    return { ...this.value };
+  }
+
+  static fromPrimitives<V extends CoordinatesValue = CoordinatesValue>(
+    this: new (value: CoordinatesValue["value"]) => V,
+    value: CoordinatesValue["value"],
+  ): V {
+    return new this(value);
+  }
+
   abstract readonly attributeName: string;
 }

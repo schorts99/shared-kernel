@@ -56,9 +56,33 @@ export abstract class AggregateRoot<IDValue extends ValueObject> {
 
   abstract toPrimitives(): Record<string, any>;
 
-  static fromPrimitives(_model: unknown): InstanceType<typeof this> {
+  static fromPrimitives<T extends AggregateRoot<any> = AggregateRoot<any>>(
+    this: abstract new (...args: any[]) => T,
+    _model: unknown,
+  ): T {
+    if (
+      _model !== null &&
+      typeof _model === "object" &&
+      "id" in _model &&
+      this.prototype.restoreFromPrimitives &&
+      this.prototype.restoreFromPrimitives !== AggregateRoot.prototype.restoreFromPrimitives
+    ) {
+      const data = _model as Record<string, any>;
+      const Ctor = this as unknown as new (id: any, version?: number) => T;
+      const rawId =
+        typeof this.prototype.createId === "function"
+          ? this.prototype.createId(data.id)
+          : data.id;
+      const instance = new Ctor(rawId, typeof data.version === "number" ? data.version : 0);
+      (instance as any).restoreFromPrimitives(data);
+      instance.markChangesCommitted();
+      return instance;
+    }
+
     throw new Error("Aggregate reconstruction not implemented.");
   }
+
+  protected createId?(rawId: any): IDValue;
 
   protected restoreFromPrimitives?(_data: Record<string, any>): void {}
 

@@ -9,6 +9,8 @@ import { Logger } from "../logger";
 import { IdempotencyStore } from "../idempotency";
 import { Cache } from "../cache";
 import type { UnitOfWork } from "../unit-of-work";
+import { CommitOutcomeUnknownError } from "../unit-of-work/commit-outcome-unknown-error";
+import { CrossDispatchCycleError } from "./bus-runtime";
 import type { DomainEvent } from "../domain-events";
 
 export interface CommandHandlerOptions {
@@ -130,6 +132,9 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
 
         return result;
       } catch (error) {
+        if (error instanceof CrossDispatchCycleError || error instanceof CommitOutcomeUnknownError) {
+          throw error;
+        }
         lastError = error as Error;
 
         if (retryCount < maxRetries && this.canRetry?.(command, lastError)) {

@@ -23,5 +23,17 @@ export abstract class URLValue implements ValueObject {
     );
   }
 
+  toPrimitives(): string {
+    return this.value.toString();
+  }
+
+  static fromPrimitives<V extends URLValue = URLValue>(
+    this: new (value: URL, allowedHosts?: Array<string>) => V,
+    value: URL | string,
+    allowedHosts: Array<string> = [],
+  ): V {
+    return new this(value instanceof URL ? value : new URL(value), allowedHosts);
+  }
+
   abstract readonly attributeName: string;
 }

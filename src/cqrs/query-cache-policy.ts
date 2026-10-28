@@ -11,4 +11,6 @@ export interface QueryCachePolicy<Q extends Query = Query, R = unknown> {
   ttl?: number;
   getTags?(query: Q, result: R): string[];
   shouldCache?(query: Q, result: R): boolean;
+  /** Optional custom copier for isolating cached query results on write and read. */
+  cloneResult?(result: R): R;
 }

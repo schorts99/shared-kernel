@@ -33,5 +33,18 @@ export abstract class IntegerValue implements ValueObject {
     return this.value;
   }
 
+  toPrimitives(): number {
+    return this.value;
+  }
+
+  static fromPrimitives<V extends IntegerValue = IntegerValue>(
+    this: new (value: number, min?: number, max?: number) => V,
+    value: number,
+    min?: number,
+    max?: number,
+  ): V {
+    return new this(value, min, max);
+  }
+
   abstract readonly attributeName: string;
 }

@@ -40,7 +40,32 @@ export abstract class Entity<IDValue extends ValueObject, M extends Model> {
 
   abstract toPrimitives(): M;
 
-  static fromPrimitives(_model: unknown): InstanceType<typeof this> {
+  static fromPrimitives<T extends Entity<any, any> = Entity<any, any>>(
+    this: abstract new (...args: any[]) => T,
+    _model: unknown,
+  ): T {
+    if (
+      _model !== null &&
+      typeof _model === "object" &&
+      "id" in _model &&
+      this.prototype.restoreFromPrimitives &&
+      this.prototype.restoreFromPrimitives !== Entity.prototype.restoreFromPrimitives
+    ) {
+      const data = _model as Record<string, any>;
+      const Ctor = this as unknown as new (id: any) => T;
+      const rawId =
+        typeof this.prototype.createId === "function"
+          ? this.prototype.createId(data.id)
+          : data.id;
+      const instance = new Ctor(rawId);
+      (instance as any).restoreFromPrimitives(data);
+      return instance;
+    }
+
     throw new Error("Entity reconstruction not implemented.");
   }
+
+  protected createId?(rawId: any): IDValue;
+
+  protected restoreFromPrimitives?(_data: M): void {}
 }

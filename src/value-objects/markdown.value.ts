@@ -27,4 +27,15 @@ export abstract class MarkdownValue implements ValueObject {
   toJSON(): string {
     return this.value;
   }
+
+  toPrimitives(): string {
+    return this.value;
+  }
+
+  static fromPrimitives<V extends MarkdownValue = MarkdownValue>(
+    this: new (value: string) => V,
+    value: string,
+  ): V {
+    return new this(value);
+  }
 }

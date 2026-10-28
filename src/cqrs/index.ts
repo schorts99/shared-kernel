@@ -28,4 +28,5 @@ export * from "./error-tracking-middleware";
 export * from "./query-registry";
 export * from "./command-registry";
 export type { BusMetrics, BusDispatchOptions, BusCloseOptions } from "./bus-runtime";
+export { CrossDispatchCycleError } from "./bus-runtime";
 export type { QueryCachePolicy } from "./query-cache-policy";

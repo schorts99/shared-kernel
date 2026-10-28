@@ -4,7 +4,14 @@ import { EventStore } from "../event-store";
 import { EventSubscriber } from "../event-subscriber";
 import { EventBus, EventBusConfig, EventBusContext, EventBusMiddleware } from "..";
 import { DeadLetterStore } from "../dead-letter-store";
-import { BusRuntime, validateBusConfig } from "../../cqrs/bus-runtime";
+import {
+  BusRuntime,
+  CrossDispatchCycleError,
+  collectUpstreamWaiters,
+  findDependencyPath,
+  registerInFlightTask,
+  validateBusConfig,
+} from "../../cqrs/bus-runtime";
 import type { BusDispatchOptions, BusCloseOptions } from "../../cqrs/bus-runtime";
 import type { Logger } from "../../logger";
 import type { ExecutionContext, ExecutionContextStorage } from "../../types/execution-context";
@@ -14,6 +21,12 @@ interface DeliveryFrame {
   eventIds: ReadonlySet<string>;
 }
 
+interface SharedEventDelivery {
+  promise: Promise<void>;
+  controller: AbortController;
+  waiters: Set<symbol>;
+}
+
 export class InMemoryEventBus implements EventBus {
   private readonly subscribers = new Map<string, EventSubscriber<any>[]>();
   private readonly middlewares: EventBusMiddleware[] = [];
@@ -21,7 +34,7 @@ export class InMemoryEventBus implements EventBus {
   private readonly deadLetterStore: DeadLetterStore | undefined;
   private config: EventBusConfig;
   private readonly runtime: BusRuntime;
-  private readonly inProgress = new Map<string, Promise<void>>();
+  private readonly inProgress = new Map<string, SharedEventDelivery>();
   private replayTask: Promise<void> | undefined;
   private readonly deliveryContext: ExecutionContextStorage<DeliveryFrame> | undefined;
 
@@ -54,13 +67,19 @@ export class InMemoryEventBus implements EventBus {
   close(options?: BusCloseOptions): Promise<void> { return this.runtime.close(options); }
 
   ready(): Promise<void> {
-    if (this.runtime.isExecuting()) return Promise.resolve();
+    return this.ensureReady();
+  }
+
+  private ensureReady(signal?: AbortSignal): Promise<void> {
+    if (this.runtime.isInReplay() || this.deliveryContext?.getStore()?.active) {
+      return Promise.resolve();
+    }
     if (!this.config.autoReplay) return Promise.resolve();
     this.replayTask ??= this.replay().catch(error => {
       this.replayTask = undefined;
       throw error;
     });
-    return this.runtime.waitFor(this.replayTask, this.config);
+    return this.runtime.waitFor(this.replayTask, this.config, signal);
   }
 
   private validateConfig(config: EventBusConfig): void {
@@ -101,25 +120,73 @@ export class InMemoryEventBus implements EventBus {
 
   async publish<Event extends DomainEvent>(event: Event, options?: BusDispatchOptions) {
     options?.signal?.throwIfAborted();
-    await this.runtime.waitFor(this.ready(), this.config, options?.signal);
+    await this.ensureReady(options?.signal);
     return this.deliver(event, true, options);
   }
 
   private async deliver(event: DomainEvent, save: boolean, options?: BusDispatchOptions): Promise<void> {
     const parent = this.deliveryContext?.getStore();
+    const label = `event:${event.getEventName()}`;
+    const cycleMessage = `Recursive publication of event '${event.id}' would wait on its own delivery`;
+
     if (parent?.active && parent.eventIds.has(event.id)) {
-      throw new Error(`Recursive publication of event '${event.id}' would wait on its own delivery`);
+      throw new CrossDispatchCycleError([label, label], cycleMessage);
     }
+
+    const currentNode = this.runtime.getCurrentNode();
+    if (currentNode) {
+      for (const upstream of collectUpstreamWaiters(currentNode)) {
+        if (upstream.active && upstream.eventIds.has(event.id)) {
+          const path = findDependencyPath(upstream, currentNode) ?? [upstream.label, currentNode.label];
+          throw new CrossDispatchCycleError([...path, label], cycleMessage);
+        }
+      }
+    }
+
+    const callerSignal = options?.signal;
+    callerSignal?.throwIfAborted();
+    const waiterId = Symbol(event.id);
     const ongoing = this.inProgress.get(event.id);
-    if (ongoing) return this.runtime.waitFor(ongoing, this.config, options?.signal);
+
+    if (ongoing) {
+      ongoing.waiters.add(waiterId);
+      const onFollowerAbort = () => {
+        ongoing.waiters.delete(waiterId);
+        if (ongoing.waiters.size === 0) {
+          ongoing.controller.abort(callerSignal!.reason);
+        }
+      };
+      callerSignal?.addEventListener("abort", onFollowerAbort, { once: true });
+      try {
+        return await this.runtime.waitFor(ongoing.promise, this.config, callerSignal, cycleMessage);
+      } finally {
+        ongoing.waiters.delete(waiterId);
+        callerSignal?.removeEventListener("abort", onFollowerAbort);
+      }
+    }
+
     const config = this.getConfig();
     const frame: DeliveryFrame = {
       active: true,
       eventIds: new Set([...(parent?.active ? parent.eventIds : []), event.id]),
     };
+    const deliveryController = new AbortController();
+    const waiters = new Set<symbol>([waiterId]);
+    const onLeaderAbort = () => {
+      waiters.delete(waiterId);
+      if (waiters.size === 0) {
+        deliveryController.abort(callerSignal!.reason);
+      }
+    };
+    callerSignal?.addEventListener("abort", onLeaderAbort, { once: true });
+
     let started = false;
     const operation = async (signal: AbortSignal) => {
       started = true;
+      const activeNode = this.runtime.getCurrentNode();
+      if (activeNode) {
+        registerInFlightTask(execution, activeNode);
+      }
       const context = this.createContext(event, config);
       context.signal = signal;
 
@@ -139,16 +206,50 @@ export class InMemoryEventBus implements EventBus {
         this.inProgress.delete(event.id);
       }
     };
-    const execution = this.runtime.run(event.getEventName(), config, signal => this.deliveryContext
-      ? this.deliveryContext.run(frame, () => operation(signal))
-      : operation(signal), options).finally(() => {
+
+    const execution = this.runtime.run(
+      event.getEventName(),
+      config,
+      signal => this.deliveryContext
+        ? this.deliveryContext.run(frame, () => operation(signal))
+        : operation(signal),
+      {
+        signal: deliveryController.signal,
+        label,
+        eventId: event.id,
+        dispatchKey: `event:${event.id}`,
+        cycleMessage,
+      },
+    ).finally(() => {
       if (!started) {
         frame.active = false;
         this.inProgress.delete(event.id);
       }
     });
-    this.inProgress.set(event.id, execution);
-    return execution;
+
+    registerInFlightTask(execution, currentNode);
+    this.inProgress.set(event.id, {
+      promise: execution,
+      controller: deliveryController,
+      waiters,
+    });
+
+    try {
+      if (!callerSignal) {
+        return await execution;
+      }
+      const callerAbortPromise = new Promise<never>((_, reject) => {
+        if (callerSignal.aborted) {
+          reject(callerSignal.reason);
+          return;
+        }
+        callerSignal.addEventListener("abort", () => reject(callerSignal.reason), { once: true });
+      });
+      return await Promise.race([execution, callerAbortPromise]);
+    } finally {
+      waiters.delete(waiterId);
+      callerSignal?.removeEventListener("abort", onLeaderAbort);
+    }
   }
 
   async publishMany<Event extends DomainEvent>(events: readonly Event[], options?: BusDispatchOptions) {
@@ -250,13 +351,15 @@ export class InMemoryEventBus implements EventBus {
   }
 
   async replay() {
-    const events = await this.store.all();
+    return this.runtime.trackOperation(async () => {
+      const events = await this.store.all();
 
-    for (const primitives of events) {
-      const event = DomainEventRegistry.fromPrimitives(primitives);
+      for (const primitives of events) {
+        const event = DomainEventRegistry.fromPrimitives(primitives);
 
-      await this.deliver(event, false);
-    }
+        await this.deliver(event, false);
+      }
+    }, { isReplay: true });
   }
 
   getConfig(): EventBusConfig {

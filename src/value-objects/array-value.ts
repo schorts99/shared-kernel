@@ -26,6 +26,17 @@ export abstract class ArrayValue<Type = any> implements ValueObject {
     return this.value;
   }
 
+  toPrimitives(): Type[] {
+    return this.value;
+  }
+
+  static fromPrimitives<V extends ArrayValue<any> = ArrayValue<any>>(
+    this: new (...args: any[]) => V,
+    ...args: any[]
+  ): V {
+    return new this(...args);
+  }
+
   abstract readonly attributeName: string;
 
   abstract readonly isPrimitive: boolean;

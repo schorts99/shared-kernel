@@ -21,5 +21,16 @@ export abstract class EmailValue implements ValueObject {
     return this.value === valueObject.value;
   }
 
+  toPrimitives(): string {
+    return this.value;
+  }
+
+  static fromPrimitives<V extends EmailValue = EmailValue>(
+    this: new (value: string) => V,
+    value: string,
+  ): V {
+    return new this(value);
+  }
+
   abstract readonly attributeName: string;
 }

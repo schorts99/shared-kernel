@@ -27,5 +27,16 @@ export abstract class HTMLValue implements ValueObject {
   toJSON(): string {
     return this.value;
   }
+
+  toPrimitives(): string {
+    return this.value;
+  }
+
+  static fromPrimitives<V extends HTMLValue = HTMLValue>(
+    this: new (value: string) => V,
+    value: string,
+  ): V {
+    return new this(value);
+  }
 }
 

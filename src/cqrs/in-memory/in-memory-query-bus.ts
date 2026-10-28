@@ -13,19 +13,22 @@ import type { BusDispatchOptions, BusCloseOptions } from "../bus-runtime";
 import type { Logger } from "../../logger";
 import { InMemoryCache } from "../../cache";
 import { getExpirationTime } from "../../utils/expiration";
+import { cloneValue } from "../../utils/object";
 import type { ExecutionContext } from "../../types/execution-context";
 import type { QueryCachePolicy } from "../query-cache-policy";
 
 export interface InMemoryQueryBusDependencies {
   executionContext?: ExecutionContext;
   logger?: Logger;
+  cloneResult?: (value: unknown) => unknown;
 }
 
 export class InMemoryQueryBus implements QueryBus {
   private readonly handlers = new Map<string, QueryHandler<Query, unknown>>();
   private readonly middleware: QueryBusMiddleware[] = [];
   private readonly runtime: BusRuntime;
-  private readonly cache = new InMemoryCache<{ result: unknown }>({ maxEntries: 10_000 });
+  private readonly cache: InMemoryCache<{ result: unknown }>;
+  private readonly cloneResult: ((value: unknown) => unknown) | undefined;
   private cacheGeneration = 0;
   private readonly cachePolicies = new Map<string, QueryCachePolicy>();
 
@@ -45,6 +48,13 @@ export class InMemoryQueryBus implements QueryBus {
 
   constructor(dependencies: InMemoryQueryBusDependencies = {}) {
     this.runtime = new BusRuntime(dependencies.logger, dependencies.executionContext);
+    this.cloneResult = dependencies.cloneResult;
+    this.cache = new InMemoryCache<{ result: unknown }>({
+      maxEntries: 10_000,
+      cloneValue: entry => ({
+        result: this.cloneResult ? this.cloneResult(entry.result) : cloneValue(entry.result),
+      }),
+    });
   }
 
   getMetrics() {
@@ -98,7 +108,19 @@ export class InMemoryQueryBus implements QueryBus {
 
   async dispatch<Q extends Query, R>(query: Q, options?: BusDispatchOptions): Promise<R> {
     const config = this.getConfig();
-    return this.runtime.run(query.getType(), config, signal => this.execute<Q, R>(query, config, signal), options);
+    const queryType = query.getType();
+    const primitives = query.toPrimitives();
+    const dispatchKey = `query:${queryType}:${JSON.stringify(primitives.payload)}`;
+    return this.runtime.run(
+      queryType,
+      config,
+      signal => this.execute<Q, R>(query, config, signal),
+      {
+        ...options,
+        label: `query:${queryType}`,
+        dispatchKey,
+      },
+    );
   }
 
   private async execute<Q extends Query, R>(query: Q, config: QueryBusConfig, signal: AbortSignal): Promise<R> {
@@ -135,7 +157,7 @@ export class InMemoryQueryBus implements QueryBus {
         }
       }
 
-      const policy = config.enableCaching ? this.cachePolicies.get(queryType) : undefined;
+      const policy = config.enableCaching ? (this.cachePolicies.get(queryType) as QueryCachePolicy<Q, R> | undefined) : undefined;
       if (policy && handler.getOptions?.().cache) {
         throw new Error("Choose either bus-owned or handler-owned caching, not both");
       }
@@ -168,7 +190,13 @@ export class InMemoryQueryBus implements QueryBus {
         currentPrimitives.version,
       ]);
       const cached = cacheKey !== null ? await this.cache.get(cacheKey) : undefined;
-      const result = cached ? cached.result as R : await handler.handle(deserializedQuery, handlerContext);
+      let result: R;
+      if (cached) {
+        const deserialized = handler.deserializeResult ? handler.deserializeResult(cached.result) : cached.result as R;
+        result = policy?.cloneResult ? policy.cloneResult(deserialized) : deserialized;
+      } else {
+        result = await handler.handle(deserializedQuery, handlerContext);
+      }
       signal.throwIfAborted();
 
       for (const mw of this.middleware) {
@@ -185,7 +213,9 @@ export class InMemoryQueryBus implements QueryBus {
         cacheGeneration === this.cacheGeneration &&
         (policy.shouldCache?.(deserializedQuery, result) ?? true)) {
         const tags = policy.getTags?.(deserializedQuery, result);
-        await this.cache.set(cacheKey, { result }, policy.ttl ?? config.cacheTtl, tags);
+        const clonedForStore = policy.cloneResult ? policy.cloneResult(result) : result;
+        const serializedForStore = handler.serializeResult ? handler.serializeResult(clonedForStore) : clonedForStore;
+        await this.cache.set(cacheKey, { result: serializedForStore }, policy.ttl ?? config.cacheTtl, tags);
       }
       return result;
     } catch (error) {

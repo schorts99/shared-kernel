@@ -27,5 +27,16 @@ export abstract class BooleanValue implements ValueObject {
     return this.value;
   }
 
+  toPrimitives(): boolean {
+    return this.value;
+  }
+
+  static fromPrimitives<V extends BooleanValue = BooleanValue>(
+    this: new (value: boolean) => V,
+    value: boolean,
+  ): V {
+    return new this(value);
+  }
+
   abstract readonly attributeName: string;
 }

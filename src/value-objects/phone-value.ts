@@ -49,5 +49,16 @@ export abstract class PhoneValue implements ValueObject {
     return this.value === valueObject.value;
   }
 
+  toPrimitives(): string {
+    return this.value;
+  }
+
+  static fromPrimitives<V extends PhoneValue = PhoneValue>(
+    this: new (value: string) => V,
+    value: string,
+  ): V {
+    return new this(value);
+  }
+
   abstract readonly attributeName: string;
 }

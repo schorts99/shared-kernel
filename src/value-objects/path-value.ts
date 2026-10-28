@@ -39,5 +39,17 @@ export abstract class PathValue implements ValueObject<string> {
     return this.value;
   }
 
+  toPrimitives(): string {
+    return this.value;
+  }
+
+  static fromPrimitives<V extends PathValue = PathValue>(
+    this: new (value: string, allowedRoots?: string[]) => V,
+    value: string,
+    allowedRoots: string[] = [],
+  ): V {
+    return new this(value, allowedRoots);
+  }
+
   abstract readonly attributeName: string;
 }

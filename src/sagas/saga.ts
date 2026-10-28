@@ -1,6 +1,14 @@
 import { DomainEvent } from "../domain-events";
 import { EventSubscriber, EventSubscriberContext } from "../event-bus";
 import { Command, CommandBus } from "../cqrs";
+import {
+  addWaitEdge,
+  assertNoCycleWhenWaitingOn,
+  getCurrentExecutionNode,
+  getInFlightTaskOwner,
+  registerInFlightTask,
+  removeWaitEdge,
+} from "../cqrs/bus-runtime";
 import { SagaStateStore, SagaStatus } from "./saga-state-store";
 
 export type SagaCompensationAction = () => Promise<void>;
@@ -42,9 +50,32 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
     this.handlers.set(eventName, handler as (event: DomainEvent, context: SagaExecutionContext<Schema>) => Promise<void>);
   }
 
-  handle(event: DomainEvent, _context?: EventSubscriberContext): Promise<void> {
-    const execution = this.executionQueue.then(() => this.execute(event));
-    this.executionQueue = execution.then(() => undefined, () => undefined);
+  async handle(event: DomainEvent, _context?: EventSubscriberContext): Promise<void> {
+    const previous = this.executionQueue;
+    const currentNode = getCurrentExecutionNode();
+    const ownerNode = getInFlightTaskOwner(previous);
+    if (currentNode && ownerNode) {
+      assertNoCycleWhenWaitingOn(currentNode, ownerNode);
+    }
+
+    const waitAndExecute = async () => {
+      if (currentNode && ownerNode) {
+        addWaitEdge(currentNode, ownerNode);
+      }
+      try {
+        await previous;
+      } finally {
+        if (currentNode && ownerNode) {
+          removeWaitEdge(currentNode, ownerNode);
+        }
+      }
+      return this.execute(event);
+    };
+
+    const execution = waitAndExecute();
+    const settled = execution.then(() => undefined, () => undefined);
+    registerInFlightTask(settled, currentNode);
+    this.executionQueue = settled;
 
     return execution;
   }

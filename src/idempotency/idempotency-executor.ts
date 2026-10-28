@@ -1,8 +1,15 @@
+import type { CommitOutcomeUnknownError } from "../unit-of-work/commit-outcome-unknown-error";
+
 export interface IdempotencyExecution<T> {
   result: T;
   /** Runs after the result is retained; failure retries completion, never the committed operation. */
   complete?: () => Promise<void>;
 }
+
+export type UnknownCommitReconciliation<T = unknown> =
+  | { status: "committed"; execution?: IdempotencyExecution<T> | undefined }
+  | { status: "not-committed" }
+  | { status: "unknown" };
 
 export interface IdempotencyExecutor {
   /**
@@ -16,5 +23,10 @@ export interface IdempotencyExecutor {
    * operation must return only after commit. Pending completion must not expire or be evicted.
    * TTL starts after completion succeeds. The in-memory implementation is not crash-durable.
    */
-  executeWithCompletion<T>(key: string, operation: () => Promise<IdempotencyExecution<T>>, ttl?: number): Promise<T>;
+  executeWithCompletion<T>(
+    key: string,
+    operation: () => Promise<IdempotencyExecution<T>>,
+    ttl?: number,
+    reconcile?: (error: CommitOutcomeUnknownError) => Promise<UnknownCommitReconciliation<T>>,
+  ): Promise<T>;
 }

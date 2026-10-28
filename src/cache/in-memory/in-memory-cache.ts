@@ -1,10 +1,11 @@
 import { Cache } from "../../cache";
 import { getExpirationTime } from "../../utils/expiration";
+import { cloneValue as defaultCloneValue } from "../../utils/object";
 
 export interface InMemoryCacheOptions<T = unknown> {
   /** Maximum retained entries; defaults to 10,000. Evicts the oldest entry when full. */
   maxEntries?: number;
-  /** Defaults to structuredClone; supply a copier for domain classes or non-cloneable values. */
+  /** Defaults to domain-aware deep cloning; supply a custom copier to override. */
   cloneValue?: (value: T) => T;
 }
 
@@ -21,7 +22,7 @@ export class InMemoryCache<T = unknown> implements Cache<T> {
   }
 
   private clone(value: T): T {
-    return this.options.cloneValue ? this.options.cloneValue(value) : structuredClone(value);
+    return this.options.cloneValue ? this.options.cloneValue(value) : defaultCloneValue(value);
   }
 
   async prune(): Promise<number> {
@@ -55,7 +56,7 @@ export class InMemoryCache<T = unknown> implements Cache<T> {
 
   async set(key: string, value: T, ttl?: number, tags?: string[]): Promise<void> {
     const expiresAt = getExpirationTime(ttl);
-    const storedValue = ttl === 0 ? value : this.clone(value);
+    const storedValue = this.clone(value);
     this.pruneExpired();
 
     this.deleteEntry(key);

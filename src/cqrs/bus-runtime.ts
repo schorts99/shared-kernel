@@ -2,10 +2,160 @@ import { ConsoleLogger } from "../logger";
 import type { Logger } from "../logger";
 import type { ExecutionContext, ExecutionContextStorage } from "../types/execution-context";
 
-interface ExecutionFrame {
+export class CrossDispatchCycleError extends Error {
+  readonly cycle: readonly string[];
+
+  constructor(cycle: readonly string[], message?: string) {
+    super(message ?? `Cross-dispatch dependency cycle detected: ${cycle.join(" -> ")}`);
+    this.name = "CrossDispatchCycleError";
+    this.cycle = [...cycle];
+  }
+}
+
+export interface BusSlotRoot {
+  readonly bus: BusRuntime;
+  readonly owner: ExecutionNode;
+  pending: number;
+  release: () => void;
+}
+
+export interface ExecutionNode {
+  readonly id: symbol;
+  readonly label: string;
+  readonly dispatchKey?: string | undefined;
+  readonly bus: BusRuntime;
+  readonly parent?: ExecutionNode | undefined;
   active: boolean;
   signal: AbortSignal;
-  root: { pending: number; release: () => void };
+  readonly rootsByBus: Map<BusRuntime, BusSlotRoot>;
+  readonly waitingOn: Set<ExecutionNode>;
+  readonly waitedBy: Set<ExecutionNode>;
+  waitingOnBus?: BusRuntime | undefined;
+  readonly idempotencyKeys: ReadonlyArray<{ store: unknown; key: string }>;
+  readonly eventIds: ReadonlySet<string>;
+  readonly replayBuses: ReadonlySet<unknown>;
+}
+
+const sharedStorageByContext = new WeakMap<ExecutionContext, ExecutionContextStorage<ExecutionNode>>();
+const activeStorages = new Set<ExecutionContextStorage<ExecutionNode>>();
+const taskOwnerByPromise = new WeakMap<object, ExecutionNode>();
+
+export function getSharedExecutionStorage(
+  executionContext?: ExecutionContext,
+): ExecutionContextStorage<ExecutionNode> | undefined {
+  if (!executionContext) return undefined;
+  let storage = sharedStorageByContext.get(executionContext);
+  if (!storage) {
+    storage = executionContext.createStorage<ExecutionNode>();
+    sharedStorageByContext.set(executionContext, storage);
+    activeStorages.add(storage);
+  }
+  return storage;
+}
+
+export function getCurrentExecutionNode(
+  storage?: ExecutionContextStorage<ExecutionNode>,
+): ExecutionNode | undefined {
+  if (storage) {
+    const node = storage.getStore();
+    return node?.active ? node : undefined;
+  }
+  for (const candidate of activeStorages) {
+    const node = candidate.getStore();
+    if (node?.active) return node;
+  }
+  return undefined;
+}
+
+export function registerInFlightTask<T extends object>(task: T, owner?: ExecutionNode): T {
+  if (owner) {
+    taskOwnerByPromise.set(task, owner);
+  }
+  return task;
+}
+
+export function getInFlightTaskOwner(task: object): ExecutionNode | undefined {
+  return taskOwnerByPromise.get(task);
+}
+
+export function addWaitEdge(waiter: ExecutionNode, target: ExecutionNode): void {
+  if (waiter === target) return;
+  waiter.waitingOn.add(target);
+  target.waitedBy.add(waiter);
+}
+
+export function removeWaitEdge(waiter: ExecutionNode, target: ExecutionNode): void {
+  waiter.waitingOn.delete(target);
+  target.waitedBy.delete(waiter);
+}
+
+export function findDependencyPath(
+  from: ExecutionNode,
+  target: ExecutionNode,
+  visited = new Set<ExecutionNode>(),
+  visitingBuses = new Set<BusRuntime>(),
+): string[] | undefined {
+  if (from === target) return [from.label];
+  if (visited.has(from)) return undefined;
+  visited.add(from);
+
+  for (const next of from.waitingOn) {
+    const subPath = findDependencyPath(next, target, visited, visitingBuses);
+    if (subPath) return [from.label, ...subPath];
+  }
+
+  const queuedBus = from.waitingOnBus;
+  if (queuedBus && !visitingBuses.has(queuedBus) && queuedBus.isAtCapacity()) {
+    const owners = queuedBus.getActiveSlotOwners();
+    if (owners.length > 0) {
+      visitingBuses.add(queuedBus);
+      try {
+        let firstOwnerPath: string[] | undefined;
+        let allOwnersBlockedOnTarget = true;
+        for (const owner of owners) {
+          const ownerPath = findDependencyPath(owner, target, new Set(visited), visitingBuses);
+          if (!ownerPath) {
+            allOwnersBlockedOnTarget = false;
+            break;
+          }
+          firstOwnerPath ??= ownerPath;
+        }
+        if (allOwnersBlockedOnTarget && firstOwnerPath) {
+          return [from.label, ...firstOwnerPath];
+        }
+      } finally {
+        visitingBuses.delete(queuedBus);
+      }
+    }
+  }
+
+  return undefined;
+}
+
+export function collectUpstreamWaiters(
+  target: ExecutionNode,
+  visited = new Set<ExecutionNode>(),
+): Set<ExecutionNode> {
+  if (visited.has(target)) return visited;
+  visited.add(target);
+  if (target.parent) {
+    collectUpstreamWaiters(target.parent, visited);
+  }
+  for (const waiter of target.waitedBy) {
+    collectUpstreamWaiters(waiter, visited);
+  }
+  return visited;
+}
+
+export function assertNoCycleWhenWaitingOn(
+  waiter: ExecutionNode,
+  target: ExecutionNode,
+  customMessage?: string,
+): void {
+  const path = findDependencyPath(target, waiter);
+  if (path) {
+    throw new CrossDispatchCycleError([waiter.label, ...path], customMessage);
+  }
 }
 
 export interface BusMetrics {
@@ -30,7 +180,15 @@ export interface BusRuntimeConfig {
 }
 
 export interface BusDispatchOptions {
-  signal?: AbortSignal;
+  signal?: AbortSignal | undefined;
+}
+
+export interface BusRunOptions extends BusDispatchOptions {
+  dispatchKey?: string | undefined;
+  label?: string | undefined;
+  idempotencyKey?: { store: unknown; key: string } | undefined;
+  eventId?: string | undefined;
+  cycleMessage?: string | undefined;
 }
 
 export interface BusCloseOptions {
@@ -62,20 +220,53 @@ export function validateBusConfig(config: BusRuntimeConfig): void {
 
 export class BusRuntime {
   private active = 0;
+  private activeOperations = 0;
+  private readonly activeSlotOwners = new Set<ExecutionNode>();
   private readonly queue: Array<{ start: () => void; reject: (error: Error) => void }> = [];
   private limit = Infinity;
   private maxQueueSize = 1000;
   private closing = false;
   private readonly drainWaiters = new Set<() => void>();
   private readonly metrics: BusMetrics = { dispatched: 0, succeeded: 0, failed: 0, totalDurationMs: 0 };
-  private readonly executionContext: ExecutionContextStorage<ExecutionFrame> | undefined;
+  private readonly executionContext: ExecutionContextStorage<ExecutionNode> | undefined;
 
   constructor(private readonly logger: Logger = new ConsoleLogger(), executionContext?: ExecutionContext) {
-    this.executionContext = executionContext?.createStorage<ExecutionFrame>();
+    this.executionContext = getSharedExecutionStorage(executionContext);
+  }
+
+  getCurrentNode(): ExecutionNode | undefined {
+    const node = this.executionContext?.getStore();
+    return node?.active ? node : undefined;
+  }
+
+  hasExecutionContext(): boolean {
+    return this.executionContext !== undefined;
+  }
+
+  isClosing(): boolean {
+    return this.closing;
+  }
+
+  isAtCapacity(): boolean {
+    return this.active >= this.limit;
+  }
+
+  getActiveSlotOwners(): ExecutionNode[] {
+    return [...this.activeSlotOwners];
   }
 
   isExecuting(): boolean {
-    return this.executionContext?.getStore()?.active ?? false;
+    const node = this.getCurrentNode();
+    if (!node) return false;
+    if (node.rootsByBus.has(this) || node.replayBuses.has(this)) return true;
+    for (const owner of this.activeSlotOwners) {
+      if (findDependencyPath(owner, node)) return true;
+    }
+    return false;
+  }
+
+  isInReplay(): boolean {
+    return this.getCurrentNode()?.replayBuses.has(this) ?? false;
   }
 
   getMetrics(): BusMetrics {
@@ -96,15 +287,52 @@ export class BusRuntime {
       this.active++;
       this.queue.shift()!.start();
     }
-    if (this.active === 0 && this.queue.length === 0) {
+    if (this.active === 0 && this.activeOperations === 0 && this.queue.length === 0) {
       for (const resolve of this.drainWaiters) resolve();
       this.drainWaiters.clear();
     }
   }
 
+  async trackOperation<T>(operation: () => Promise<T>, options: { isReplay?: boolean } = {}): Promise<T> {
+    const parent = this.getCurrentNode();
+    const isReentrant = parent ? (parent.rootsByBus.has(this) || parent.replayBuses.has(this)) : false;
+    if (this.closing && !isReentrant) {
+      throw new Error("Bus is closed to new dispatches");
+    }
+    this.activeOperations++;
+    const controller = new AbortController();
+    const node: ExecutionNode = {
+      id: Symbol("bus-operation"),
+      label: options.isReplay ? "event:replay" : "bus:operation",
+      bus: this,
+      parent,
+      active: true,
+      signal: controller.signal,
+      rootsByBus: new Map(parent?.rootsByBus),
+      waitingOn: new Set(),
+      waitedBy: new Set(),
+      idempotencyKeys: parent?.idempotencyKeys ?? [],
+      eventIds: parent?.eventIds ?? new Set(),
+      replayBuses: new Set([...(parent?.replayBuses ?? []), ...(options.isReplay ? [this] : [])]),
+    };
+    if (parent) addWaitEdge(parent, node);
+    try {
+      const task = Promise.resolve().then(() =>
+        this.executionContext ? this.executionContext.run(node, operation) : operation(),
+      );
+      registerInFlightTask(task, node);
+      return await task;
+    } finally {
+      node.active = false;
+      if (parent) removeWaitEdge(parent, node);
+      this.activeOperations--;
+      this.pump();
+    }
+  }
+
   drain(): Promise<void> {
     if (this.isExecuting()) return Promise.reject(new Error("Cannot drain a bus from its own execution"));
-    if (this.active === 0 && this.queue.length === 0) return Promise.resolve();
+    if (this.active === 0 && this.activeOperations === 0 && this.queue.length === 0) return Promise.resolve();
     return new Promise(resolve => this.drainWaiters.add(resolve));
   }
 
@@ -118,19 +346,37 @@ export class BusRuntime {
     return this.drain();
   }
 
-  async waitFor<T>(task: Promise<T>, config: BusRuntimeConfig, signal?: AbortSignal): Promise<T> {
-    const frame = this.executionContext?.getStore();
-    if (frame?.active) {
-      frame.root.pending++;
-      const release = () => {
-        if (--frame.root.pending === 0) frame.root.release();
-      };
-      task.then(release, release);
+  async waitFor<T>(
+    task: Promise<T>,
+    config: BusRuntimeConfig,
+    signal?: AbortSignal,
+    customCycleMessage?: string,
+  ): Promise<T> {
+    const frame = this.getCurrentNode();
+    const owner = getInFlightTaskOwner(task);
+
+    if (frame && owner) {
+      assertNoCycleWhenWaitingOn(frame, owner, customCycleMessage);
+      addWaitEdge(frame, owner);
     }
-    const signals = [signal, frame?.active ? frame.signal : undefined].filter(
+
+    const trackSlot = frame && !owner;
+    if (trackSlot) {
+      for (const root of frame.rootsByBus.values()) {
+        root.pending++;
+      }
+      const releaseSlot = () => {
+        for (const root of frame.rootsByBus.values()) {
+          if (--root.pending === 0) root.release();
+        }
+      };
+      task.then(releaseSlot, releaseSlot);
+    }
+
+    const signals = [signal, frame?.signal].filter(
       (value): value is AbortSignal => value !== undefined,
     );
-    const timeout = frame?.active ? config.nestedTimeout ?? 30_000 : config.queueTimeout ?? 30_000;
+    const timeout = frame ? config.nestedTimeout ?? 30_000 : config.queueTimeout ?? 30_000;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const removers: Array<() => void> = [];
     try {
@@ -147,60 +393,192 @@ export class BusRuntime {
       });
       return await Promise.race([task, cancellation]);
     } finally {
+      if (frame && owner) {
+        removeWaitEdge(frame, owner);
+      }
       if (timer !== undefined) clearTimeout(timer);
       removers.forEach(remove => remove());
     }
   }
 
-  async run<T>(type: string, config: BusRuntimeConfig, operation: (signal: AbortSignal) => Promise<T>,
-    options: BusDispatchOptions = {}): Promise<T> {
-    const inherited = this.executionContext?.getStore();
-    const parent = inherited?.active ? inherited : undefined;
+  private checkUpstreamCycles(parent: ExecutionNode, label: string, options: BusRunOptions): void {
+    const upstreamNodes = collectUpstreamWaiters(parent);
+
+    if (options.idempotencyKey) {
+      const { store, key } = options.idempotencyKey;
+      for (const node of upstreamNodes) {
+        if (node.active && node.idempotencyKeys.some(entry => entry.store === store && entry.key === key)) {
+          const path = findDependencyPath(node, parent) ?? [node.label, parent.label];
+          throw new CrossDispatchCycleError(
+            [...path, label],
+            `Recursive command dispatch for idempotency key '${key}'`,
+          );
+        }
+      }
+    }
+
+    if (options.eventId) {
+      const eventId = options.eventId;
+      for (const node of upstreamNodes) {
+        if (node.active && node.eventIds.has(eventId)) {
+          const path = findDependencyPath(node, parent) ?? [node.label, parent.label];
+          throw new CrossDispatchCycleError(
+            [...path, label],
+            `Recursive publication of event '${eventId}' would wait on its own delivery`,
+          );
+        }
+      }
+    }
+
+    if (options.dispatchKey) {
+      for (const node of upstreamNodes) {
+        if (node.active && node.dispatchKey === options.dispatchKey) {
+          const path = findDependencyPath(node, parent) ?? [node.label, parent.label];
+          throw new CrossDispatchCycleError([...path, label], options.cycleMessage);
+        }
+      }
+    }
+  }
+
+  async run<T>(
+    type: string,
+    config: BusRuntimeConfig,
+    operation: (signal: AbortSignal) => Promise<T>,
+    options: BusRunOptions = {},
+  ): Promise<T> {
+    const parent = this.getCurrentNode();
     parent?.signal.throwIfAborted();
     options.signal?.throwIfAborted();
-    if (this.closing && !parent) throw new Error("Bus is closed to new dispatches");
-    if (!parent) {
+
+    const label = options.label ?? type;
+    if (parent) {
+      this.checkUpstreamCycles(parent, label, options);
+    }
+
+    const existingBusRoot = parent?.rootsByBus.get(this);
+    const inReplayOnThisBus = parent?.replayBuses.has(this) ?? false;
+    const isReentrantOnThisBus = existingBusRoot !== undefined || inReplayOnThisBus;
+
+    if (this.closing && !isReentrantOnThisBus) {
+      throw new Error("Bus is closed to new dispatches");
+    }
+
+    if (!existingBusRoot) {
+      if (parent && this.active >= this.limit && this.activeSlotOwners.size > 0) {
+        let firstPath: string[] | undefined;
+        let allOwnersBlockedOnParent = true;
+        for (const owner of this.activeSlotOwners) {
+          const path = findDependencyPath(owner, parent);
+          if (!path) {
+            allOwnersBlockedOnParent = false;
+            break;
+          }
+          firstPath ??= path;
+        }
+        if (allOwnersBlockedOnParent && firstPath) {
+          throw new CrossDispatchCycleError([parent.label, ...firstPath, label], options.cycleMessage);
+        }
+      }
+
       await new Promise<void>((resolve, reject) => {
-        const signal = options.signal;
+        const signals = [options.signal, parent?.signal].filter(
+          (value): value is AbortSignal => value !== undefined,
+        );
         let queueTimer: ReturnType<typeof setTimeout> | undefined;
+        const removers: Array<() => void> = [];
         const cleanup = () => {
-          signal?.removeEventListener("abort", abort);
+          if (parent && parent.waitingOnBus === this) {
+            parent.waitingOnBus = undefined;
+          }
+          removers.forEach(remove => remove());
           if (queueTimer !== undefined) clearTimeout(queueTimer);
         };
         const entry = {
           start: () => { cleanup(); resolve(); },
           reject: (error: Error) => { cleanup(); reject(error); },
         };
-        const abort = () => {
-          const index = this.queue.indexOf(entry);
-          if (index >= 0) this.queue.splice(index, 1);
-          cleanup();
-          reject(signal!.reason);
-          this.pump();
-        };
         if (this.active >= this.limit && this.queue.length >= this.maxQueueSize) {
           reject(new Error("Bus dispatch queue capacity exceeded"));
           return;
         }
-        signal?.addEventListener("abort", abort, { once: true });
+        for (const sig of signals) {
+          if (sig.aborted) {
+            reject(sig.reason);
+            return;
+          }
+          const abort = () => {
+            const index = this.queue.indexOf(entry);
+            if (index >= 0) this.queue.splice(index, 1);
+            cleanup();
+            reject(sig.reason);
+            this.pump();
+          };
+          sig.addEventListener("abort", abort, { once: true });
+          removers.push(() => sig.removeEventListener("abort", abort));
+        }
+        if (parent && this.active >= this.limit) {
+          parent.waitingOnBus = this;
+        }
         this.queue.push(entry);
+        const admissionTimeout = parent
+          ? Math.min(config.queueTimeout ?? 30_000, config.nestedTimeout ?? 30_000)
+          : (config.queueTimeout ?? 30_000);
         queueTimer = setTimeout(() => {
           const index = this.queue.indexOf(entry);
           if (index >= 0) this.queue.splice(index, 1);
           entry.reject(new DOMException("Bus admission wait timed out", "TimeoutError"));
           this.pump();
-        }, config.queueTimeout ?? 30_000);
+        }, admissionTimeout);
         this.pump();
       });
     }
+
     const start = Date.now();
     const controller = new AbortController();
-    const root = parent?.root ?? {
-      pending: 0,
-      release: () => { this.active--; this.pump(); },
+    const rootsByBus = new Map<BusRuntime, BusSlotRoot>(parent?.rootsByBus);
+
+    const frame: ExecutionNode = {
+      id: Symbol(label),
+      label,
+      dispatchKey: options.dispatchKey,
+      bus: this,
+      parent,
+      active: true,
+      signal: controller.signal,
+      rootsByBus,
+      waitingOn: new Set(),
+      waitedBy: new Set(),
+      idempotencyKeys: options.idempotencyKey
+        ? [...(parent?.idempotencyKeys ?? []), options.idempotencyKey]
+        : (parent?.idempotencyKeys ?? []),
+      eventIds: options.eventId
+        ? new Set([...(parent?.eventIds ?? []), options.eventId])
+        : (parent?.eventIds ?? new Set()),
+      replayBuses: parent?.replayBuses ?? new Set(),
     };
-    root.pending++;
-    const frame: ExecutionFrame = { active: true, signal: controller.signal, root };
+
+    if (!existingBusRoot) {
+      const newRoot: BusSlotRoot = {
+        bus: this,
+        owner: frame,
+        pending: 0,
+        release: () => {
+          this.activeSlotOwners.delete(frame);
+          this.active--;
+          this.pump();
+        },
+      };
+      this.activeSlotOwners.add(frame);
+      rootsByBus.set(this, newRoot);
+    }
+
+    for (const root of rootsByBus.values()) {
+      root.pending++;
+    }
+    if (parent) {
+      addWaitEdge(parent, frame);
+    }
+
     const onParentAbort = () => controller.abort(parent!.signal.reason);
     if (parent) {
       parent.signal.addEventListener("abort", onParentAbort, { once: true });
@@ -209,14 +587,21 @@ export class BusRuntime {
     const onCallerAbort = () => controller.abort(options.signal!.reason);
     options.signal?.addEventListener("abort", onCallerAbort, { once: true });
     if (options.signal?.aborted) onCallerAbort();
+
     let released = false;
     const release = () => {
       if (released) return;
       released = true;
       frame.active = false;
-      parent?.signal.removeEventListener("abort", onParentAbort);
-      if (--root.pending === 0) root.release();
+      if (parent) {
+        removeWaitEdge(parent, frame);
+        parent.signal.removeEventListener("abort", onParentAbort);
+      }
+      for (const root of rootsByBus.values()) {
+        if (--root.pending === 0) root.release();
+      }
     };
+
     let timer: ReturnType<typeof setTimeout> | undefined;
     let removeAbortListener = () => {};
     let task: Promise<T> | undefined;
@@ -231,6 +616,7 @@ export class BusRuntime {
           ? this.executionContext.run(frame, () => operation(controller.signal))
           : operation(controller.signal);
       });
+      registerInFlightTask(task, frame);
       // A timeout cannot stop an uncooperative handler, so keep its slot until it really settles.
       task.then(release, release);
 

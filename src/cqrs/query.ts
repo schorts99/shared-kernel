@@ -1,12 +1,13 @@
 import { QueryMetadata, QueryPrimitives } from "./query-metadata";
 
-export interface Query {
+export interface Query<T = any> {
   getType(): string;
   getMetadata(): QueryMetadata;
+  getPayload?(): T;
   toPrimitives(): QueryPrimitives;
 }
 
-export abstract class AbstractQuery<T = any> implements Query {
+export abstract class AbstractQuery<T = any> implements Query<T> {
   protected readonly payload: T;
   protected readonly metadata: QueryMetadata;
 
@@ -35,6 +36,10 @@ export abstract class AbstractQuery<T = any> implements Query {
 
   abstract getType(): string;
 
+  getPayload(): T {
+    return this.payload;
+  }
+
   getMetadata(): QueryMetadata {
     return this.metadata;
   }
@@ -54,6 +59,32 @@ export abstract class AbstractQuery<T = any> implements Query {
       headers: this.metadata.headers,
       context: this.metadata.context,
     };
+  }
+
+  static fromPrimitives<Q extends Query = Query>(
+    this: new (
+      correlationId: string,
+      payload: any,
+      customMetadata?: Partial<QueryMetadata>,
+    ) => Q,
+    primitives: QueryPrimitives,
+  ): Q {
+    return new this(
+      primitives.correlation_id,
+      primitives.payload,
+      {
+        id: primitives.id,
+        createdAt: new Date(primitives.created_at),
+        correlationId: primitives.correlation_id,
+        causationId: primitives.causation_id,
+        requestId: primitives.request_id,
+        version: primitives.version,
+        userId: primitives.user_id,
+        tenantId: primitives.tenant_id,
+        headers: primitives.headers,
+        context: primitives.context,
+      },
+    );
   }
 
   setCorrelationId(correlationId: string): void {

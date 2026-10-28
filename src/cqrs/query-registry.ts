@@ -2,30 +2,68 @@ import { Query } from "./query";
 import { QueryMetadata, QueryPrimitives } from "./query-metadata";
 import { QueryNotRegistered } from "./exceptions";
 
-export type QueryConstructor = {
-  new (
-    correlationId: string,
-    payload: any,
-    metadata?: Partial<QueryMetadata>,
-  ): Query;
-};
+export type QueryFactory<Q extends Query = Query> = (
+  primitives: QueryPrimitives,
+) => Q;
+
+export type QueryConstructor<Q extends Query = Query> =
+  | {
+      new (...args: any[]): Q;
+      fromPrimitives(primitives: QueryPrimitives): Q;
+    }
+  | {
+      new (
+        correlationId: string,
+        payload: any,
+        metadata?: Partial<QueryMetadata>,
+      ): Q;
+      fromPrimitives?(primitives: QueryPrimitives): Q;
+    };
+
+export type QueryRegistration<Q extends Query = Query> =
+  | QueryConstructor<Q>
+  | QueryFactory<Q>;
+
+function isClassConstructor(fn: unknown): fn is new (...args: any[]) => Query {
+  return (
+    typeof fn === "function" &&
+    fn.prototype !== undefined &&
+    fn.prototype.constructor === fn
+  );
+}
 
 export class QueryRegistry {
-  private static readonly registry = new Map<string, QueryConstructor>();
+  private static readonly registry = new Map<string, QueryRegistration>();
 
-  static register(
+  static register<Q extends Query = Query>(
     queryType: string,
-    constructor: QueryConstructor,
+    constructorOrFactory: QueryRegistration<Q>,
   ): void {
-    this.registry.set(queryType, constructor);
+    this.registry.set(queryType, constructorOrFactory);
   }
 
-  static fromPrimitives(primitives: QueryPrimitives): Query {
-    const Constructor = this.registry.get(primitives.type);
+  static fromPrimitives<Q extends Query = Query>(primitives: QueryPrimitives): Q {
+    const registered = this.registry.get(primitives.type);
 
-    if (!Constructor) {
+    if (!registered) {
       throw new QueryNotRegistered(primitives.type);
     }
+
+    if (typeof (registered as { fromPrimitives?: unknown }).fromPrimitives === "function") {
+      return (registered as unknown as { fromPrimitives(p: QueryPrimitives): Q }).fromPrimitives(
+        primitives,
+      );
+    }
+
+    if (!isClassConstructor(registered)) {
+      return (registered as unknown as QueryFactory<Q>)(primitives);
+    }
+
+    const Constructor = registered as unknown as new (
+      correlationId: string,
+      payload: any,
+      metadata?: Partial<QueryMetadata>,
+    ) => Q;
 
     return new Constructor(
       primitives.correlation_id,

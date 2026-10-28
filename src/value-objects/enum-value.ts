@@ -23,5 +23,16 @@ export abstract class EnumValue<Allowed extends readonly (string | null)[]> impl
     );
   }
 
+  toPrimitives(): Allowed[number] {
+    return this.value;
+  }
+
+  static fromPrimitives<V extends EnumValue<any> = EnumValue<any>>(
+    this: new (...args: any[]) => V,
+    ...args: any[]
+  ): V {
+    return new this(...args);
+  }
+
   abstract readonly attributeName: string;
 }

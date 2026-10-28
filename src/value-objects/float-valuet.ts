@@ -27,6 +27,20 @@ export abstract class FloatValue implements ValueObject {
     return this.value === valueObject.value;
   }
 
+  toPrimitives(): number {
+    return this.value;
+  }
+
+  static fromPrimitives<V extends FloatValue = FloatValue>(
+    this: new (value: number, decimals?: number, min?: number, max?: number) => V,
+    value: number,
+    decimals?: number,
+    min?: number,
+    max?: number,
+  ): V {
+    return new this(value, decimals, min, max);
+  }
+
   abstract readonly attributeName: string;
 
   private transform(value: number): number {

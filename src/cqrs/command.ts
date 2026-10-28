@@ -1,12 +1,13 @@
 import { CommandMetadata, CommandPrimitives } from "./command-metadata";
 
-export interface Command {
+export interface Command<T = any> {
   getType(): string;
   getMetadata(): CommandMetadata;
+  getPayload?(): T;
   toPrimitives(): CommandPrimitives;
 }
 
-export abstract class AbstractCommand<T = any> implements Command {
+export abstract class AbstractCommand<T = any> implements Command<T> {
   protected readonly payload: T;
   protected readonly metadata: CommandMetadata;
 
@@ -35,6 +36,10 @@ export abstract class AbstractCommand<T = any> implements Command {
 
   abstract getType(): string;
 
+  getPayload(): T {
+    return this.payload;
+  }
+
   getMetadata(): CommandMetadata {
     return this.metadata;
   }
@@ -54,6 +59,32 @@ export abstract class AbstractCommand<T = any> implements Command {
       headers: this.metadata.headers,
       context: this.metadata.context,
     };
+  }
+
+  static fromPrimitives<C extends Command = Command>(
+    this: new (
+      correlationId: string,
+      payload: any,
+      customMetadata?: Partial<CommandMetadata>,
+    ) => C,
+    primitives: CommandPrimitives,
+  ): C {
+    return new this(
+      primitives.correlation_id,
+      primitives.payload,
+      {
+        id: primitives.id,
+        createdAt: new Date(primitives.created_at),
+        correlationId: primitives.correlation_id,
+        causationId: primitives.causation_id,
+        requestId: primitives.request_id,
+        version: primitives.version,
+        userId: primitives.user_id,
+        tenantId: primitives.tenant_id,
+        headers: primitives.headers,
+        context: primitives.context,
+      },
+    );
   }
 
   setCorrelationId(correlationId: string): void {

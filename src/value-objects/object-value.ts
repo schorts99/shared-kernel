@@ -44,6 +44,17 @@ export abstract class ObjectValue<Type = any, Optional extends boolean = false> 
     return this.validateObject(this.value as Type, this.schema);
   }
 
+  toPrimitives(): Optional extends true ? Type | null : Type {
+    return this.value;
+  }
+
+  static fromPrimitives<V extends ObjectValue<any, any> = ObjectValue<any, any>>(
+    this: new (...args: any[]) => V,
+    ...args: any[]
+  ): V {
+    return new this(...args);
+  }
+
   equals(valueObject: unknown): boolean {
     if (!(valueObject instanceof ObjectValue)) return false;
     if (!this.isValid || !valueObject.isValid) return false;

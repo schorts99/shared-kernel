@@ -1,7 +1,10 @@
 import { Query } from "./query";
 import { QueryValidationError, QueryAuthorizationError, QueryExecutionError } from "./exceptions";
+import { CrossDispatchCycleError } from "./bus-runtime";
+import { CommitOutcomeUnknownError } from "../unit-of-work/commit-outcome-unknown-error";
 import { Logger } from "../logger";
 import { Cache } from "../cache";
+import { cloneValue } from "../utils/object";
 
 export interface QueryHandlerOptions {
   cache?: boolean;
@@ -92,7 +95,7 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
               this.logQuery(query, cachedResult as R, startTime, true);
             }
 
-            return this.deserializeResult(structuredClone(cachedResult));
+            return this.deserializeResult(cloneValue(cachedResult));
           }
         }
       }
@@ -107,7 +110,7 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
 
           await this.cache.set(
             cacheKey,
-            structuredClone(this.serializeResult(result)),
+            cloneValue(this.serializeResult(result)),
             this.options.cacheTtl,
             tags,
           );
@@ -126,7 +129,9 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
 
       if (error instanceof QueryValidationError ||
         error instanceof QueryAuthorizationError ||
-        error instanceof QueryExecutionError
+        error instanceof QueryExecutionError ||
+        error instanceof CrossDispatchCycleError ||
+        error instanceof CommitOutcomeUnknownError
       ) {
         throw error;
       }

@@ -27,4 +27,16 @@ export abstract class BaseValueObject<T> implements ValueObject<T> {
   toJSON(): T {
     return this.value;
   }
+
+  toPrimitives(): T {
+    return this.value;
+  }
+
+  static fromPrimitives<T, V extends BaseValueObject<T> = BaseValueObject<T>>(
+    this: new (value: T, ...args: any[]) => V,
+    primitives: T,
+    ...args: any[]
+  ): V {
+    return new this(primitives, ...args);
+  }
 }
