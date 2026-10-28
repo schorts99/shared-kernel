@@ -12,12 +12,30 @@ export interface CriteriaPrimitives {
 }
 
 export class Criteria {
+  readonly filters: Filters;
+  readonly orders: Array<Order>;
+  readonly limit?: number | undefined;
+  readonly offset?: number | undefined;
+
   constructor(
-    readonly filters: Filters = [],
-    readonly orders: Array<Order> = [],
-    readonly limit?: number,
-    readonly offset?: number,
-  ) { }
+    filters: Filters = [],
+    orders: Array<Order> = [],
+    limit?: number,
+    offset?: number,
+  ) {
+    if (limit !== undefined && (!Number.isSafeInteger(limit) || limit < 1)) {
+      throw new LimitNotValid(limit);
+    }
+
+    if (offset !== undefined && (!Number.isSafeInteger(offset) || offset < 0)) {
+      throw new OffsetNotValid(offset);
+    }
+
+    this.filters = filters.map(filter => ({ ...filter }));
+    this.orders = orders.map(order => ({ ...order }));
+    this.limit = limit;
+    this.offset = offset;
+  }
 
   public static none(): Criteria {
     return new Criteria();

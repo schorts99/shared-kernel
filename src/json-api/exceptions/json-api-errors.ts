@@ -9,9 +9,17 @@ export class JSONAPIErrors extends Error {
     meta?: Record<string, any>;
   }>;
 
-  constructor(errors: JSONAPIErrors["errors"]) {
-    super();
+  constructor(errors: JSONAPIErrors["errors"], message?: string) {
+    const formatted = errors
+      .map(err => {
+        if (err.title && err.detail) return `${err.title}: ${err.detail}`;
+        return err.detail || err.title || err.code || err.status;
+      })
+      .filter(Boolean)
+      .join("; ");
+    super(message ?? (formatted || "JSON:API Errors"));
 
+    this.name = "JSONAPIErrors";
     this.errors = errors;
   }
 }

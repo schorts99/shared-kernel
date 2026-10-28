@@ -7,5 +7,6 @@ export class RequireAuthNotImplementedCorrectly extends Error {
       : "RequireAuth decorator not implemented correctly";
 
     super(message);
+    this.name = "RequireAuthNotImplementedCorrectly";
   }
 }

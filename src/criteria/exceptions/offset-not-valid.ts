@@ -7,5 +7,6 @@ export class OffsetNotValid extends Error {
       : `Offset Not Valid: ${offset}`;
 
     super(message);
+    this.name = "OffsetNotValid";
   }
 }

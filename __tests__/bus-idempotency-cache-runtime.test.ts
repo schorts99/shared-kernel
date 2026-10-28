@@ -51,11 +51,16 @@ import {
   InMemoryUnitOfWork,
   InMemoryUnitOfWorkRunner,
   JSONAPIConnector,
+  JSONAPIErrors,
+  LimitNotValid,
   Logger,
   LoggingMailer,
   MarkdownValue,
+  NotAuthenticated,
+  NotAuthorized,
   ObjectValue,
   OfflineCommandSync,
+  OffsetNotValid,
   PaginationLinksGenerator,
   PascalCamelToSnake,
   PathValue,
@@ -2074,5 +2079,62 @@ describe("10. Schema Validation, Array Utilities, ErrorTrackingMiddleware on Eve
     );
 
     await expect(memHttp.get("/missing")).rejects.toThrow("HTTP Error 404");
+  });
+
+  it("round-trips GEO_RADIUS and Date filters between URLCriteriaBuilder and URLCriteriaParser, validates Criteria constructor, and populates domain exception metadata", () => {
+    const startDate = new Date("2026-01-15T10:30:00.000Z");
+    const initialCriteria = Criteria.none()
+      .where("createdAt", "GREATER_THAN_OR_EQUAL", startDate)
+      .where("location", "GEO_RADIUS", { center: [40.7128, -74.006], radiusInM: 2500 });
+
+    const builtUrl = new URLCriteriaBuilder(
+      new URL("https://api.example.com/events"),
+      initialCriteria,
+    ).build();
+
+    expect(builtUrl.searchParams.get("filter[createdAt][gte]")).toBe("2026-01-15T10:30:00.000Z");
+    expect(builtUrl.searchParams.get("filter[location][geo_radius]")).toBe(
+      "40.7128,-74.006,2500",
+    );
+
+    const parsedCriteria = new URLCriteriaParser(builtUrl, ["createdAt", "location"]).parse();
+    expect(parsedCriteria.filters[0]?.value).toEqual(startDate);
+    expect(parsedCriteria.filters[1]?.value).toEqual({
+      center: [40.7128, -74.006],
+      radiusInM: 2500,
+      lat: 40.7128,
+      lng: -74.006,
+      radius: 2500,
+    });
+
+    const rebuiltUrl = new URLCriteriaBuilder(
+      new URL("https://api.example.com/events"),
+      parsedCriteria,
+    ).build();
+    expect(rebuiltUrl.toString()).toBe(builtUrl.toString());
+
+    // Criteria constructor & fromPrimitives validation
+    expect(() => new Criteria([], [], 0)).toThrow(LimitNotValid);
+    expect(() => Criteria.fromPrimitives({ offset: -1 })).toThrow(OffsetNotValid);
+
+    // Domain exception names & messages
+    const jsonApiErr = new JSONAPIErrors([
+      {
+        status: "400",
+        code: "INVALID_FIELD",
+        title: "Invalid Attribute",
+        detail: "Email is required",
+      },
+    ]);
+    expect(jsonApiErr.name).toBe("JSONAPIErrors");
+    expect(jsonApiErr.message).toBe("Invalid Attribute: Email is required");
+
+    const notAuthz = new NotAuthorized();
+    expect(notAuthz.name).toBe("NotAuthorized");
+    expect(notAuthz.message).toBe("Not Authorized");
+
+    const notAuthen = new NotAuthenticated();
+    expect(notAuthen.name).toBe("NotAuthenticated");
+    expect(notAuthen.message).toBe("Not Authenticated");
   });
 });

@@ -7,5 +7,6 @@ export class LimitNotValid extends Error {
       : `Limit Not Valid: ${limit}`;
 
     super(message);
+    this.name = "LimitNotValid";
   }
 }

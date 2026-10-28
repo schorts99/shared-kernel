@@ -7,5 +7,6 @@ export class NotAuthenticated extends Error {
       : "Not Authenticated";
 
     super(message);
+    this.name = "NotAuthenticated";
   }
 }

@@ -13,13 +13,19 @@ export class URLCriteriaParser {
     const params = this.url.searchParams;
 
     for (const [key, value] of params.entries()) {
-      if (!this.allowedKeys.includes(key) && this.allowedKeys.length > 0) continue;
-
       const match = key.match(/^filter\[([^\]]+)\](?:\[([^\]]+)\])?$/);
 
       if (!match) continue;
 
       const [, field, op] = match;
+      if (
+        this.allowedKeys.length > 0 &&
+        !this.allowedKeys.includes(key) &&
+        !this.allowedKeys.includes(field!)
+      ) {
+        continue;
+      }
+
       const operator = this.mapOperator(op);
       const parsedValue = this.parseValue(operator, value);
 
@@ -99,10 +105,12 @@ export class URLCriteriaParser {
         return raw.split(",").map((v) => tryParsePrimitive(v.trim()));
       case "GEO_RADIUS": {
         const [latStr, lngStr, radiusStr] = raw.split(",");
-        const center = [parseFloat(latStr!), parseFloat(lngStr!)];
+        const lat = parseFloat(latStr!);
+        const lng = parseFloat(lngStr!);
         const radiusInM = parseFloat(radiusStr!);
+        const center = [lat, lng];
 
-        return { center, radiusInM };
+        return { center, radiusInM, lat, lng, radius: radiusInM };
       }
       default:
         return tryParsePrimitive(raw);
