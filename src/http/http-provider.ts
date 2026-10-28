@@ -2,6 +2,7 @@ export interface HTTPRequestOptions<T = any> {
   body?: T;
   query?: Record<string, string | number | boolean | undefined>;
   headers?: Record<string, string>;
+  deduplicate?: boolean;
 }
 
 export interface HTTPProvider {

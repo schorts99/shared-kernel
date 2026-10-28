@@ -10,7 +10,7 @@ export interface FetchHTTPProviderConfig {
 }
 
 export class FetchHTTPProvider implements HTTPProvider {
-  private ongoingRequests = new Map<string, Promise<any>>();
+  private ongoingRequests = new Map<string, Promise<unknown>>();
   private readonly interceptors: HTTPInterceptor[] = [];
   private readonly config: FetchHTTPProviderConfig;
 
@@ -47,23 +47,29 @@ export class FetchHTTPProvider implements HTTPProvider {
     url: string | URL,
     options?: HTTPRequestOptions
   ): Promise<R> {
-    const fullUrl = this.buildUrl(url, options?.query);
-    const key = this.generateRequestKey(method, fullUrl, options?.body);
+    try {
+      const fullUrl = this.buildUrl(url, options?.query);
+      let init = await this.prepareRequest(method, options);
 
-    if (this.ongoingRequests.has(key)) {
-      return this.ongoingRequests.get(key) as Promise<R>;
-    }
-
-    const requestTask = (async () => {
-      try {
-        let init = await this.prepareRequest(method, options);
-
-        for (const interceptor of this.interceptors) {
-          if (interceptor.request) {
-            init = await interceptor.request(init, fullUrl);
-          }
+      for (const interceptor of this.interceptors) {
+        if (interceptor.request) {
+          init = await interceptor.request(init, fullUrl);
         }
+      }
 
+      const key = options?.deduplicate && method === "GET" &&
+        (init.method ?? method).toUpperCase() === "GET" && !init.signal &&
+        (init.body === undefined || init.body === null)
+        ? this.generateRequestKey(fullUrl, init)
+        : undefined;
+
+      if (key !== undefined) {
+        const ongoingRequest = this.ongoingRequests.get(key);
+
+        if (ongoingRequest) return await ongoingRequest as R;
+      }
+
+      const requestTask = (async () => {
         let response = await fetch(fullUrl.href, init);
 
         for (const interceptor of this.interceptors) {
@@ -73,24 +79,26 @@ export class FetchHTTPProvider implements HTTPProvider {
         }
 
         return await this.handleResponse<R>(response);
-      } catch (error) {
-        let finalError = error as Error;
+      })();
 
-        for (const interceptor of this.interceptors) {
-          if (interceptor.error) {
-            finalError = await interceptor.error(finalError);
-          }
-        }
+      if (key !== undefined) this.ongoingRequests.set(key, requestTask);
 
-        throw finalError;
+      try {
+        return await requestTask;
+      } finally {
+        if (key !== undefined) this.ongoingRequests.delete(key);
       }
-    })().finally(() => {
-      this.ongoingRequests.delete(key);
-    });
+    } catch (error) {
+      let finalError = error instanceof Error ? error : new Error(String(error));
 
-    this.ongoingRequests.set(key, requestTask);
+      for (const interceptor of this.interceptors) {
+        if (interceptor.error) {
+          finalError = await interceptor.error(finalError);
+        }
+      }
 
-    return requestTask;
+      throw finalError;
+    }
   }
 
   private buildUrl(url: string | URL, query?: Record<string, any>): URL {
@@ -105,7 +113,7 @@ export class FetchHTTPProvider implements HTTPProvider {
         finalUrl = new URL(url, base);
       }
     } else {
-      finalUrl = url;
+      finalUrl = new URL(url.href);
     }
 
     if (query) {
@@ -152,22 +160,18 @@ export class FetchHTTPProvider implements HTTPProvider {
 
   private async handleResponse<R>(response: Response): Promise<R> {
     if (response.status === 204) {
-      return undefined as any;
+      return undefined as R;
     }
 
-    const contentType = response.headers.get("Content-Type") ?? "";
-    let data: any;
+    const contentType = (response.headers.get("Content-Type") ?? "").split(";")[0]!.trim().toLowerCase();
+    let data: unknown;
 
-    try {
-      if (contentType.includes("application/json")) {
-        data = await response.json();
-      } else if (contentType.includes("text/")) {
-        data = await response.text();
-      } else {
-        data = await response.blob();
-      }
-    } catch {
-      data = undefined;
+    if (contentType === "application/json" || contentType.endsWith("+json")) {
+      data = await response.json();
+    } else if (contentType.startsWith("text/")) {
+      data = await response.text();
+    } else {
+      data = await response.blob();
     }
 
     if (!response.ok) {
@@ -177,22 +181,10 @@ export class FetchHTTPProvider implements HTTPProvider {
     return data as R;
   }
 
-  private generateRequestKey(method: string, url: URL, body?: unknown): string {
-    const base = `${method}:${url.href}`;
-    const bodyHash = body !== undefined ? this.hashString(JSON.stringify(body)) : "";
+  private generateRequestKey(url: URL, init: RequestInit): string {
+    const headers: Array<[string, string]> = [];
+    new Headers(init.headers).forEach((value, name) => headers.push([name, value]));
 
-    return `${base}:${bodyHash}`;
-  }
-
-  private hashString(input: string): string {
-    let hash = 0;
-
-    for (let i = 0; i < input.length; i++) {
-      const chr = input.charCodeAt(i);
-      hash = (hash << 5) - hash + chr;
-      hash |= 0;
-    }
-
-    return hash.toString();
+    return JSON.stringify([url.href, { ...init, headers }]);
   }
 }
