@@ -100,7 +100,7 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
         }
       }
 
-      const result = await this.execute(query, handlerContext);
+      const result = await this.runWithTimeout(query, handlerContext);
 
       if (this.options.cache && this.cache && this.shouldCache?.(query, result)) {
         const cacheKey = this.getCacheKey?.(query);
@@ -144,6 +144,46 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
     }
   }
 
+  private async runWithTimeout(query: Q, handlerContext: QueryHandlerContext): Promise<R> {
+    const timeoutMs = this.options.timeout;
+    if (timeoutMs === undefined || timeoutMs <= 0) {
+      return await this.execute(query, handlerContext);
+    }
+
+    const controller = new AbortController();
+    const callerSignal = handlerContext.signal;
+    const onCallerAbort = () => controller.abort(callerSignal?.reason);
+
+    if (callerSignal) {
+      if (callerSignal.aborted) {
+        throw callerSignal.reason ?? new QueryExecutionError("Query aborted", "QUERY_ABORTED");
+      }
+      callerSignal.addEventListener("abort", onCallerAbort, { once: true });
+    }
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        const err = new QueryExecutionError(
+          `Query timed out after ${timeoutMs}ms`,
+          "QUERY_TIMEOUT",
+        );
+        controller.abort(err);
+        reject(err);
+      }, timeoutMs);
+    });
+
+    try {
+      return await Promise.race([
+        this.execute(query, { ...handlerContext, signal: controller.signal }),
+        timeoutPromise,
+      ]);
+    } finally {
+      if (timer !== undefined) clearTimeout(timer);
+      callerSignal?.removeEventListener("abort", onCallerAbort);
+    }
+  }
+
   getOptions(): QueryHandlerOptions {
     return this.options;
   }
@@ -155,7 +195,19 @@ export abstract class AbstractQueryHandler<Q extends Query = Query, R = unknown>
   public abstract execute(query: Q, context: QueryHandlerContext): Promise<R>;
 
   getCacheKey?(query: Q): string | null {
-    return `${query.getType()}:${JSON.stringify(query.toPrimitives?.() ?? {})}`;
+    const primitives = query.toPrimitives?.();
+    if (!primitives) {
+      return `${query.getType()}:{}`;
+    }
+
+    return `${query.getType()}:${JSON.stringify({
+      payload: primitives.payload,
+      user_id: primitives.user_id,
+      tenant_id: primitives.tenant_id,
+      headers: primitives.headers,
+      context: primitives.context,
+      version: primitives.version,
+    })}`;
   }
 
   shouldCache?(_: Q, __: R): boolean {

@@ -105,7 +105,7 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
         await this.authorize(command);
 
         const execute = async (): Promise<R> => {
-          const result = await this.execute(command, handlerContext);
+          const result = await this.runWithTimeout(command, handlerContext);
           if (!handlerContext.deferCacheInvalidation && this.cache && this.getInvalidationTags) {
             const tags = this.getInvalidationTags(command, result);
             if (tags.length > 0 && this.cache.deleteByTags) {
@@ -198,8 +198,60 @@ export abstract class AbstractCommandHandler<C extends Command = Command, R = vo
 
   public abstract execute(command: C, context: CommandHandlerContext): Promise<R>;
 
+  private async runWithTimeout(command: C, handlerContext: CommandHandlerContext): Promise<R> {
+    const timeoutMs = this.options.timeout;
+    if (timeoutMs === undefined || timeoutMs <= 0) {
+      return await this.execute(command, handlerContext);
+    }
+
+    const controller = new AbortController();
+    const callerSignal = handlerContext.signal;
+    const onCallerAbort = () => controller.abort(callerSignal?.reason);
+
+    if (callerSignal) {
+      if (callerSignal.aborted) {
+        throw callerSignal.reason ?? new CommandExecutionError("Command aborted", "COMMAND_ABORTED");
+      }
+      callerSignal.addEventListener("abort", onCallerAbort, { once: true });
+    }
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        const err = new CommandExecutionError(
+          `Command timed out after ${timeoutMs}ms`,
+          "COMMAND_TIMEOUT",
+        );
+        controller.abort(err);
+        reject(err);
+      }, timeoutMs);
+    });
+
+    try {
+      return await Promise.race([
+        this.execute(command, { ...handlerContext, signal: controller.signal }),
+        timeoutPromise,
+      ]);
+    } finally {
+      if (timer !== undefined) clearTimeout(timer);
+      callerSignal?.removeEventListener("abort", onCallerAbort);
+    }
+  }
+
   getIdempotencyKey(command: C): string | null {
-    return `${command.getType()}:${JSON.stringify(command.toPrimitives?.() ?? {})}`;
+    const primitives = command.toPrimitives?.();
+    if (!primitives) {
+      return `${command.getType()}:{}`;
+    }
+
+    return `${command.getType()}:${JSON.stringify({
+      id: primitives.id,
+      request_id: primitives.request_id,
+      user_id: primitives.user_id,
+      tenant_id: primitives.tenant_id,
+      version: primitives.version,
+      payload: primitives.payload,
+    })}`;
   }
 
   canRetry(_: C, error: Error): boolean {

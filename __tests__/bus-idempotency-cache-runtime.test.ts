@@ -2316,4 +2316,96 @@ describe("10. Schema Validation, Array Utilities, ErrorTrackingMiddleware on Eve
     await commandBus.close();
     await queryBus.close();
   });
+
+  it("supports handler-owned query caching across distinct Query instances, deterministic getIdempotencyKey across timestamps, and handler-level timeout options", async () => {
+    const cacheStore = new InMemoryCache<unknown>();
+    let queryExecutions = 0;
+
+    class CachedQueryHandler extends AbstractQueryHandler<TestQuery, { value: string }> {
+      constructor() {
+        super({ cache: true, cacheStore, cacheTtl: 60_000 });
+      }
+      async execute(query: TestQuery): Promise<{ value: string }> {
+        queryExecutions++;
+        return { value: `val:${query.getPayload().id}` };
+      }
+    }
+
+    const cachedQueryHandler = new CachedQueryHandler();
+    const res1 = await cachedQueryHandler.handle(
+      new TestQuery("corr-a", { id: "item-99" }, { createdAt: new Date(1000) }),
+    );
+    const res2 = await cachedQueryHandler.handle(
+      new TestQuery("corr-b", { id: "item-99" }, { createdAt: new Date(9000) }),
+    );
+    expect(res1).toEqual({ value: "val:item-99" });
+    expect(res2).toEqual({ value: "val:item-99" });
+    expect(queryExecutions).toBe(1);
+
+    // Deterministic getIdempotencyKey ignoring createdAt and correlationId
+    class IdempCmdHandler extends AbstractCommandHandler<TestCommand, void> {
+      async execute(): Promise<void> {}
+    }
+    const idempHandler = new IdempCmdHandler();
+    const cmdAttempt1 = new TestCommand(
+      "corr-1",
+      { id: "ord-1" },
+      { id: "cmd-fixed-id", createdAt: new Date(1000) },
+    );
+    const cmdAttempt2 = new TestCommand(
+      "corr-2",
+      { id: "ord-1" },
+      { id: "cmd-fixed-id", createdAt: new Date(5000) },
+    );
+    expect(idempHandler.getIdempotencyKey(cmdAttempt1)).toBe(
+      idempHandler.getIdempotencyKey(cmdAttempt2),
+    );
+
+    // Handler-level timeout option on AbstractCommandHandler & AbstractQueryHandler
+    class SlowTimeoutCmdHandler extends AbstractCommandHandler<TestCommand, void> {
+      constructor() {
+        super({ timeout: 15 });
+      }
+      async execute(_cmd: TestCommand, ctx: CommandHandlerContext): Promise<void> {
+        await new Promise<void>((resolve, reject) => {
+          const timer = setTimeout(resolve, 200);
+          ctx.signal?.addEventListener(
+            "abort",
+            () => {
+              clearTimeout(timer);
+              reject(ctx.signal?.reason);
+            },
+            { once: true },
+          );
+        });
+      }
+    }
+
+    class SlowTimeoutQueryHandler extends AbstractQueryHandler<TestQuery, string> {
+      constructor() {
+        super({ timeout: 15 });
+      }
+      async execute(_qry: TestQuery, ctx: QueryHandlerContext): Promise<string> {
+        return await new Promise<string>((resolve, reject) => {
+          const timer = setTimeout(() => resolve("done"), 200);
+          ctx.signal?.addEventListener(
+            "abort",
+            () => {
+              clearTimeout(timer);
+              reject(ctx.signal?.reason);
+            },
+            { once: true },
+          );
+        });
+      }
+    }
+
+    await expect(
+      new SlowTimeoutCmdHandler().handle(new TestCommand("corr-t", { id: "1" })),
+    ).rejects.toThrow("Command timed out after 15ms");
+
+    await expect(
+      new SlowTimeoutQueryHandler().handle(new TestQuery("corr-t", { id: "1" })),
+    ).rejects.toThrow("Query timed out after 15ms");
+  });
 });
