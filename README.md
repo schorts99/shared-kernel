@@ -168,4 +168,5 @@ npm run test
 
 ## 📜 License
 
-LGPL-3.0-or-later
+Licensed under LGPL-3.0-or-later. See [LICENSE](LICENSE) for the LGPLv3 text
+and [COPYING](COPYING) for the GPLv3 terms it incorporates.
