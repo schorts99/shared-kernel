@@ -18,6 +18,9 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
   private completedSteps: string[] = [];
   private compensationActions = new Map<string, SagaCompensationAction>();
   private currentState: Schema;
+  private executionQueue: Promise<void> = Promise.resolve();
+  private activeSagaId: string | undefined;
+  private completed = false;
 
   constructor(
     protected readonly commandBus: CommandBus,
@@ -39,15 +42,22 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
     this.handlers.set(eventName, handler as (event: DomainEvent, context: SagaExecutionContext<Schema>) => Promise<void>);
   }
 
-  async handle(event: DomainEvent, _context?: EventSubscriberContext): Promise<void> {
+  handle(event: DomainEvent, _context?: EventSubscriberContext): Promise<void> {
+    const execution = this.executionQueue.then(() => this.execute(event));
+    this.executionQueue = execution.then(() => undefined, () => undefined);
+
+    return execution;
+  }
+
+  private async execute(event: DomainEvent): Promise<void> {
     const sagaId = this.getSagaId(event);
     const persisted = await this.stateStore.load(sagaId);
     const state = persisted?.data ?? this.getInitialState();
-    const completedSteps = persisted?.completedSteps ?? [];
+    const completedSteps = [...(persisted?.completedSteps ?? [])];
     const processedEventIds = persisted?.processedEventIds ?? [];
     const handler = this.handlers.get(event.getEventName());
 
-    if (processedEventIds.includes(event.id)) {
+    if (persisted?.status === "completed" || processedEventIds.includes(event.id)) {
       return;
     }
 
@@ -58,10 +68,15 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
     this.currentState = state;
     this.completedSteps = completedSteps;
     this.compensationActions.clear();
+    this.activeSagaId = sagaId;
+    this.completed = false;
 
     try {
+      const saga = this;
       await handler(event, {
-        state: this.currentState,
+        get state() {
+          return saga.currentState;
+        },
         completeStep: (stepId, compensation) => this.completeStep(stepId, compensation),
         dispatch: command => this.commandBus.dispatch(command),
         updateState: nextState => {
@@ -69,12 +84,30 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
         },
       });
 
-      await this.saveState(sagaId, "pending", event.id);
+      await this.saveState(sagaId, this.completed ? "completed" : "pending", event.id);
     } catch (error) {
-      await this.rollback();
-      await this.saveState(sagaId, "failed", event.id);
+      const errors: unknown[] = [error];
+
+      try {
+        await this.rollback();
+      } catch (rollbackError) {
+        errors.push(rollbackError);
+      }
+
+      try {
+        await this.saveState(sagaId, "failed");
+      } catch (saveError) {
+        errors.push(saveError);
+      }
+
+      if (errors.length > 1) {
+        throw new AggregateError(errors, "Saga execution and recovery failed");
+      }
 
       throw error;
+    } finally {
+      this.activeSagaId = undefined;
+      this.compensationActions.clear();
     }
   }
 
@@ -87,7 +120,27 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
   }
 
   protected async completeSaga(sagaId: string, eventId?: string): Promise<void> {
-    await this.saveState(sagaId, "completed", eventId);
+    if (this.activeSagaId !== undefined) {
+      if (sagaId !== this.activeSagaId) {
+        throw new Error("Cannot complete a different saga during execution");
+      }
+
+      this.completed = true;
+
+      return;
+    }
+
+    const persisted = await this.stateStore.load(sagaId);
+
+    await this.stateStore.save(sagaId, {
+      status: "completed",
+      data: persisted?.data ?? this.getInitialState(),
+      completedSteps: [...(persisted?.completedSteps ?? [])],
+      processedEventIds: [...new Set([
+        ...(persisted?.processedEventIds ?? []),
+        ...(eventId === undefined ? [] : [eventId]),
+      ])],
+    });
   }
 
   protected completeStep(stepId: string, compensation?: SagaCompensationAction): void {
@@ -105,19 +158,30 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
       .filter(([stepId]) => this.completedSteps.includes(stepId))
       .reverse();
 
-    for (const [, compensation] of compensationEntries) {
-      await compensation();
+    const errors: unknown[] = [];
+
+    for (const [stepId, compensation] of compensationEntries) {
+      try {
+        await compensation();
+        this.completedSteps = this.completedSteps.filter(completedStep => completedStep !== stepId);
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+
+    if (errors.length > 0) {
+      throw new AggregateError(errors, "Saga compensation failed");
     }
   }
 
   private async saveState(sagaId: string, status: SagaStatus, eventId?: string): Promise<void> {
     const processedEventIds = eventId ? [eventId] : [];
     const persisted = await this.stateStore.load(sagaId);
-    const allProcessedEventIds = [...(persisted?.processedEventIds ?? []), ...processedEventIds];
+    const allProcessedEventIds = [...new Set([...(persisted?.processedEventIds ?? []), ...processedEventIds])];
 
     await this.stateStore.save(sagaId, {
       status,
-      completedSteps: this.completedSteps,
+      completedSteps: [...this.completedSteps],
       processedEventIds: allProcessedEventIds,
       data: this.currentState,
     });
