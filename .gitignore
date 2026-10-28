@@ -3,3 +3,9 @@ node_modules
 
 # Coverage
 coverage
+
+# macOS
+.DS_Store
+
+# Local JetBrains project metadata
+.idea/
