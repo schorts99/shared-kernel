@@ -9,7 +9,7 @@ export abstract class BooleanValue implements ValueObject {
   }
 
   get isValid(): boolean {
-    return true;
+    return typeof this.value === "boolean";
   }
 
   equals(valueObject: unknown): boolean {

@@ -14,10 +14,13 @@ export abstract class CoordinatesValue implements ValueObject {
   }
 
   get isValid(): boolean {
-    const validLatitud = -90 <= this.value.latitude && this.value.latitude <= 90;
-    const validLongitude = -180 <= this.value.longitude && this.value.longitude <= 180;
+    if (!this.value || typeof this.value !== "object") return false;
+    const { latitude, longitude } = this.value;
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return false;
+    const validLatitude = -90 <= latitude && latitude <= 90;
+    const validLongitude = -180 <= longitude && longitude <= 180;
 
-    return validLatitud && validLongitude;
+    return validLatitude && validLongitude;
   }
 
   get latitude(): number | null {

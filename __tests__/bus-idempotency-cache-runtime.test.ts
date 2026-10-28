@@ -7,6 +7,7 @@ import {
   ArrayValue,
   AsyncUnitOfWorkRunner,
   BaseValueObject,
+  BooleanValue,
   CommandRegistry,
   CommitOutcomeUnknownError,
   CoordinatesValue,
@@ -49,6 +50,8 @@ import {
   OfflineCommandSync,
   PaginationLinksGenerator,
   PascalCamelToSnake,
+  PathValue,
+  PhoneValue,
   QueryRegistry,
   RemoteFileToBase64,
   Result,
@@ -58,6 +61,7 @@ import {
   SlugValue,
   SnakeToCamel,
   StaticRBACPolicy,
+  StringValue,
   unorderedObjectArrayEqual,
   URLCriteriaBuilder,
   URLCriteriaParser,
@@ -1679,5 +1683,52 @@ describe("10. Schema Validation, Array Utilities, ErrorTrackingMiddleware on Eve
     );
     expect(result).toBe("recovered");
     expect(attempts).toBe(3);
+  });
+
+  it("enforces PathValue traversal protection, DateValue invalid date check, PhoneValue anchor, EmailValue TLDs/+ tags, UUIDv7, and String/Coordinates/Boolean validation", () => {
+    class UploadPath extends PathValue {
+      readonly attributeName = "uploadPath";
+    }
+    expect(new UploadPath("/var/uploads/report.pdf", ["/var/uploads"]).isValid).toBe(true);
+    expect(new UploadPath("/var/uploads/../../etc/passwd", ["/var/uploads"]).isValid).toBe(false);
+    expect(new UploadPath("/var/uploads-other/file.txt", ["/var/uploads"]).isValid).toBe(false);
+    expect(new UploadPath("/var/uploads/file\0.txt", ["/var/uploads"]).isValid).toBe(false);
+
+    class CreatedDate extends DateValue {
+      readonly attributeName = "createdAt";
+    }
+    expect(CreatedDate.fromPrimitives("not-a-valid-date").isValid).toBe(false);
+    expect(CreatedDate.fromPrimitives("2026-10-28T00:00:00.000Z").isValid).toBe(true);
+
+    class ContactPhone extends PhoneValue {
+      readonly attributeName = "phone";
+    }
+    expect(new ContactPhone("+12345678901").isValid).toBe(true);
+    expect(new ContactPhone("call me at +12345678901").isValid).toBe(false);
+
+    class UserEmail extends EmailValue {
+      readonly attributeName = "email";
+    }
+    expect(new UserEmail("dev+alerts@company.engineering").isValid).toBe(true);
+
+    // UUIDv7 support and case-insensitive equality
+    const uuidV7Lower = UUIDValue.fromPrimitives("018f3b24-a450-7b2c-9d1e-34567890abcd");
+    const uuidV7Upper = UUIDValue.fromPrimitives("018F3B24-A450-7B2C-9D1E-34567890ABCD");
+    expect(uuidV7Lower.isValid).toBe(true);
+    expect(uuidV7Lower.equals(uuidV7Upper)).toBe(true);
+
+    class EmptyOnlyString extends StringValue {
+      readonly attributeName = "empty";
+    }
+    expect(new EmptyOnlyString("", 0, 0).isValid).toBe(true);
+    expect(new EmptyOnlyString("a", 0, 0).isValid).toBe(false);
+
+    expect(CoordinatesValue.fromPrimitives({ latitude: Number.NaN, longitude: 0 }).isValid).toBe(false);
+
+    class FlagBoolean extends BooleanValue {
+      readonly attributeName = "flag";
+    }
+    expect(new FlagBoolean(true).isValid).toBe(true);
+    expect(new FlagBoolean("true" as unknown as boolean).isValid).toBe(false);
   });
 });

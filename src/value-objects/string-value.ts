@@ -24,13 +24,16 @@ export abstract class StringValue<Optional extends boolean = false> implements V
       return true;
     }
 
-    if (this.value === null) {
+    if (typeof this.value !== "string") {
       return false;
     }
 
     const length = this.value.length;
 
-    return length >= this.minLength && (this.maxLength ? length <= this.maxLength : true);
+    return (
+      length >= this.minLength &&
+      (this.maxLength !== undefined ? length <= this.maxLength : true)
+    );
   }
 
   equals(valueObject: unknown): boolean {

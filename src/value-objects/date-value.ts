@@ -18,7 +18,10 @@ export abstract class DateValue<Required extends boolean = true> implements Valu
   }
 
   get isValid(): boolean {
-    if (!this.value) return this.optional;
+    if (this.value === null || this.value === undefined) return this.optional;
+    if (!(this.value instanceof Date) || Number.isNaN(this.value.getTime())) {
+      return false;
+    }
     if (this.beforeDate && this.value > this.beforeDate) return false;
     if (this.afterDate && this.value < this.afterDate) return false;
 
