@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - The ESM build (`dist/esm`) now emits real ES modules instead of CommonJS, and each subpath's `import` condition resolves to ESM type declarations.
+- `randomString` now draws from `crypto.getRandomValues` without modulo bias instead of `Math.random`, rejects invalid lengths, and throws when the Web Crypto API is unavailable (for example on Node 18 without `--experimental-global-webcrypto`).
+- Inline ABAC predicates passed to `RBACPolicy.canWithAttributes`, `canAnyWithAttributes`, and their async variants now get typed `user`, `resource`, and `context` parameters instead of implicit `any`. Predicates typed as `Predicate` or `AsyncPredicate` are still accepted.
+
+### Added
+
+- `isPlainObject` in `utils`.
 
 ### Changed
 

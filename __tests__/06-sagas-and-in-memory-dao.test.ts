@@ -10,13 +10,11 @@ import {
   Saga,
   UUIDValue,
 } from "../src";
-import type {
-  UnitOfWork,
-} from "../src";
 import { NodeExecutionContext } from "../src/node";
 import {
   registerTestMessages,
   TestDomainEvent,
+  TestUUIDValue,
 } from "./support/fixtures";
 
 beforeAll(registerTestMessages);
@@ -60,7 +58,7 @@ describe("6. Saga Concurrency, Cross-Event Compensation, Store Isolation, and In
           compensatedLog.push(`declarative:step-1:${sagaId}:${state.steps.join(",")}`);
         });
 
-        this.on<TestDomainEvent>(TestDomainEvent.NAME, async (event, ctx) => {
+        this.on<TestDomainEvent>(TestDomainEvent.NAME, async (_event, ctx) => {
           if (ctx.sagaId === "saga-slow") {
             await slowSagaAGate;
           }
@@ -158,8 +156,8 @@ describe("6. Saga Concurrency, Cross-Event Compensation, Store Isolation, and In
 
     const dao = new InMemoryDAO<StoreModel, StoreEntity>("SOFT");
 
-    const nycId = new UUIDValue("123e4567-e89b-12d3-a456-426614174001");
-    const laId = new UUIDValue("123e4567-e89b-12d3-a456-426614174002");
+    const nycId = new TestUUIDValue("123e4567-e89b-12d3-a456-426614174001");
+    const laId = new TestUUIDValue("123e4567-e89b-12d3-a456-426614174002");
 
     const nycStore = new StoreEntity(
       nycId,

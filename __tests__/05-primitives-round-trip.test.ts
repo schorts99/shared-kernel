@@ -1,16 +1,10 @@
 import {
   AggregateRoot,
   CommandRegistry,
-  CoordinatesValue,
   Criteria,
-  DateValue,
-  DomainEvent,
   DomainEventRegistry,
-  EmailValue,
   EntityRegistry,
   QueryRegistry,
-  SlugValue,
-  URLValue,
   UUIDValue,
 } from "../src";
 import {
@@ -18,6 +12,12 @@ import {
   TestCommand,
   TestQuery,
   TestDomainEvent,
+  TestCoordinatesValue,
+  TestDateValue,
+  TestEmailValue,
+  TestSlugValue,
+  TestURLValue,
+  TestUUIDValue,
 } from "./support/fixtures";
 
 beforeAll(registerTestMessages);
@@ -73,7 +73,7 @@ describe("5. fromPrimitives and toPrimitives across Domain Building Blocks", () 
 
   it("supports Criteria, ValueObjects, EntityRegistry, and AggregateRoot fromPrimitives/toPrimitives", () => {
     const criteria = Criteria.none()
-      .where("status", "=", "active")
+      .where("status", "EQUAL", "active")
       .orderBy("createdAt", "DESC")
       .limitResults(25)
       .offsetResults(2);
@@ -82,22 +82,22 @@ describe("5. fromPrimitives and toPrimitives across Domain Building Blocks", () 
     const hydratedCriteria = Criteria.fromPrimitives(criteriaPrimitives);
     expect(hydratedCriteria.toPrimitives()).toEqual(criteriaPrimitives);
 
-    const uuid = UUIDValue.fromPrimitives("123e4567-e89b-12d3-a456-426614174000");
+    const uuid = TestUUIDValue.fromPrimitives("123e4567-e89b-12d3-a456-426614174000");
     expect(uuid.toPrimitives()).toBe("123e4567-e89b-12d3-a456-426614174000");
 
-    const email = EmailValue.fromPrimitives("user@example.com");
+    const email = TestEmailValue.fromPrimitives("user@example.com");
     expect(email.toPrimitives()).toBe("user@example.com");
 
-    const slug = SlugValue.fromPrimitives("hello-world");
+    const slug = TestSlugValue.fromPrimitives("hello-world");
     expect(slug.toPrimitives()).toBe("hello-world");
 
-    const coords = CoordinatesValue.fromPrimitives({ latitude: 40.7128, longitude: -74.006 });
+    const coords = TestCoordinatesValue.fromPrimitives({ latitude: 40.7128, longitude: -74.006 });
     expect(coords.toPrimitives()).toEqual({ latitude: 40.7128, longitude: -74.006 });
 
-    const dateVal = DateValue.fromPrimitives("2026-01-01T00:00:00.000Z");
+    const dateVal = TestDateValue.fromPrimitives("2026-01-01T00:00:00.000Z");
     expect(dateVal.toPrimitives()).toBe("2026-01-01T00:00:00.000Z");
 
-    const urlVal = URLValue.fromPrimitives("https://example.com/test");
+    const urlVal = TestURLValue.fromPrimitives("https://example.com/test");
     expect(urlVal.toPrimitives()).toBe("https://example.com/test");
 
     class InvoiceAggregate extends AggregateRoot<UUIDValue> {
@@ -108,15 +108,15 @@ describe("5. fromPrimitives and toPrimitives across Domain Building Blocks", () 
         this.amount = amount;
       }
 
-      protected createId(rawId: string | UUIDValue): UUIDValue {
-        return rawId instanceof UUIDValue ? rawId : UUIDValue.fromPrimitives(rawId);
+      protected override createId(rawId: string | UUIDValue): UUIDValue {
+        return rawId instanceof UUIDValue ? rawId : TestUUIDValue.fromPrimitives(rawId);
       }
 
       toPrimitives(): Record<string, unknown> {
         return { id: this.id.toPrimitives(), amount: this.amount };
       }
 
-      restoreFromPrimitives(primitives: Record<string, any>): void {
+      override restoreFromPrimitives(primitives: Record<string, any>): void {
         this.amount = Number(primitives.amount);
       }
     }

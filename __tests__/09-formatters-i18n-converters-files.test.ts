@@ -10,6 +10,7 @@ import {
 } from "../src";
 import {
   registerTestMessages,
+  TestUUIDValue,
 } from "./support/fixtures";
 
 beforeAll(registerTestMessages);
@@ -85,15 +86,15 @@ describe("9. Formatters, i18n, RemoteFileToBase64, EntityJSONAPIMapper, and InMe
         super(id);
       }
 
-      protected createId(rawId: string): UUIDValue {
-        return UUIDValue.fromPrimitives(rawId);
+      protected override createId(rawId: string): UUIDValue {
+        return TestUUIDValue.fromPrimitives(rawId);
       }
 
       toPrimitives() {
         return internalModel;
       }
 
-      restoreFromPrimitives(data: typeof internalModel): void {
+      override restoreFromPrimitives(data: typeof internalModel): void {
         this.total = data.total;
         this.items = [...data.items];
       }
@@ -104,7 +105,7 @@ describe("9. Formatters, i18n, RemoteFileToBase64, EntityJSONAPIMapper, and InMe
       MappedOrderEntity,
     );
     const entity = new MappedOrderEntity(
-      new UUIDValue(internalModel.id),
+      new TestUUIDValue(internalModel.id),
       internalModel.total,
       internalModel.items,
     );

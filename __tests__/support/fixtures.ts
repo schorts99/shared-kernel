@@ -1,5 +1,10 @@
 import {
   AbstractCommand,
+  CoordinatesValue,
+  DateValue,
+  EmailValue,
+  SlugValue,
+  URLValue,
   AbstractQuery,
   BaseValueObject,
   CommandRegistry,
@@ -20,7 +25,7 @@ export class TestCommand extends AbstractCommand<{ id: string; value?: string }>
     return TestCommand.TYPE;
   }
 
-  getPayload() {
+  override getPayload() {
     return this.payload;
   }
 }
@@ -32,7 +37,7 @@ export class SecondaryCommand extends AbstractCommand<{ id: string }> {
     return SecondaryCommand.TYPE;
   }
 
-  getPayload() {
+  override getPayload() {
     return this.payload;
   }
 }
@@ -44,7 +49,7 @@ export class TestQuery extends AbstractQuery<{ id: string }> {
     return TestQuery.TYPE;
   }
 
-  getPayload() {
+  override getPayload() {
     return this.payload;
   }
 }
@@ -64,7 +69,7 @@ export class TestDomainEvent extends DomainEvent<{ id: string }> {
     return TestDomainEvent.NAME;
   }
 
-  getPayload() {
+  override getPayload() {
     return this.payload;
   }
 }
@@ -111,4 +116,30 @@ export function registerTestMessages(): void {
   CommandRegistry.register(SecondaryCommand.TYPE, SecondaryCommand);
   QueryRegistry.register(TestQuery.TYPE, TestQuery);
   DomainEventRegistry.register(TestDomainEvent.NAME, TestDomainEvent);
+}
+
+// Concrete value objects for tests; the library's value objects are abstract and
+// need an attributeName.
+export class TestUUIDValue extends UUIDValue {
+  readonly attributeName = "id";
+}
+
+export class TestEmailValue extends EmailValue {
+  readonly attributeName = "email";
+}
+
+export class TestSlugValue extends SlugValue {
+  readonly attributeName = "slug";
+}
+
+export class TestCoordinatesValue extends CoordinatesValue {
+  readonly attributeName = "coordinates";
+}
+
+export class TestDateValue extends DateValue {
+  readonly attributeName = "date";
+}
+
+export class TestURLValue extends URLValue {
+  readonly attributeName = "url";
 }

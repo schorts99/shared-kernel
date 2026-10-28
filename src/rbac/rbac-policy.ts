@@ -1,8 +1,6 @@
 import { Permission, BaseAction } from "./permission.js";
 import { BaseResource } from "./base-resource.js";
-import {
-  Predicate,
-  AsyncPredicate,
+import type {
   ContextualPredicate,
   AsyncContextualPredicate,
 } from "../abac/index.js";
@@ -34,7 +32,9 @@ export abstract class RBACPolicy<Action extends string = BaseAction> {
     roles: string | string[],
     action: Action | BaseAction,
     resource: Resource,
-    predicates: Array<Predicate<User, Resource> | ContextualPredicate<User, Resource, Context>>,
+    // A two-argument Predicate is assignable here, and a single signature keeps inline
+    // predicates' parameters typed.
+    predicates: Array<ContextualPredicate<User, Resource, Context>>,
     context?: Context,
   ): boolean {
     if (!this.can(roles, action, resource)) return false;
@@ -51,7 +51,9 @@ export abstract class RBACPolicy<Action extends string = BaseAction> {
     roles: string | string[],
     action: Action | BaseAction,
     resource: Resource,
-    predicates: Array<Predicate<User, Resource> | ContextualPredicate<User, Resource, Context>>,
+    // A two-argument Predicate is assignable here, and a single signature keeps inline
+    // predicates' parameters typed.
+    predicates: Array<ContextualPredicate<User, Resource, Context>>,
     context?: Context,
   ): boolean {
     if (!this.can(roles, action, resource)) return false;
@@ -70,8 +72,6 @@ export abstract class RBACPolicy<Action extends string = BaseAction> {
     action: Action | BaseAction,
     resource: Resource,
     predicates: Array<
-      | Predicate<User, Resource>
-      | AsyncPredicate<User, Resource>
       | ContextualPredicate<User, Resource, Context>
       | AsyncContextualPredicate<User, Resource, Context>
     >,
@@ -97,8 +97,6 @@ export abstract class RBACPolicy<Action extends string = BaseAction> {
     action: Action | BaseAction,
     resource: Resource,
     predicates: Array<
-      | Predicate<User, Resource>
-      | AsyncPredicate<User, Resource>
       | ContextualPredicate<User, Resource, Context>
       | AsyncContextualPredicate<User, Resource, Context>
     >,

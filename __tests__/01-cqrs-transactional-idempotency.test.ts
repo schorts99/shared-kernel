@@ -9,7 +9,6 @@ import {
   InMemoryIdempotencyStore,
   InMemoryTransactionalIdempotencyAdapter,
   InMemoryUnitOfWork,
-  retry,
 } from "../src";
 import type {
   CommandHandlerContext,
@@ -36,6 +35,7 @@ describe("1. Ambiguous commits & transactional idempotency", () => {
     const publishedEvents: string[] = [];
     eventBus.subscribe(TestDomainEvent.NAME, {
       getName: () => "test-subscriber",
+      subscribedTo: () => [TestDomainEvent.NAME],
       handle: async (event: TestDomainEvent) => {
         publishedEvents.push(event.getPayload().id);
       },
@@ -77,7 +77,7 @@ describe("1. Ambiguous commits & transactional idempotency", () => {
         return { orderId: id };
       }
 
-      getInvalidationTags(command: TestCommand): string[] {
+      override getInvalidationTags(command: TestCommand): string[] {
         return [`order:${command.getPayload().id}`];
       }
     }
@@ -115,6 +115,7 @@ describe("1. Ambiguous commits & transactional idempotency", () => {
     const published: string[] = [];
     eventBus.subscribe(TestDomainEvent.NAME, {
       getName: () => "sub",
+      subscribedTo: () => [TestDomainEvent.NAME],
       handle: async (event: TestDomainEvent) => {
         published.push(event.getPayload().id);
       },
@@ -193,7 +194,7 @@ describe("1. Ambiguous commits & transactional idempotency", () => {
         return uow;
       }
 
-      protected async resolveCommitOutcome(): Promise<"committed" | "not-committed" | "unknown"> {
+      protected override async resolveCommitOutcome(): Promise<"committed" | "not-committed" | "unknown"> {
         return this.resolution;
       }
     }

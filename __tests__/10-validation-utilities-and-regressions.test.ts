@@ -11,7 +11,6 @@ import {
   ConsoleLogger,
   CoordinatesValue,
   Criteria,
-  CrossDispatchCycleError,
   DateValue,
   debounce,
   DomainEvent,
@@ -78,6 +77,7 @@ import {
 } from "../src";
 import type {
   CommandHandlerContext,
+  CommandPrimitives,
   QueryHandlerContext,
 } from "../src";
 import { NodeExecutionContext } from "../src/node";
@@ -87,7 +87,8 @@ import {
   SecondaryCommand,
   TestQuery,
   TestDomainEvent,
-  OrderEntity,
+  TestCoordinatesValue,
+  TestUUIDValue,
 } from "./support/fixtures";
 
 beforeAll(registerTestMessages);
@@ -164,6 +165,7 @@ describe("10. Schema Validation, Array Utilities, ErrorTrackingMiddleware on Eve
 
     eventBus.subscribe(TestDomainEvent.NAME, {
       getName: () => "failing-sub",
+      subscribedTo: () => [TestDomainEvent.NAME],
       handle: async () => {
         throw new Error("event subscriber failed");
       },
@@ -255,8 +257,8 @@ describe("10. Schema Validation, Array Utilities, ErrorTrackingMiddleware on Eve
     expect(new UserEmail("dev+alerts@company.engineering").isValid).toBe(true);
 
     // UUIDv7 support and case-insensitive equality
-    const uuidV7Lower = UUIDValue.fromPrimitives("018f3b24-a450-7b2c-9d1e-34567890abcd");
-    const uuidV7Upper = UUIDValue.fromPrimitives("018F3B24-A450-7B2C-9D1E-34567890ABCD");
+    const uuidV7Lower = TestUUIDValue.fromPrimitives("018f3b24-a450-7b2c-9d1e-34567890abcd");
+    const uuidV7Upper = TestUUIDValue.fromPrimitives("018F3B24-A450-7B2C-9D1E-34567890ABCD");
     expect(uuidV7Lower.isValid).toBe(true);
     expect(uuidV7Lower.equals(uuidV7Upper)).toBe(true);
 
@@ -266,7 +268,7 @@ describe("10. Schema Validation, Array Utilities, ErrorTrackingMiddleware on Eve
     expect(new EmptyOnlyString("", 0, 0).isValid).toBe(true);
     expect(new EmptyOnlyString("a", 0, 0).isValid).toBe(false);
 
-    expect(CoordinatesValue.fromPrimitives({ latitude: Number.NaN, longitude: 0 }).isValid).toBe(false);
+    expect(TestCoordinatesValue.fromPrimitives({ latitude: Number.NaN, longitude: 0 }).isValid).toBe(false);
 
     class FlagBoolean extends BooleanValue {
       readonly attributeName = "flag";
@@ -317,19 +319,19 @@ describe("10. Schema Validation, Array Utilities, ErrorTrackingMiddleware on Eve
       constructor(id: UUIDValue, public name: string) {
         super(id);
       }
-      protected createId(rawId: string): UUIDValue {
-        return UUIDValue.fromPrimitives(rawId);
+      protected override createId(rawId: string): UUIDValue {
+        return TestUUIDValue.fromPrimitives(rawId);
       }
       toPrimitives() {
         return { id: this.id.value, name: this.name };
       }
-      restoreFromPrimitives(data: { id: string; name: string }): void {
+      override restoreFromPrimitives(data: { id: string; name: string }): void {
         this.name = data.name;
       }
     }
 
     const authUser = new AuthUserEntity(
-      new UUIDValue("123e4567-e89b-12d3-a456-426614174000"),
+      new TestUUIDValue("123e4567-e89b-12d3-a456-426614174000"),
       "Ada",
     );
     const authProvider = new InMemoryAuthProvider({
@@ -454,7 +456,7 @@ describe("10. Schema Validation, Array Utilities, ErrorTrackingMiddleware on Eve
   });
 
   it("enforces type-safe Entity/AggregateRoot equality, exact event sequence numbers, FloatValue Infinity/rounding fixes, ValuesNotValid message, and InMemoryPubSub isolation/wildcards", async () => {
-    const sharedUuid = new UUIDValue("123e4567-e89b-12d3-a456-426614174000");
+    const sharedUuid = new TestUUIDValue("123e4567-e89b-12d3-a456-426614174000");
 
     class UserEntity extends Entity<UUIDValue, { id: string }> {
       toPrimitives() {
@@ -686,7 +688,7 @@ describe("10. Schema Validation, Array Utilities, ErrorTrackingMiddleware on Eve
       getEventName(): string {
         return "temp.event";
       }
-      getPayload() {
+      override getPayload() {
         return this.payload;
       }
     }
@@ -754,16 +756,20 @@ describe("10. Schema Validation, Array Utilities, ErrorTrackingMiddleware on Eve
     }
 
     const commandBus = new InMemoryCommandBus({ executionContext });
+    const doubleAmount = async (cmd: LocalUnregisteredCommand) => cmd.getPayload().amount * 2;
     commandBus.register<LocalUnregisteredCommand, number>(LocalUnregisteredCommand.TYPE, {
-      handle: async cmd => cmd.getPayload().amount * 2,
+      handle: doubleAmount,
+      execute: doubleAmount,
     });
     expect(
       await commandBus.dispatch(new LocalUnregisteredCommand("corr-local", { amount: 21 })),
     ).toBe(42);
 
     const queryBus = new InMemoryQueryBus({ executionContext });
+    const findItem = async (qry: LocalUnregisteredQuery) => `found:${qry.getPayload().id}`;
     queryBus.register<LocalUnregisteredQuery, string>(LocalUnregisteredQuery.TYPE, {
-      handle: async qry => `found:${qry.getPayload().id}`,
+      handle: findItem,
+      execute: findItem,
     });
     expect(
       await queryBus.dispatch(new LocalUnregisteredQuery("corr-local", { id: "item-7" })),
@@ -784,6 +790,7 @@ describe("10. Schema Validation, Array Utilities, ErrorTrackingMiddleware on Eve
 
     eventBus.subscribe<LocalUnregisteredEvent>(LocalUnregisteredEvent.NAME, {
       getName: () => "sub-1-mutating-and-retrying",
+      subscribedTo: () => [LocalUnregisteredEvent.NAME],
       getOptions: () => ({ priority: 10 }),
       handle: async event => {
         sub1Attempts++;
@@ -797,6 +804,7 @@ describe("10. Schema Validation, Array Utilities, ErrorTrackingMiddleware on Eve
 
     eventBus.subscribe<LocalUnregisteredEvent>(LocalUnregisteredEvent.NAME, {
       getName: () => "sub-2-isolated",
+      subscribedTo: () => [LocalUnregisteredEvent.NAME],
       getOptions: () => ({ priority: 5 }),
       handle: async event => {
         observedItemsBySub2.push([...event.getPayload().items]);
@@ -969,7 +977,7 @@ describe("10. Schema Validation, Array Utilities, ErrorTrackingMiddleware on Eve
     expect(arrVo.value).toEqual([{ label: "a" }]);
 
     // 2. Concurrent OfflineCommandSync.sync() serialization
-    const offlineStore = new InMemoryOfflineStore();
+    const offlineStore = new InMemoryOfflineStore<CommandPrimitives>();
     const commandBus = new InMemoryCommandBus();
     const dispatchedIds: string[] = [];
 
@@ -1146,15 +1154,18 @@ describe("10. Schema Validation, Array Utilities, ErrorTrackingMiddleware on Eve
       updatedAt: string;
     }
     class DaoItemEntity extends Entity<DaoItemId, DaoItemModel> {
+      readonly createdAt = "2026-01-01T00:00:00.000Z";
+      readonly updatedAt = "2026-01-01T00:00:00.000Z";
+
       constructor(
         id: DaoItemId,
         public name: string,
         public occurredAt: string,
         public rank: number | null,
       ) {
-        super(id, "2026-01-01T00:00:00.000Z", "2026-01-01T00:00:00.000Z");
+        super(id);
       }
-      protected createId(rawId: string | DaoItemId): DaoItemId {
+      protected override createId(rawId: string | DaoItemId): DaoItemId {
         return rawId instanceof DaoItemId ? rawId : new DaoItemId(rawId);
       }
       toPrimitives(): DaoItemModel {

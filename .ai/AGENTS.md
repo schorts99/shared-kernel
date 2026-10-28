@@ -96,7 +96,7 @@ Execute common engineering tasks by following the dedicated skill instructions u
 - **Build ESM Only**: `npm run build:esm`
 - **Run Tests**: `npm test`
 - **Run Coverage**: `npm run test:coverage` (CI enforces the thresholds in `jest.config.js` via `npm run test:ci`)
-- **Typecheck**: `npm run typecheck`
+- **Typecheck (source and tests)**: `npm run typecheck`
 - **Check Import Paths**: `npm run lint:imports`
 - **Load Every Entry Point (after build)**: `npm run test:package`
 - **Lint Package Shape (after build)**: `npm run lint:package`

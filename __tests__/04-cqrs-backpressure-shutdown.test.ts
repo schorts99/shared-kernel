@@ -108,6 +108,7 @@ describe("4. Backpressure and shutdown", () => {
 
     const subscriber: EventSubscriber<TestDomainEvent> = {
       getName: () => "shared-sub",
+      subscribedTo: () => [TestDomainEvent.NAME],
       handle: async event => {
         await gate;
         delivered.push(event.id);

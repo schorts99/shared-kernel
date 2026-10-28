@@ -13,13 +13,11 @@ import {
   Result,
   UUIDValue,
 } from "../src";
-import type {
-  UnitOfWork,
-} from "../src";
 import { NodeExecutionContext } from "../src/node";
 import {
   registerTestMessages,
   TestDomainEvent,
+  TestUUIDValue,
 } from "./support/fixtures";
 
 beforeAll(registerTestMessages);
@@ -42,6 +40,7 @@ describe("7. Transactional Outbox on UnitOfWork and Async Combinators / Serializ
 
     eventBus.subscribe(TestDomainEvent.NAME, {
       getName: () => "outbox-sub",
+      subscribedTo: () => [TestDomainEvent.NAME],
       getOptions: () => ({ retryOnError: false }),
       handle: async event => {
         if (failSubscriberOnce) {
@@ -74,7 +73,7 @@ describe("7. Transactional Outbox on UnitOfWork and Async Combinators / Serializ
       eventBus,
     });
 
-    const accountId = new UUIDValue("123e4567-e89b-12d3-a456-426614174010");
+    const accountId = new TestUUIDValue("123e4567-e89b-12d3-a456-426614174010");
     const account = new AccountAggregate(accountId, 100);
 
     // 1. Rollback discards staged events without writing to EventStore or publishing to EventBus
@@ -195,7 +194,7 @@ describe("7. Transactional Outbox on UnitOfWork and Async Combinators / Serializ
       from: "noreply@example.com",
       to: ["customer@example.com"],
       subject: "Order Confirmation",
-      body: "Thanks!",
+      text: "Thanks!",
     });
     expect(loggedInfos).toHaveLength(1);
     expect(loggedInfos[0]?.message).toContain("Order Confirmation");

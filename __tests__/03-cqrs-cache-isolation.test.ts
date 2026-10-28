@@ -15,6 +15,7 @@ import {
   TestQuery,
   MoneyValue,
   OrderEntity,
+  TestUUIDValue,
 } from "./support/fixtures";
 
 beforeAll(registerTestMessages);
@@ -23,7 +24,7 @@ describe("3. Cache isolation & domain class support", () => {
   it("clones domain classes on write and read and rejects unsupported values without replacing existing entries", async () => {
     const cache = new InMemoryCache<unknown>();
 
-    const entity = new OrderEntity(new UUIDValue("123e4567-e89b-12d3-a456-426614174000"), 100, ["item-1"]);
+    const entity = new OrderEntity(new TestUUIDValue("123e4567-e89b-12d3-a456-426614174000"), 100, ["item-1"]);
     const money = new MoneyValue({ amount: 50, currency: "USD" });
     const okResult = Result.success({ entity, money });
 
@@ -78,7 +79,7 @@ describe("3. Cache isolation & domain class support", () => {
     class GetOrderQueryHandler extends AbstractQueryHandler<TestQuery, OrderEntity> {
       async execute(query: TestQuery, _context: QueryHandlerContext): Promise<OrderEntity> {
         return new OrderEntity(
-          new UUIDValue("123e4567-e89b-12d3-a456-426614174000"),
+          new TestUUIDValue("123e4567-e89b-12d3-a456-426614174000"),
           250,
           [query.getPayload().id],
         );
