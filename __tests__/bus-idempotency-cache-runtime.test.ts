@@ -2609,4 +2609,134 @@ describe("10. Schema Validation, Array Utilities, ErrorTrackingMiddleware on Eve
     expect(cmd.headers).toEqual({ "x-trace": "t-1" });
     expect(cmd.getPayload().id).toBe("c-1");
   });
+
+  it("supports InMemoryDAO Date/ISO-string filters, SQL LIKE wildcards, and null-safe ordering, plus RBACPolicy domain User/isolation and Saga terminal failure guard", async () => {
+    // 1. InMemoryDAO Date vs ISO-string filtering, LIKE wildcards, and null-safe ordering
+    class DaoItemId extends UUIDValue {
+      readonly attributeName = "id";
+    }
+    interface DaoItemModel {
+      id: string;
+      name: string;
+      occurredAt: string;
+      rank: number | null;
+      createdAt: string;
+      updatedAt: string;
+    }
+    class DaoItemEntity extends Entity<DaoItemId, DaoItemModel> {
+      constructor(
+        id: DaoItemId,
+        public name: string,
+        public occurredAt: string,
+        public rank: number | null,
+      ) {
+        super(id, "2026-01-01T00:00:00.000Z", "2026-01-01T00:00:00.000Z");
+      }
+      protected createId(rawId: string | DaoItemId): DaoItemId {
+        return rawId instanceof DaoItemId ? rawId : new DaoItemId(rawId);
+      }
+      toPrimitives(): DaoItemModel {
+        return {
+          id: this.id.value,
+          name: this.name,
+          occurredAt: this.occurredAt,
+          rank: this.rank,
+          createdAt: this.createdAt,
+          updatedAt: this.updatedAt,
+        };
+      }
+    }
+
+    const dao = new InMemoryDAO<DaoItemModel, DaoItemEntity>();
+    const id1 = "123e4567-e89b-12d3-a456-426614174001";
+    const id2 = "123e4567-e89b-12d3-a456-426614174002";
+    const id3 = "123e4567-e89b-12d3-a456-426614174003";
+
+    await dao.create(new DaoItemEntity(new DaoItemId(id1), "alpha-service", "2026-05-01T00:00:00.000Z", null));
+    await dao.create(new DaoItemEntity(new DaoItemId(id2), "beta-alpha", "2026-05-10T00:00:00.000Z", 20));
+    await dao.create(new DaoItemEntity(new DaoItemId(id3), "gamma-core", "2026-05-20T00:00:00.000Z", 5));
+
+    // Date filter against ISO-8601 string in entity primitives
+    const byAfterDate = await dao.search(
+      Criteria.none().where("occurredAt", "GREATER_THAN", new Date("2026-05-05T00:00:00.000Z")),
+    );
+    expect(byAfterDate.map((e) => e.id.value)).toEqual([id2, id3]);
+
+    const byBetweenDates = await dao.search(
+      Criteria.none().where("occurredAt", "BETWEEN", [
+        new Date("2026-05-01T00:00:00.000Z"),
+        new Date("2026-05-12T00:00:00.000Z"),
+      ]),
+    );
+    expect(byBetweenDates.map((e) => e.id.value)).toEqual([id1, id2]);
+
+    // Anchored SQL LIKE wildcards vs plain substring LIKE
+    const prefixAlpha = await dao.search(Criteria.none().where("name", "LIKE", "alpha%"));
+    expect(prefixAlpha.map((e) => e.id.value)).toEqual([id1]);
+
+    const substringAlpha = await dao.search(Criteria.none().where("name", "LIKE", "alpha"));
+    expect(substringAlpha.map((e) => e.id.value)).toEqual([id1, id2]);
+
+    // Null-safe ordering (nulls placed consistently last)
+    const orderedByRank = await dao.search(Criteria.none().orderBy("rank", "ASC"));
+    expect(orderedByRank.map((e) => e.id.value)).toEqual([id3, id2, id1]);
+
+    // 2. RBACPolicy with domain User (UUIDValue id), empty predicates in canAnyWithAttributes, and StaticRBACPolicy isolation
+    const rawPerms = [{ resource: "orders", action: "read" as const }];
+    const policy = new StaticRBACPolicy({ viewer: rawPerms });
+    rawPerms.push({ resource: "orders", action: "delete" as any });
+    policy.getPermissions("viewer").push({ resource: "orders", action: "update" as any });
+
+    expect(policy.can("viewer", "delete", "orders")).toBe(false);
+    expect(policy.can("viewer", "update", "orders")).toBe(false);
+
+    const domainUser = { id: new DaoItemId(id1) };
+    const resource = { name: "orders", ownerId: id1 };
+    expect(
+      policy.canWithAttributes(domainUser, "viewer", "read", resource, [
+        (u, r) => u.id.value === (r as typeof resource).ownerId,
+      ]),
+    ).toBe(true);
+    expect(policy.canAnyWithAttributes(domainUser, "viewer", "read", resource, [])).toBe(true);
+    await expect(
+      policy.canAnyWithAttributesAsync(domainUser, "viewer", "read", resource, []),
+    ).resolves.toBe(true);
+
+    // 3. Saga declarative compensation updateState & non-retried CrossDispatchCycleError in EventBus
+    const commandBus = new InMemoryCommandBus();
+    const sagaStore = new InMemorySagaStateStore<{ steps: string[]; rolledBack?: boolean }>();
+
+    class CompensationStateSaga extends Saga<{ steps: string[]; rolledBack?: boolean }> {
+      constructor() {
+        super(commandBus, sagaStore);
+      }
+      protected getInitialState() {
+        return { steps: [] };
+      }
+      protected getSagaId(event: DomainEvent): string {
+        return (event.getPayload() as { id: string }).id;
+      }
+      protected configure(): void {
+        this.registerStepCompensation("step-1", ({ state, updateState }) => {
+          updateState({ steps: state.steps.filter((s) => s !== "step-1"), rolledBack: true });
+        });
+        this.on<TestDomainEvent>(TestDomainEvent.NAME, async (event, ctx) => {
+          ctx.updateState({ steps: [...ctx.state.steps, "step-1"] });
+          ctx.completeStep("step-1");
+          if (event.id === "evt-fail") {
+            throw new Error("boom");
+          }
+        });
+      }
+    }
+
+    const saga = new CompensationStateSaga();
+    await expect(
+      saga.handle(new TestDomainEvent("c-1", { id: "s-1" }, { id: "evt-fail" })),
+    ).rejects.toThrow("boom");
+    const failedState = await sagaStore.load("s-1");
+    expect(failedState?.status).toBe("failed");
+    expect(failedState?.data).toEqual({ steps: [], rolledBack: true });
+    await commandBus.close();
+  });
 });

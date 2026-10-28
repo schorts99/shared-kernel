@@ -324,53 +324,127 @@ export class InMemoryDAO<
     return path.split(".").reduce((o, key) => o?.[key], obj);
   }
 
+  private toTimestampIfDateLike(val: unknown): number | null {
+    if (val instanceof Date) {
+      const ms = val.getTime();
+      return Number.isNaN(ms) ? null : ms;
+    }
+    if (
+      typeof val === "string" &&
+      /^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})?)?$/.test(val)
+    ) {
+      const ms = Date.parse(val);
+      return Number.isNaN(ms) ? null : ms;
+    }
+    return null;
+  }
+
+  private valuesEqual(a: unknown, b: unknown): boolean {
+    if (a === b) return true;
+    const tsA = this.toTimestampIfDateLike(a);
+    const tsB = this.toTimestampIfDateLike(b);
+    if (tsA !== null && tsB !== null) {
+      return tsA === tsB;
+    }
+    return false;
+  }
+
+  private compareValues(a: unknown, b: unknown): number | null {
+    if (a === null || a === undefined || b === null || b === undefined) {
+      return null;
+    }
+    const tsA = this.toTimestampIfDateLike(a);
+    const tsB = this.toTimestampIfDateLike(b);
+    if (tsA !== null && tsB !== null) {
+      return tsA < tsB ? -1 : tsA > tsB ? 1 : 0;
+    }
+    if (
+      typeof a === typeof b &&
+      (typeof a === "number" ||
+        typeof a === "string" ||
+        typeof a === "boolean" ||
+        typeof a === "bigint")
+    ) {
+      if (typeof a === "number" && (Number.isNaN(a) || Number.isNaN(b as number))) {
+        return null;
+      }
+      return (a as any) < (b as any) ? -1 : (a as any) > (b as any) ? 1 : 0;
+    }
+    return null;
+  }
+
   private evaluateFilter(value: any, operator: Operator, filterValue: any): boolean {
     switch (operator) {
       case "EQUAL":
-        return value === filterValue;
+        return this.valuesEqual(value, filterValue);
       case "NOT_EQUAL":
-        return value !== filterValue;
-      case "GREATER_THAN":
-        return value > filterValue;
-      case "LESS_THAN":
-        return value < filterValue;
-      case "GREATER_THAN_OR_EQUAL":
-        return value >= filterValue;
-      case "LESS_THAN_OR_EQUAL":
-        return value <= filterValue;
+        return !this.valuesEqual(value, filterValue);
+      case "GREATER_THAN": {
+        const cmp = this.compareValues(value, filterValue);
+        return cmp !== null && cmp > 0;
+      }
+      case "LESS_THAN": {
+        const cmp = this.compareValues(value, filterValue);
+        return cmp !== null && cmp < 0;
+      }
+      case "GREATER_THAN_OR_EQUAL": {
+        const cmp = this.compareValues(value, filterValue);
+        return cmp !== null && cmp >= 0;
+      }
+      case "LESS_THAN_OR_EQUAL": {
+        const cmp = this.compareValues(value, filterValue);
+        return cmp !== null && cmp <= 0;
+      }
       case "IN":
-        return Array.isArray(filterValue) && filterValue.includes(value);
-      case "NOT_IN":
-        return Array.isArray(filterValue) && !filterValue.includes(value);
-      case "LIKE":
         return (
-          typeof value === "string" &&
-          typeof filterValue === "string" &&
-          value.toLowerCase().includes(filterValue.toLowerCase().replace(/%/g, ""))
+          Array.isArray(filterValue) &&
+          filterValue.some(candidate => this.valuesEqual(value, candidate))
         );
+      case "NOT_IN":
+        return (
+          Array.isArray(filterValue) &&
+          !filterValue.some(candidate => this.valuesEqual(value, candidate))
+        );
+      case "LIKE": {
+        if (typeof value !== "string" || typeof filterValue !== "string") {
+          return false;
+        }
+        if (!filterValue.includes("%") && !filterValue.includes("_")) {
+          return value.toLowerCase().includes(filterValue.toLowerCase());
+        }
+        const regexSource = filterValue
+          .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+          .replace(/%/g, "[\\s\\S]*")
+          .replace(/_/g, "[\\s\\S]");
+        return new RegExp(`^${regexSource}$`, "i").test(value);
+      }
       case "BETWEEN": {
         if (value === null || value === undefined) {
           return false;
         }
         if (Array.isArray(filterValue) && filterValue.length === 2) {
-          return value >= filterValue[0] && value <= filterValue[1];
+          const cmpMin = this.compareValues(value, filterValue[0]);
+          const cmpMax = this.compareValues(value, filterValue[1]);
+          return cmpMin !== null && cmpMax !== null && cmpMin >= 0 && cmpMax <= 0;
         }
         if (filterValue && typeof filterValue === "object") {
           const min = filterValue.min ?? filterValue.from;
           const max = filterValue.max ?? filterValue.to;
           if (min !== undefined && max !== undefined) {
-            return value >= min && value <= max;
+            const cmpMin = this.compareValues(value, min);
+            const cmpMax = this.compareValues(value, max);
+            return cmpMin !== null && cmpMax !== null && cmpMin >= 0 && cmpMax <= 0;
           }
         }
         return false;
       }
       case "ARRAY_CONTAINS":
-        return Array.isArray(value) && value.includes(filterValue);
+        return Array.isArray(value) && value.some(item => this.valuesEqual(item, filterValue));
       case "ARRAY_CONTAINS_ANY":
         return (
           Array.isArray(value) &&
           Array.isArray(filterValue) &&
-          filterValue.some(candidate => value.includes(candidate))
+          filterValue.some(candidate => value.some(item => this.valuesEqual(item, candidate)))
         );
       case "GEO_RADIUS":
         return this.evaluateGeoRadius(value, filterValue);
@@ -443,12 +517,22 @@ export class InMemoryDAO<
     const sorted = [...entities];
 
     sorted.sort((a, b) => {
+      const primA = a.toPrimitives() as any;
+      const primB = b.toPrimitives() as any;
       for (const order of criteria.orders) {
-        const valA = this.getNestedValue(a.toPrimitives() as any, order.field);
-        const valB = this.getNestedValue(b.toPrimitives() as any, order.field);
+        const valA = this.getNestedValue(primA, order.field);
+        const valB = this.getNestedValue(primB, order.field);
 
-        if (valA < valB) return order.direction === "ASC" ? -1 : 1;
-        if (valA > valB) return order.direction === "ASC" ? 1 : -1;
+        const aNull = valA === null || valA === undefined;
+        const bNull = valB === null || valB === undefined;
+        if (aNull && bNull) continue;
+        if (aNull) return 1;
+        if (bNull) return -1;
+
+        const cmp = this.compareValues(valA, valB);
+        if (cmp !== null && cmp !== 0) {
+          return order.direction === "ASC" ? cmp : -cmp;
+        }
       }
 
       return 0;

@@ -18,6 +18,7 @@ export type SagaStepCompensationContext<Schema extends Record<string, any>> = {
   state: Schema;
   event: DomainEvent;
   dispatch: <R = void>(command: Command) => Promise<R>;
+  updateState: (nextState: Schema) => void;
 };
 
 export type SagaStepCompensation<Schema extends Record<string, any>> = (
@@ -292,9 +293,14 @@ export abstract class Saga<Schema extends Record<string, any> = {}>
         } else if (declarativeCompensation) {
           await declarativeCompensation({
             sagaId: frame.sagaId,
-            state: frame.state,
+            get state() {
+              return frame.state;
+            },
             event: frame.event,
             dispatch: command => this.commandBus.dispatch(command),
+            updateState: nextState => {
+              frame.state = nextState;
+            },
           });
         }
         frame.completedSteps = frame.completedSteps.filter(

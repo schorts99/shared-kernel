@@ -26,7 +26,7 @@ export abstract class RBACPolicy<Action extends string = BaseAction> {
   }
 
   canWithAttributes<
-    User extends { id: string },
+    User extends { id: unknown },
     Resource extends BaseResource,
     Context = {},
   >(
@@ -43,7 +43,7 @@ export abstract class RBACPolicy<Action extends string = BaseAction> {
   }
 
   canAnyWithAttributes<
-    User extends { id: string },
+    User extends { id: unknown },
     Resource extends BaseResource,
     Context = {},
   >(
@@ -55,12 +55,13 @@ export abstract class RBACPolicy<Action extends string = BaseAction> {
     context?: Context,
   ): boolean {
     if (!this.can(roles, action, resource)) return false;
+    if (predicates.length === 0) return true;
 
     return predicates.some((predicate) => predicate(user, resource, context));
   }
 
   async canWithAttributesAsync<
-    User extends { id: string },
+    User extends { id: unknown },
     Resource extends BaseResource,
     Context = {},
   >(
@@ -87,7 +88,7 @@ export abstract class RBACPolicy<Action extends string = BaseAction> {
   }
 
   async canAnyWithAttributesAsync<
-    User extends { id: string },
+    User extends { id: unknown },
     Resource extends BaseResource,
     Context = {},
   >(
@@ -104,6 +105,7 @@ export abstract class RBACPolicy<Action extends string = BaseAction> {
     context?: Context,
   ): Promise<boolean> {
     if (!this.can(roles, action, resource)) return false;
+    if (predicates.length === 0) return true;
 
     for (const predicate of predicates) {
       const allowed = await predicate(user, resource, context);
@@ -115,11 +117,19 @@ export abstract class RBACPolicy<Action extends string = BaseAction> {
 }
 
 export class StaticRBACPolicy<Action extends string = BaseAction> extends RBACPolicy<Action> {
-  constructor(private readonly roles: Record<string, Permission<Action>[]>) {
+  private readonly roles: Record<string, Permission<Action>[]>;
+
+  constructor(roles: Record<string, Permission<Action>[]>) {
     super();
+    this.roles = Object.fromEntries(
+      Object.entries(roles).map(([role, perms]) => [
+        role,
+        perms.map((perm) => ({ ...perm })),
+      ]),
+    );
   }
 
   getPermissions(role: string): Permission<Action>[] {
-    return this.roles[role] ?? [];
+    return (this.roles[role] ?? []).map((perm) => ({ ...perm }));
   }
 }

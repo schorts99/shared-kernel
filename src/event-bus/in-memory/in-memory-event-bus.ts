@@ -334,7 +334,7 @@ export class InMemoryEventBus implements EventBus {
           signal.throwIfAborted();
           await subscriber.handle(currentEvent, { signal, subscriptionTime: new Date(), metadata: {}, options });
         } catch (error) {
-          if (signal.aborted) {
+          if (signal.aborted || error instanceof CrossDispatchCycleError) {
             retainForReplay = true;
             throw error;
           }
